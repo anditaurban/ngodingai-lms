@@ -5,15 +5,12 @@ import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
-  
-  // State Management
   const [loginState, setLoginState] = useState<'phone' | 'otp'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // 1. Fungsi Cek Nomor HP
   const handleCheckPhone = () => {
     setErrorMessage('');
     if (phoneNumber.length < 9) {
@@ -22,14 +19,12 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    // Simulasi Network Call
     setTimeout(() => {
       setLoginState('otp');
       setIsLoading(false);
     }, 800);
   };
 
-  // 2. Fungsi Verifikasi OTP
   const handleVerifyLogin = () => {
     const otpCode = otpValues.join('');
     if (otpCode.length < 6) {
@@ -39,8 +34,6 @@ export default function LoginPage() {
 
     setIsLoading(true);
     setErrorMessage('');
-
-    // Simulasi Validasi Server
     setTimeout(() => {
       if (otpCode === '123456') {
         router.push('/dashboard');
@@ -52,7 +45,6 @@ export default function LoginPage() {
     }, 1000);
   };
 
-  // 3. Logic Input OTP
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
 
@@ -90,8 +82,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-background-light dark:bg-background-dark text-[#121217] dark:text-white font-display">
-      
-      {/* Background Decoration */}
       <div className="absolute inset-0 z-0 mesh-gradient opacity-90"></div>
       
       <div className="absolute top-[-10%] right-[-5%] w-150 h-150 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -99,10 +89,8 @@ export default function LoginPage() {
 
       <div className="relative z-10 flex flex-1 flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
         
-        {/* Login Card */}
         <div className="w-full max-w-120 glass-panel rounded-2xl sm:rounded-4xl shadow-soft border border-white/50 dark:border-white/10 p-8 sm:p-10 flex flex-col gap-8 transition-all duration-300">
-          
-          {/* Header Section */}
+
           <header className="flex flex-col gap-6">
             <div className="flex items-center gap-3">
               <div className="size-10 bg-primary/10 dark:bg-primary/20 rounded-xl flex items-center justify-center text-primary">
@@ -122,8 +110,7 @@ export default function LoginPage() {
           </header>
 
           <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-6">
-            
-            {/* Error Alert */}
+
             {errorMessage && (
               <div className="p-4 rounded-xl bg-red-50 text-red-600 text-sm font-bold border border-red-100 flex items-center gap-2 animate-fade-in">
                 <span className="material-symbols-outlined text-[18px]">error</span>
@@ -131,9 +118,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* STEP 1: Phone Input */}
             <div className="flex flex-col gap-2">
-              {/* FIX: Menambahkan htmlFor */}
               <label htmlFor="phone" className="text-[#121217] dark:text-gray-200 text-sm font-bold uppercase tracking-wider mb-1">
                 WhatsApp Number
               </label>
@@ -144,8 +129,7 @@ export default function LoginPage() {
                 <div className="flex items-center justify-center pl-3 pr-2 border-r border-transparent">
                   <span className="text-[#121217] dark:text-white font-semibold text-base">+62</span>
                 </div>
-                
-                {/* FIX: Menambahkan id, name, dan autoComplete */}
+
                 <input 
                   id="phone"
                   name="phone"
@@ -171,11 +155,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* STEP 2: OTP Input */}
             {loginState === 'otp' && (
               <div className="flex flex-col gap-4 animate-fade-in">
                 <div className="flex justify-between items-baseline">
-                  {/* FIX: Menambahkan htmlFor ke input pertama agar valid */}
                   <label htmlFor="otp-0" className="text-[#121217] dark:text-gray-200 text-sm font-bold uppercase tracking-wider">
                     Enter 6-Digit Code
                   </label>
@@ -186,8 +168,8 @@ export default function LoginPage() {
                     <input
                       key={idx}
                       id={`otp-${idx}`}
-                      name={`otp-${idx}`} // FIX: Menambahkan name unik
-                      autoComplete="one-time-code" // FIX: Autocomplete OTP
+                      name={`otp-${idx}`} 
+                      autoComplete="one-time-code"
                       type="text"
                       inputMode="numeric"
                       maxLength={1}
@@ -206,7 +188,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Action Button */}
             <button
               type="button"
               onClick={loginState === 'phone' ? handleCheckPhone : handleVerifyLogin}

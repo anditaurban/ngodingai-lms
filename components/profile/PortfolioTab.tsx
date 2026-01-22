@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-// Fix: Import tipe dari folder types yang benar
 import { UserProfile } from '@/types';
 
 export default function PortfolioTab({ user }: { user: UserProfile }) {
@@ -30,9 +29,7 @@ export default function PortfolioTab({ user }: { user: UserProfile }) {
             </div>
           </div>
         ))}
-        
-        {/* Empty Slot Style */}
-        {/* Fix: Menggunakan canonical class min-h-50 pengganti min-h-[200px] */}
+
         <button className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center h-full min-h-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
           <div className="size-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
             <span className="material-symbols-outlined text-slate-400">cloud_upload</span>

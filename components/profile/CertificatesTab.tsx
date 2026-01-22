@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-// Fix: Import tipe dari folder types yang benar
 import { UserProfile } from '@/types';
 
 export default function CertificatesTab({ user }: { user: UserProfile }) {
@@ -10,7 +9,6 @@ export default function CertificatesTab({ user }: { user: UserProfile }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {user.certificates.map((cert) => (
           <div key={cert.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex gap-4 items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={cert.image} className="w-24 h-16 object-cover rounded border border-slate-200 shadow-sm" alt="Certificate" />
             <div>
               <h4 className="font-bold text-slate-900 dark:text-white text-sm">{cert.title}</h4>

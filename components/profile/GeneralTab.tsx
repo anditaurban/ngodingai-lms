@@ -1,16 +1,13 @@
 'use client';
 
 import React from 'react';
-// Fix: Import tipe dari folder types yang benar
 import { UserProfile } from '@/types';
 
 export default function GeneralTab({ user }: { user: UserProfile }) {
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header Section */}
       <div className="flex items-center gap-6 pb-8 border-b border-slate-200 dark:border-slate-700">
         <div className="relative group">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={user.avatar} className="size-24 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-lg" alt="Avatar" />
           <button className="absolute bottom-0 right-0 bg-primary text-white p-1.5 rounded-full shadow-md hover:bg-primary-dark transition-colors" title="Change Photo">
             <span className="material-symbols-outlined text-[16px]">photo_camera</span>
@@ -22,7 +19,6 @@ export default function GeneralTab({ user }: { user: UserProfile }) {
         </div>
       </div>
 
-      {/* Form Section */}
       <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={(e) => { e.preventDefault(); alert('Profile Updated (Simulation)'); }}>
         
         <div className="md:col-span-2">

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-// Fix Import: Ambil dari folder types
 import { UserProfile } from '@/types';
 
 export default function AttendanceTab({ user }: { user: UserProfile }) {
@@ -48,7 +47,6 @@ export default function AttendanceTab({ user }: { user: UserProfile }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-800">
-              {/* Fix: Tambahkan tipe explicit (log: any, idx: number) atau biarkan inferred jika import sudah benar */}
               {user.attendance_log.map((log, idx) => (
                 <tr key={idx}>
                   <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{formatDate(log.date)}</td>

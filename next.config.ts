@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com', // <-- TAMBAHAN WAJIB
+        hostname: 'images.unsplash.com',
       },
     ],
   },

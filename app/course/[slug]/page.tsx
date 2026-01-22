@@ -12,7 +12,6 @@ const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 import coursesDataRaw from '@/data/courses.json';
 import curriculumDataRaw from '@/data/curriculum.json';
 
-// --- DEFINISI TIPE DATA ---
 interface Video {
   id: string;
   type: string;
@@ -116,7 +115,6 @@ export default function CourseDetailPage() {
   return (
     <div className="flex flex-col min-h-full">
       
-      {/* HEADER INFO */}
       <div className="bg-[#1b2636] text-white p-6 md:p-8 shrink-0">
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-4 uppercase tracking-wider">
           <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
@@ -153,7 +151,6 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* TABS NAVIGATION */}
       <div className="sticky top-0 z-40 bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 shadow-sm px-6 md:px-8 shrink-0 transition-colors">
         <div className="flex items-center gap-8">
           {['overview', 'preparation', 'classroom'].map((tab) => (
@@ -175,10 +172,8 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* CONTENT AREA */}
       <div className="flex-1 p-6 md:p-8 w-full max-w-7xl mx-auto">
 
-          {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-fade-in">
               <div className="md:col-span-2 space-y-6">
@@ -191,7 +186,7 @@ export default function CourseDetailPage() {
                 <div className="bg-blue-50 dark:bg-slate-800 p-5 rounded-2xl border border-blue-100 dark:border-slate-700">
                   <h4 className="font-bold text-slate-900 dark:text-white mb-3 text-sm uppercase">Tools Needed</h4>
                   <ul className="space-y-2">
-                    {/* PERBAIKAN: Menambahkan tipe data eksplisit (tool: string, idx: number) */}
+                
                     {foundCourse.tabs.overview.tools.map((tool: string, idx: number) => (
                       <li key={idx} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                         <span className="material-symbols-outlined text-[16px] text-blue-500">check_circle</span>
@@ -204,7 +199,6 @@ export default function CourseDetailPage() {
             </div>
           )}
 
-          {/* TAB 2: PREPARATION */}
           {activeTab === 'preparation' && (
             <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
               
@@ -241,8 +235,7 @@ export default function CourseDetailPage() {
                 ) : (
                   <div>
                     <h3 className="font-bold text-lg mb-4 text-slate-900 dark:text-white">Editing Content</h3>
-                    
-                    {/* REACT QUILL EDITOR */}
+
                     <div className="bg-white text-slate-900 rounded-lg overflow-hidden border border-slate-200">
                         <ReactQuill 
                             theme="snow" 
@@ -262,7 +255,6 @@ export default function CourseDetailPage() {
             </div>
           )}
 
-          {/* TAB 3: CLASSROOM */}
           {activeTab === 'classroom' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
               <div className="lg:col-span-8">
@@ -349,9 +341,7 @@ export default function CourseDetailPage() {
 
       </div>
 
-      {/* MODAL SLIDES */}
       {showSlideModal && foundCourse.tabs.preparation.slides_id && (
-        // PERBAIKAN: z-[100] -> z-50 agar sesuai standar Tailwind default
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[85vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col relative">
             <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">

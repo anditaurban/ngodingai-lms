@@ -20,9 +20,6 @@ const config: Config = {
         "teal-accent": "#00BCD4",
       },
       fontFamily: {
-        // PERUBAHAN UTAMA:
-        // Menggunakan variable dari next/font (layout.tsx)
-        // 'sans' dijadikan default agar seluruh aplikasi otomatis pakai Manrope
         sans: ["var(--font-manrope)", "sans-serif"],
         display: ["var(--font-manrope)", "sans-serif"],
       },
@@ -35,7 +32,6 @@ const config: Config = {
   plugins: [
     tailwindForms,
     tailwindContainerQueries,
-    // Plugin ini wajib untuk merapikan konten teks dari Editor (Tab Preparation)
     require('@tailwindcss/typography'), 
   ],
 };

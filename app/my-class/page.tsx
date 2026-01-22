@@ -2,22 +2,18 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image'; // Import komponen Image untuk performa
+import Image from 'next/image';
 
-// --- IMPORT DATA ASLI ---
 import coursesData from '@/data/courses.json';
 
 export default function MyClassPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
 
-  // Logic Filtering menggunakan Data JSON Asli
   const filteredCourses = coursesData.filter(course => {
-    // 1. Search Logic
     const matchesSearch = course.title.toLowerCase().includes(search.toLowerCase()) || 
                           course.instructor.toLowerCase().includes(search.toLowerCase());
     
-    // 2. Category Logic (Kita tebak kategori berdasarkan Slug karena di JSON tidak ada field 'category')
     let category = 'All';
     if(course.slug.includes('ngoding') || course.slug.includes('ai')) category = 'AI';
     if(course.slug.includes('esp32') || course.slug.includes('iot')) category = 'IoT';
@@ -30,15 +26,13 @@ export default function MyClassPage() {
 
   return (
     <div className="p-6 md:p-10 min-h-screen">
-        
-        {/* Page Header */}
+
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
             <div>
                 <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">My Learning</h1>
                 <p className="text-slate-500 dark:text-slate-400">Manage your courses and track your progress.</p>
             </div>
-            
-            {/* Search Bar */}
+
             <div className="relative w-full md:w-72">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
                 <input 
@@ -51,7 +45,6 @@ export default function MyClassPage() {
             </div>
         </div>
 
-        {/* Filter Tabs */}
         <div className="flex flex-wrap items-center gap-3 mb-8 overflow-x-auto pb-2 no-scrollbar">
             {['All', 'AI', 'IoT', 'Automation'].map((cat) => (
                 <button 
@@ -68,12 +61,10 @@ export default function MyClassPage() {
             ))}
         </div>
 
-        {/* Course Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredCourses.map((course) => (
                 <Link href={`/course/${course.slug}`} key={course.slug} className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden h-full">
-                    
-                    {/* Thumbnail Image dengan Next/Image */}
+
                     <div className="aspect-video w-full relative">
                        <Image 
                           src={course.thumbnail} 
@@ -84,7 +75,6 @@ export default function MyClassPage() {
                        />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors z-10"></div>
                         <div className="absolute top-3 left-3 z-20">
-                            {/* Status Badge Logic */}
                             {course.progress > 0 && course.progress < 100 && (
                                 <span className="bg-white/90 backdrop-blur text-[#00BCD4] text-[10px] font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1">
                                     <span className="material-symbols-outlined text-[12px]">schedule</span> In Progress
@@ -103,7 +93,6 @@ export default function MyClassPage() {
                         </div>
                     </div>
 
-                    {/* Card Content */}
                     <div className="p-5 flex flex-col flex-1">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight group-hover:text-[#00BCD4] transition-colors mb-2 line-clamp-2">
                             {course.title}
@@ -117,7 +106,6 @@ export default function MyClassPage() {
                         </div>
 
                         <div className="mt-auto space-y-3">
-                            {/* Progress Bar */}
                             <div>
                                 <div className="flex justify-between text-xs font-semibold mb-1.5">
                                     <span className="text-slate-500">Progress</span>
@@ -131,11 +119,9 @@ export default function MyClassPage() {
                                 </div>
                             </div>
 
-                            {/* Footer Action */}
                             <div className="pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                 <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
                                     <span className="material-symbols-outlined text-[14px]">video_library</span> 
-                                    {/* Hitung Module secara Dinamis jika ada */}
                                     {course.tabs?.curriculum?.length || 0} Modules
                                 </span>
                                 <span className="text-[#00BCD4] text-sm font-bold group-hover:underline">

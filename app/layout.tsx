@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-// Import Font Manrope dari Google
 import { Manrope } from "next/font/google"; 
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 
-// Konfigurasi Font
 const manrope = Manrope({ 
   subsets: ["latin"],
-  variable: "--font-manrope", // Variable CSS
+  variable: "--font-manrope",
   display: "swap",
 });
 
@@ -29,8 +27,7 @@ export default function RootLayout({
           rel="stylesheet" 
         />
       </head>
-      
-      {/* Terapkan font ke body */}
+
       <body className="bg-[#f3f4f6] dark:bg-[#0f111a] font-sans text-slate-900 dark:text-white">
         <AppShell>
           {children}
