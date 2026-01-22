@@ -1,0 +1,109 @@
+{
+  "ngodingai": {
+    "batches": [
+      { "id": "batch_7", "name": "Batch 7 (Desember 2025)" },
+      { "id": "batch_6", "name": "Batch 6 (Desember 2025)" },
+      { "id": "batch_5", "name": "Batch 5 (Desember 2025)" },
+      { "id": "batch_4", "name": "Batch 4 (November 2025)" },
+      { "id": "batch_3", "name": "Batch 3 (Oktober 2025)" },
+      { "id": "batch_2", "name": "Batch 2 (Juni 2025)" },
+      { "id": "batch_1", "name": "Batch 1 (Mei 2025)" }
+    ],
+    "content": {
+      "batch_1": [
+        {
+          "title": "Week 1: Introduction",
+          "videos": [
+            { "id": "b1d1", "type": "gdrive", "title": "Day 1 - 20 Mei 2025", "url": "1RILbQsHLA_E1YT6JFndO5Hwxw6pn26fi", "duration": "01:30:00" },
+            { "id": "b1d2", "type": "gdrive", "title": "Day 2 - 21 Mei 2025", "url": "1ZxkDSbyiRgd5b-HAs51kgAwEkVyXlygr", "duration": "01:45:00" },
+            { "id": "b1d3", "type": "gdrive", "title": "Day 3 - 22 Mei 2025", "url": "1VWWyAfsrkbIY9WnmYEJ99exbnS7WbTbs", "duration": "02:00:00" }
+          ]
+        }
+      ],
+      "batch_2": [
+        {
+          "title": "Week 1: Foundation",
+          "videos": [
+            { "id": "b2d1", "type": "gdrive", "title": "Day 1 - 17 Juni 2025", "url": "1OpcyZTAQy9LDNVU_MhQ-ycsqdptj76En", "duration": "01:30:00" },
+            { "id": "b2d2", "type": "gdrive", "title": "Day 2 - 18 Juni 2025", "url": "1_Vq6757EvZ7mtiZ5le1P_lJTl4vdcfZx", "duration": "01:40:00" },
+            { "id": "b2d3", "type": "gdrive", "title": "Day 3 - 19 Juni 2025", "url": "1n-CZCdcnbT041lIq1rHwPfGQtp5Fcr0R", "duration": "01:50:00" }
+          ]
+        }
+      ],
+      "batch_3": [
+        {
+          "title": "Week 1: Deep Dive",
+          "videos": [
+            { "id": "b3d1", "type": "gdrive", "title": "Day 1 - 20 Oktober 2025", "url": "1BV0XRdaDx10rHSXv_5nPQH5urlJJyB0v", "duration": "01:30:00" },
+            { "id": "b3d2", "type": "gdrive", "title": "Day 2 - 22 Oktober 2025", "url": "1bH4p5WcpMpOmojdgRSDoPxhXLd7Omhbd", "duration": "01:45:00" },
+            { "id": "b3d3", "type": "gdrive", "title": "Day 3 - 24 Oktober 2025", "url": "1z42xBpGFo87KtE2dZxWKVQMbcL2LdoAU", "duration": "02:00:00" }
+          ]
+        }
+      ],
+      "batch_4": [
+        {
+          "title": "Specialization",
+          "videos": [
+            { "id": "b4d1", "type": "gdrive", "title": "Back-End Dev - 1 Nov 2025", "url": "17tZ_aqQYqxd9Lv9B1iCgekmSxB5XI7JN", "duration": "02:10:00" },
+            { "id": "b4d2", "type": "gdrive", "title": "Front-End Dev - 1 Nov 2025", "url": "1D-XW4VQgfUAq07m1CdLx6uly7cqSduBc", "duration": "02:15:00" }
+          ]
+        }
+      ],
+      "batch_5": [
+        {
+          "title": "Final Project Phase",
+          "videos": [
+            { "id": "b5d1", "type": "gdrive", "title": "Day 1 - 1 Des 2025", "url": "1OMfi_jjUXSPovEet84_pTyWht8oco5tm", "duration": "01:30:00" },
+            { "id": "b5d2", "type": "gdrive", "title": "Day 2 - 3 Des 2025", "url": "1CX1NuiZ4ZFIEmwUi1A2YW8ausnHnKYiG", "duration": "01:40:00" },
+            { "id": "b5d3", "type": "gdrive", "title": "Day 3 - 5 Des 2025", "url": "10jgdsGuikQgGFLFElaWyiaB5ZRx84qOa", "duration": "01:50:00" }
+          ]
+        }
+      ],
+      "batch_6": [
+        {
+          "title": "Bootcamp Review",
+          "videos": [
+            { "id": "b6d1", "type": "gdrive", "title": "Day 1 - 16 Des 2025", "url": "1FjvYPdbGL77LunYwFDJk2GktKccDwmRp", "duration": "01:30:00" },
+            { "id": "b6d2", "type": "gdrive", "title": "Day 2 - 18 Des 2025", "url": "1avYJwZrnaiRrgEiomyN9biMLhEevG6sc", "duration": "01:45:00" },
+            { "id": "b6d3a", "type": "gdrive", "title": "Day 3A - 19 Des 2025", "url": "1Eb83b1xAHGjmghEUoMYCwpecy1DkDWRY", "duration": "01:00:00" },
+            { "id": "b6d3b", "type": "gdrive", "title": "Day 3B - 20 Des 2025", "url": "1Pvqf7_p637cswuhEMNw8vazWrVzClNXT", "duration": "01:00:00" }
+          ]
+        }
+      ],
+      "batch_7": [
+        {
+          "title": "Live YouTube Session",
+          "videos": [
+            { "id": "b7d1", "type": "youtube", "title": "Day 1 - 21 Des 2025", "url": "bxmDnn7lrnk", "duration": "01:15:00" },
+            { "id": "b7d2", "type": "youtube", "title": "Day 2 - 23 Des 2025", "url": "3ZMUgga6SsY", "duration": "01:20:00" },
+            { "id": "b7d3", "type": "youtube", "title": "Day 3 - 25 Des 2025", "url": "w0KZhi3DD-0", "duration": "01:30:00" }
+          ]
+        }
+      ]
+    }
+  },
+  "esp32-access": {
+    "batches": [
+      { "id": "b1", "name": "Batch 1 (Regular)" },
+      { "id": "b2", "name": "Batch 2 (Intensive)" },
+      { "id": "b3", "name": "Batch 3 (Weekend)" }
+    ],
+    "content": {
+      "b1": [ { "title": "Module 1", "videos": [ { "id": "e1", "type": "youtube", "title": "Intro ESP32", "url": "3M6jJ924jAA", "duration": "10:00" } ] } ],
+      "b2": [ { "title": "Module 1", "videos": [ { "id": "e2", "type": "youtube", "title": "Wiegand Deep Dive", "url": "7Q4j8j8j8j8", "duration": "15:00" } ] } ],
+      "b3": [ { "title": "Module 1", "videos": [ { "id": "e3", "type": "youtube", "title": "Project Showcase", "url": "3M6jJ924jAA", "duration": "12:00" } ] } ]
+    }
+  },
+  "n8n-chatbot": {
+    "batches": [
+      { "id": "b1", "name": "Batch 1 (Startups)" },
+      { "id": "b2", "name": "Batch 2 (Corporate)" },
+      { "id": "b3", "name": "Batch 3 (General)" }
+    ],
+    "content": {
+      "b1": [ { "title": "Module 1", "videos": [ { "id": "n1", "type": "youtube", "title": "N8n Webhooks", "url": "A4j8j8j8j8", "duration": "14:00" } ] } ],
+      "b2": [ { "title": "Module 1", "videos": [ { "id": "n2", "type": "youtube", "title": "JSON Manipulation", "url": "A4j8j8j8j8", "duration": "20:00" } ] } ],
+      "b3": [ { "title": "Module 1", "videos": [ { "id": "n3", "type": "youtube", "title": "WhatsApp API", "url": "A4j8j8j8j8", "duration": "25:00" } ] } ]
+    }
+  }
+}

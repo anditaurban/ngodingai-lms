@@ -1,0 +1,93 @@
+[
+  {
+    "slug": "ngodingai",
+    "title": "NgodingAI: Master GenAI & LLMs",
+    "instructor": "Andita Permata Rahmawati",
+    "role": "AI Researcher",
+    "thumbnail": "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1000&auto=format&fit=crop",
+    "progress": 40,
+    "description": "Pelajari cara membangun aplikasi berbasis LLM menggunakan Python, OpenAI API, dan LangChain dari dasar hingga mahir.",
+    "tabs": {
+      "overview": {
+        "about": "Kelas ini dirancang untuk developer yang ingin terjun ke dunia Generative AI. Anda akan belajar memahami arsitektur Transformer, Fine-tuning, hingga RAG (Retrieval Augmented Generation).",
+        "audience": ["Python Developer", "Data Scientist", "AI Enthusiast"],
+        "tools": ["VS Code", "Python 3.10+", "OpenAI API Key"]
+      },
+      "preparation": {
+        "slides_id": "11292gqnEGDcSk2USp94MempgBfPt4ZHF",
+        "content_html": "<h2><strong>Persiapan Environment Development</strong></h2><p>Sebelum memulai kelas ini, ada beberapa hal teknis yang wajib Anda persiapkan agar proses coding berjalan lancar. Jangan khawatir, kita akan setup satu per satu.</p><h3><strong>1. Instalasi Python &amp; Virtual Environment</strong></h3><p>Pastikan Anda menggunakan Python versi 3.10 ke atas. Buka terminal Anda dan jalankan:</p><pre style=\"background-color: #1e293b; color: #fff; padding: 10px; border-radius: 5px;\"><code>python --version<br>pip install virtualenv<br>python -m venv venv</code></pre><h3><strong>2. Instalasi Library Utama</strong></h3><p>Kita akan menggunakan library standar industri. Silakan install via pip:</p><ul><li><code>openai</code> - Untuk akses model GPT-4</li><li><code>langchain</code> - Framework orkestrasi LLM</li><li><code>streamlit</code> - Untuk membuat UI Chatbot sederhana</li></ul><h3><strong>3. API Keys</strong></h3><p>Anda wajib memiliki API Key dari OpenAI. Jika belum punya:</p><ol><li>Masuk ke <a href=\"https://platform.openai.com\" target=\"_blank\" rel=\"noopener\">platform.openai.com</a></li><li>Klik menu API Keys &gt; Create New Secret Key</li><li>Copy key tersebut (dimulai dengan <code>sk-...</code>) dan simpan aman.</li></ol><blockquote><p><strong>Penting:</strong> Jangan pernah share API Key Anda di Github public repository!</p></blockquote>"
+      },
+      "curriculum": [
+        {
+          "title": "Module 1: Foundation",
+          "videos": [
+            { "id": "v1", "title": "Apa itu Large Language Models?", "youtube_id": "zjkBMFhNj_g", "duration": "10:05" },
+            { "id": "v2", "title": "Setup OpenAI API di Python", "youtube_id": "b-QeJ5vC2Bw", "duration": "15:20" }
+          ]
+        },
+        {
+          "title": "Module 2: Prompt Engineering",
+          "videos": [
+            { "id": "v3", "title": "Zero-shot vs Few-shot Prompting", "youtube_id": "jC4v5AS4RIM", "duration": "12:45" },
+            { "id": "v4", "title": "Chain of Thought Reasoning", "youtube_id": "dOxUroR57xs", "duration": "08:30" }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "slug": "esp32-access",
+    "title": "Wiegand ESP32 Door Access",
+    "instructor": "Deni Sumarna",
+    "role": "IoT Engineer",
+    "thumbnail": "https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?q=80&w=1000&auto=format&fit=crop",
+    "progress": 0,
+    "description": "Bangun sistem keamanan pintu otomatis menggunakan RFID Reader, Protokol Wiegand, dan Microcontroller ESP32.",
+    "tabs": {
+      "overview": {
+        "about": "Tutorial lengkap menghubungkan hardware fisik dengan web server. Kita akan merakit prototype akses kontrol pintu menggunakan kartu RFID.",
+        "audience": ["Hardware Hobbyist", "Mahasiswa Teknik Elektro", "IoT Developer"],
+        "tools": ["ESP32 DevKit V1", "RFID Reader 125Khz", "Kabel Jumper"]
+      },
+      "preparation": {
+        "content_html": "<h3>Skema Wiring</h3><p>Hubungkan Pin D0 Reader ke GPIO 16 ESP32, dan D1 Reader ke GPIO 17 ESP32. Pastikan Ground (GND) terhubung bersama.</p><h3>Software</h3><p>Install Arduino IDE dan tambahkan Board Manager untuk ESP32.</p>"
+      },
+      "curriculum": [
+        {
+          "title": "Hardware Assembly",
+          "videos": [
+            { "id": "v1", "title": "Pengenalan Protokol Wiegand", "youtube_id": "3M6jJ924jAA", "duration": "09:00" },
+            { "id": "v2", "title": "Wiring ESP32 ke RFID Reader", "youtube_id": "7Q4j8j8j8j8", "duration": "20:00" }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "slug": "n8n-chatbot",
+    "title": "Chatbot on N8n",
+    "instructor": "Muhammad Akbar Firdaus",
+    "role": "Automation Expert",
+    "thumbnail": "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?q=80&w=1000&auto=format&fit=crop",
+    "progress": 15,
+    "description": "Automasi Customer Service tanpa koding menggunakan N8n workflow automation tool.",
+    "tabs": {
+      "overview": {
+        "about": "Belajar membuat chatbot pintar yang bisa membalas pesan WhatsApp otomatis, menyimpan data ke Google Sheets, dan terintegrasi AI.",
+        "audience": ["Business Owner", "No-Code Developer"],
+        "tools": ["Akun N8n Cloud / Self-Hosted", "WhatsApp Business API"]
+      },
+      "preparation": {
+        "content_html": "<h3>Persiapan Akun</h3><p>Pastikan Anda memiliki akses ke instance N8n. Jika belum, bisa install via Docker.</p><pre>docker run -it --rm --name n8n -p 5678:5678 -v ~/.n8n:/home/node/.n8n n8nio/n8n</pre>"
+      },
+      "curriculum": [
+        {
+          "title": "N8n Basics",
+          "videos": [
+            { "id": "v1", "title": "Interface Tour & Webhooks", "youtube_id": "A4j8j8j8j8", "duration": "14:00" }
+          ]
+        }
+      ]
+    }
+  }
+]
