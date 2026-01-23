@@ -5,9 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-/**
- * NAVBAR
- */
 const Navbar = () => (
   <nav className="fixed top-0 z-50 w-full bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 h-16 transition-colors">
     <div className="px-4 lg:px-6 h-full flex items-center justify-between">
@@ -45,9 +42,6 @@ const Navbar = () => (
   </nav>
 );
 
-/**
- * SIDEBAR
- */
 const Sidebar = ({ pathname }: { pathname: string }) => {
   const router = useRouter();
 
@@ -57,22 +51,18 @@ const Sidebar = ({ pathname }: { pathname: string }) => {
     return false;
   };
 
-  // --- LOGIC LOGOUT (KONVERSI DARI PHP) ---
   const handleLogout = () => {
-    // 1. Hapus Session & Local Storage (Setara $_SESSION = array())
     if (typeof window !== 'undefined') {
         sessionStorage.clear();
         localStorage.clear();
     }
 
-    // 2. Hapus Cookie (Setara setcookie expired time - 42000)
     document.cookie.split(";").forEach((c) => {
       document.cookie = c
         .replace(/^ +/, "")
         .replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
     });
 
-    // 3. Redirect ke Login (Setara header location)
     router.replace('/');
   };
 
@@ -131,7 +121,6 @@ const Sidebar = ({ pathname }: { pathname: string }) => {
              <p className="text-sm font-medium">Community</p>
           </Link>
 
-          {/* LOGOUT BUTTON */}
           <button 
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium group hover:bg-red-500/10 text-slate-400 hover:text-red-500 mt-auto"
@@ -171,9 +160,6 @@ const Sidebar = ({ pathname }: { pathname: string }) => {
   );
 };
 
-/**
- * FOOTER
- */
 const Footer = () => (
   <footer className="h-12 bg-white dark:bg-[#1b2636] border-t border-slate-200 dark:border-slate-700 flex items-center justify-center px-6 text-xs text-slate-500 z-30 shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.02)]">
     <p>
@@ -182,9 +168,6 @@ const Footer = () => (
   </footer>
 );
 
-/**
- * MAIN APP SHELL
- */
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || '/dashboard';
   const isLoginPage = pathname === '/';
@@ -195,23 +178,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-[#f8fafc] dark:bg-[#0f111a]">
-      {/* 1. Navbar Fixed */}
       <Navbar />
 
       <div className="flex flex-1 pt-16 h-full overflow-hidden">
         
-        {/* 2. Sidebar Fixed */}
         <Sidebar pathname={pathname} />
 
-        {/* 3. Main Column (Konten + Footer) */}
         <main className="flex-1 lg:ml-72 flex flex-col h-full relative min-w-0">
-          
-          {/* A. SCROLLABLE CONTENT AREA */}
+
           <div className="flex-1 overflow-y-auto custom-scrollbar relative scroll-smooth">
              {children}
           </div>
-          
-          {/* B. FIXED FOOTER (Di luar scroll area) */}
+
           <Footer />
           
         </main>
