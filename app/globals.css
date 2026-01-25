@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @config "../tailwind.config.ts";
 
 :root {
@@ -6,6 +7,7 @@
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
 }
+
 .glass-panel {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
@@ -13,6 +15,7 @@
 .dark .glass-panel {
   background: rgba(28, 28, 46, 0.95);
 }
+
 .mesh-gradient {
   background-color: #f6f6f8;
   background-image: 
@@ -28,6 +31,7 @@
       radial-gradient(at 10% 30%, hsla(242, 65%, 44%, 0.25) 0px, transparent 50%),
       radial-gradient(at 90% 10%, hsla(260, 60%, 60%, 0.15) 0px, transparent 50%);
 }
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -49,6 +53,7 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
