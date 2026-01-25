@@ -13,6 +13,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   const getLinkClass = (path: string) => {
+    // Mengecek apakah path saat ini sama atau diawali dengan path menu (untuk nested route)
     const isActive = pathname === path || pathname?.startsWith(`${path}/`);
     return isActive 
       ? 'bg-[#182d4e] shadow-lg border border-white/5 text-white' 
@@ -26,14 +27,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-
+      {/* Mobile Overlay (Backdrop) */}
       {isOpen && (
         <div 
           onClick={onClose}
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden transition-opacity animate-fade-in"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity animate-fade-in"
         ></div>
       )}
 
+      {/* Sidebar Container */}
       <aside className={`
         fixed top-16 bottom-0 left-0 z-50 w-72 bg-[#1b2636] text-white border-r border-slate-800/50 flex flex-col transition-transform duration-300 ease-in-out shadow-xl
         lg:translate-x-0
@@ -75,16 +77,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">2</span>
               </div>
             </Link>
-             <Link href="/community" onClick={onClose} className={`flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-slate-400 hover:text-white group`}>
-                <span className="material-symbols-outlined group-hover:text-teal-400 transition-colors">group</span>
-                <p className="text-sm font-medium">Community</p>
-            </Link>
           </nav>
         </div>
 
         <div className="p-4 border-t border-slate-800 bg-[#151e2c]">
           <Link href="/profile" onClick={onClose} className={`flex items-center gap-3 p-3 rounded-xl border transition-all group ${getLinkClass('/profile')}`}>
             <div className="relative">
+              {/* Gunakan img biasa untuk sementara agar preview tidak error jika next/image belum dikonfigurasi */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="https://ui-avatars.com/api/?name=Alex+Morgan&background=0D8ABC&color=fff" className="size-9 rounded-full border border-slate-600" alt="Profile" />
               <div className="absolute -bottom-0.5 -right-0.5 bg-teal-400 size-2.5 rounded-full border-2 border-[#1b2636]"></div>
             </div>
