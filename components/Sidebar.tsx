@@ -26,7 +26,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Overlay (Backdrop) */}
+
       {isOpen && (
         <div 
           onClick={onClose}
@@ -34,9 +34,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         ></div>
       )}
 
-      {/* Sidebar Container */}
       <aside className={`
-        fixed top-16 bottom-0 left-0 z-40 w-72 bg-[#1b2636] text-white border-r border-slate-800/50 flex flex-col transition-transform duration-300 ease-in-out shadow-xl
+        fixed top-16 bottom-0 left-0 z-50 w-72 bg-[#1b2636] text-white border-r border-slate-800/50 flex flex-col transition-transform duration-300 ease-in-out shadow-xl
         lg:translate-x-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
@@ -86,7 +85,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="p-4 border-t border-slate-800 bg-[#151e2c]">
           <Link href="/profile" onClick={onClose} className={`flex items-center gap-3 p-3 rounded-xl border transition-all group ${getLinkClass('/profile')}`}>
             <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="https://ui-avatars.com/api/?name=Alex+Morgan&background=0D8ABC&color=fff" className="size-9 rounded-full border border-slate-600" alt="Profile" />
               <div className="absolute -bottom-0.5 -right-0.5 bg-teal-400 size-2.5 rounded-full border-2 border-[#1b2636]"></div>
             </div>

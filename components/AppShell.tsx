@@ -3,16 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-// --- Components Internal ---
-
-/**
- * Komponen Navbar
- */
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => (
   <nav className="fixed top-0 z-50 w-full bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 h-16 transition-colors">
     <div className="px-4 lg:px-6 h-full flex items-center justify-between">
       <div className="flex items-center gap-4">
-        {/* Tombol Menu Mobile */}
         <button 
           onClick={onMenuClick}
           className="lg:hidden text-slate-500 hover:text-[#00BCD4] transition-colors"
@@ -53,9 +47,6 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => (
   </nav>
 );
 
-/**
- * Komponen Sidebar
- */
 const Sidebar = ({ 
   isOpen, 
   onClose,
@@ -73,7 +64,6 @@ const Sidebar = ({
   ];
 
   const getLinkClass = (path: string) => {
-    // Logika active state sederhana
     const isActive = pathname === path || pathname.startsWith(`${path}/`);
     return isActive 
       ? 'bg-[#182d4e] shadow-lg border border-white/5 text-white' 
@@ -87,7 +77,7 @@ const Sidebar = ({
 
   return (
     <>
-      {/* Mobile Overlay */}
+
       {isOpen && (
         <div 
           onClick={onClose}
@@ -153,9 +143,6 @@ const Sidebar = ({
   );
 };
 
-/**
- * Komponen Footer
- */
 const Footer = () => (
   <footer className="h-12 bg-white dark:bg-[#1b2636] border-t border-slate-200 dark:border-slate-700 flex items-center justify-center px-6 text-xs text-slate-500 z-30 shrink-0">
     <p>
@@ -164,20 +151,16 @@ const Footer = () => (
   </footer>
 );
 
-// --- Main AppShell ---
-
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pathname, setPathname] = useState('');
 
-  // Simulasi usePathname untuk client-side preview agar tidak error "Could not resolve next/navigation"
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setPathname(window.location.pathname);
     }
   }, []);
-  
-  // Reset sidebar saat pindah halaman (simulasi)
+
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);

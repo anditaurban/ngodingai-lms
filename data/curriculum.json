@@ -1,13 +1,14 @@
 {
   "ngodingai": {
     "batches": [
-      { "id": "batch_7", "name": "Batch 7 (Desember 2025)" },
+      { "id": "batch_7", "name": "Batch 7 (Januari 2026)" },
       { "id": "batch_6", "name": "Batch 6 (Desember 2025)" },
       { "id": "batch_5", "name": "Batch 5 (Desember 2025)" },
       { "id": "batch_4", "name": "Batch 4 (November 2025)" },
       { "id": "batch_3", "name": "Batch 3 (Oktober 2025)" },
       { "id": "batch_2", "name": "Batch 2 (Juni 2025)" },
       { "id": "batch_1", "name": "Batch 1 (Mei 2025)" }
+      
     ],
     "content": {
       "batch_1": [

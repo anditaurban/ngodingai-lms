@@ -12,8 +12,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     <nav className="fixed top-0 z-50 w-full bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 h-16 transition-colors">
       <div className="px-4 lg:px-6 h-full flex items-center justify-between">
         <div className="flex items-center gap-4">
-          
-          {/* Tombol Menu Mobile */}
+
           <button 
             onClick={onMenuClick}
             className="lg:hidden text-slate-500 hover:text-primary transition-colors p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
