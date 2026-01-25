@@ -85,7 +85,7 @@ export default function DashboardPage() {
               className="w-full md:w-5/12 bg-gray-200 bg-cover bg-center min-h-50 md:min-h-auto relative" 
               style={{ backgroundImage: "url('https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1000&auto=format&fit=crop')" }}
             >
-               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent md:hidden"></div>
+               <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent md:hidden"></div>
                <div className="absolute bottom-4 left-4 md:hidden">
                   <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white/30">
                     Resume Learning
@@ -112,7 +112,7 @@ export default function DashboardPage() {
                     <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
                   </div>
                 </div>
-                <Link href="/course/ngodingai" className="flex items-center justify-center gap-2 w-full sm:w-auto bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-xl font-bold text-sm hover:opacity-90 hover:shadow-lg hover:translate-y-[-2px] transition-all">
+                <Link href="/course/ngodingai" className="flex items-center justify-center gap-2 w-full sm:w-auto bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-xl font-bold text-sm hover:opacity-90 hover:shadow-lg hover:-translate-y-0.5 transition-all">
                   <span className="material-symbols-outlined text-[18px]">play_circle</span>
                   Resume Session
                 </Link>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
               
               {/* Event 1 */}
               <div className="relative pl-6 group cursor-pointer">
-                <span className="absolute -left-[5px] top-1 size-2.5 rounded-full bg-orange-500 ring-4 ring-white dark:ring-slate-800 group-hover:scale-125 transition-transform"></span>
+                <span className="absolute -left-1.25 top-1 size-2.5 rounded-full bg-orange-500 ring-4 ring-white dark:ring-slate-800 group-hover:scale-125 transition-transform"></span>
                 <p className="text-xs font-bold text-slate-400 mb-1">DECEMBER 21</p>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Live Q&A Session</h4>
                 <p className="text-xs text-slate-500 mt-0.5">20:00 WIB • Zoom Meeting</p>
@@ -197,7 +197,7 @@ export default function DashboardPage() {
 
                {/* Event 2 */}
                <div className="relative pl-6 group cursor-pointer">
-                <span className="absolute -left-[5px] top-1 size-2.5 rounded-full bg-blue-500 ring-4 ring-white dark:ring-slate-800 group-hover:scale-125 transition-transform"></span>
+                <span className="absolute -left-1.25 top-1 size-2.5 rounded-full bg-blue-500 ring-4 ring-white dark:ring-slate-800 group-hover:scale-125 transition-transform"></span>
                 <p className="text-xs font-bold text-slate-400 mb-1">DECEMBER 24</p>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Project Deadline</h4>
                 <p className="text-xs text-slate-500 mt-0.5">23:59 WIB • NgodingAI</p>
@@ -205,7 +205,7 @@ export default function DashboardPage() {
 
               {/* Event 3 */}
                <div className="relative pl-6 group cursor-pointer">
-                <span className="absolute -left-[5px] top-1 size-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-slate-800 group-hover:scale-125 transition-transform"></span>
+                <span className="absolute -left-1.25 top-1 size-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-slate-800 group-hover:scale-125 transition-transform"></span>
                 <p className="text-xs font-bold text-slate-400 mb-1">JANUARY 05</p>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">New Batch Start</h4>
                 <p className="text-xs text-slate-500 mt-0.5">Automation with N8n</p>

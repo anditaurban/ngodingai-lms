@@ -132,7 +132,7 @@ const Sidebar = ({
 
         <div className="p-4 border-t border-slate-800 bg-[#151e2c]">
           <a href="/profile" onClick={onClose} className="flex items-center gap-3 p-3 rounded-xl border border-slate-700 hover:border-[#00BCD4] transition-all group cursor-pointer">
-            <div className="relative size-9 flex-shrink-0">
+            <div className="relative size-9 shrink-0">
               <Image 
                 src="https://ui-avatars.com/api/?name=Alex+Morgan&background=00BCD4&color=fff" 
                 alt="Profil" 
