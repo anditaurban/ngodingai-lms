@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Editor } from '@tinymce/tinymce-react';
 
+// Import Data (Menggunakan Relative Path agar aman)
 import coursesDataRaw from '../../../data/courses.json';
 import curriculumDataRaw from '../../../data/curriculum.json';
 
@@ -53,6 +54,7 @@ interface Course {
   tabs: CourseTabs;
 }
 
+// Casting JSON ke tipe yang benar
 const coursesData = coursesDataRaw as unknown as Course[];
 const curriculumData = curriculumDataRaw as unknown as Record<string, CurriculumContent>;
 
@@ -61,9 +63,11 @@ export default function CourseDetailPage() {
   const router = useRouter();
   const slug = params?.slug as string;
 
+  // --- LOGIC CARI DATA ---
   const foundCourse = coursesData.find((c) => c.slug === slug);
   const foundCurriculum = curriculumData[slug];
 
+  // --- STATE ---
   const [activeTab, setActiveTab] = useState('overview');
   
   const [activeBatch, setActiveBatch] = useState(() => {
@@ -79,12 +83,14 @@ export default function CourseDetailPage() {
     return null;
   });
 
+  // Editor State
   const [showSlideModal, setShowSlideModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [articleContent, setArticleContent] = useState(() => {
     return foundCourse?.tabs.preparation.content_html || '';
   });
 
+  // --- EFFECTS ---
   useEffect(() => {
     if (!foundCourse) {
       router.push('/dashboard');
@@ -93,6 +99,7 @@ export default function CourseDetailPage() {
 
   if (!foundCourse) return <div className="p-10 text-center">Loading Course...</div>;
 
+  // --- HANDLERS ---
   const currentModules = (foundCurriculum && activeBatch && foundCurriculum.content[activeBatch]) 
     ? foundCurriculum.content[activeBatch] 
     : [];
@@ -101,6 +108,7 @@ export default function CourseDetailPage() {
     setActiveBatch(batchId);
     if (!foundCurriculum) return;
 
+    // Reset video ke yang pertama di batch baru
     const firstModule = foundCurriculum.content[batchId]?.[0];
     if (firstModule?.videos?.length > 0) {
       setCurrentVideo(firstModule.videos[0]);
@@ -110,9 +118,12 @@ export default function CourseDetailPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    // PERBAIKAN LAYOUT:
+    // Hapus 'h-[calc...]' dan 'overflow-hidden'. Gunakan flex-col biasa.
+    // Ini membuat Header menjadi bagian dari aliran halaman (bisa di-scroll).
+    <div className="flex flex-col w-full min-h-screen">
       
-      {/* HEADER INFO */}
+      {/* SECTION 1: HEADER INFO (Akan ikut ter-scroll ke atas dan hilang) */}
       <div className="bg-[#1b2636] text-white p-6 md:p-8 shrink-0">
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-4 uppercase tracking-wider">
           <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
@@ -144,9 +155,9 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* SECTION 2: STICKY TABS */}
-      {/* PERBAIKAN: z-index diturunkan dari z-40 ke z-30 */}
-      <div className="sticky top-0 z-30 bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 shadow-sm px-6 md:px-8 shrink-0">
+      {/* SECTION 2: STICKY TABS (Akan menempel di top saat di-scroll) */}
+      {/* Gunakan top-0 dan z-30 agar menempel di bawah Navbar AppShell */}
+      <div className="sticky top-0 z-30 bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 shadow-sm px-6 md:px-8">
         <div className="flex items-center gap-8">
           {['overview', 'preparation', 'classroom'].map((tab) => (
             <button
@@ -167,8 +178,9 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar bg-background-light dark:bg-[#0f111a]">
+      {/* SECTION 3: CONTENT BODY (Mengalir di bawah tabs) */}
+      {/* Hapus overflow-y-auto disini karena scroll ikut body utama */}
+      <div className="flex-1 bg-background-light dark:bg-[#0f111a]">
         <div className="p-6 md:p-8 w-full max-w-7xl mx-auto min-h-full">
 
           {/* TAB 1: OVERVIEW */}
@@ -285,7 +297,8 @@ export default function CourseDetailPage() {
                 )}
               </div>
 
-              <div className="lg:col-span-4 flex flex-col h-150 lg:h-auto">
+              {/* Playlist - Perhatikan h-[600px] agar list tetap bisa discroll meski halaman utama discroll */}
+              <div className="lg:col-span-4 flex flex-col h-[600px] lg:h-auto">
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col h-full overflow-hidden shadow-sm">
                   <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Select Batch</label>
@@ -343,9 +356,9 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* MODAL SLIDES */}
+      {/* MODAL SLIDES (FIXED OVERLAY) */}
       {showSlideModal && foundCourse.tabs.preparation.slides_id && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[85vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col relative">
             <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
               <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
