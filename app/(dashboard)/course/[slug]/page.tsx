@@ -5,11 +5,9 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Editor } from '@tinymce/tinymce-react';
 
-// Import Data (Menggunakan Relative Path agar aman)
-import coursesDataRaw from '../../../data/courses.json';
-import curriculumDataRaw from '../../../data/curriculum.json';
+import coursesDataRaw from '@/data/courses.json';
+import curriculumDataRaw from '@/data/curriculum.json';
 
-// --- DEFINISI TIPE DATA ---
 interface Video {
   id: string;
   type: string;

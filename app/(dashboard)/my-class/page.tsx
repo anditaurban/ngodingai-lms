@@ -72,6 +72,7 @@ export default function MyClassPage() {
                           fill
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          unoptimized={true}
                        />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors z-10"></div>
                         <div className="absolute top-3 left-3 z-20">

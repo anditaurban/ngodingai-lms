@@ -3,62 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-// -----------------------------------------------------------------------------
-// [PENTING] BAGIAN INI UNTUK PREVIEW SAJA (MOCKING)
-// Saat di copy ke project asli:
-// 1. Hapus bagian "MOCK UTILITIES" ini.
-// 2. Uncomment import asli Next.js di bawah ini:
-// import Link from 'next/link';
-// import { usePathname } from 'next/navigation';
-// -----------------------------------------------------------------------------
-
-// MOCK UTILITIES START
-const NAV_EVENT = 'route-change-event';
-
-// Simulasi usePathname yang REAKTIF (Bisa mendeteksi perubahan URL)
-const usePathname = () => {
-  const [pathname, setPathname] = useState('/');
-
-  useEffect(() => {
-    const updatePath = () => {
-      if (typeof window !== 'undefined') setPathname(window.location.pathname);
-    };
-
-    updatePath();
-
-    window.addEventListener(NAV_EVENT, updatePath);
-    window.addEventListener('popstate', updatePath);
-
-    return () => {
-      window.removeEventListener(NAV_EVENT, updatePath);
-      window.removeEventListener('popstate', updatePath);
-    };
-  }, []);
-
-  return pathname;
-};
-
-// Simulasi Link Next.js
-const Link = ({ href, children, className, onClick, ...props }: any) => {
-  const handleClick = (e: React.MouseEvent) => {
-    if (onClick) onClick(e);
-    e.preventDefault();
-    if (typeof window !== 'undefined') {
-      window.history.pushState({}, '', href);
-      window.dispatchEvent(new Event(NAV_EVENT));
-    }
-  };
-
-  return (
-    <a href={href} onClick={handleClick} className={className} {...props}>
-      {children}
-    </a>
-  );
-};
-// MOCK UTILITIES END ----------------------------------------------------------
-
-
-// --- COMPONENTS (Bisa dipisah ke file lain jika mau lebih rapi) ---
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => (
   <nav className="fixed top-0 z-50 w-full bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 h-16 transition-colors">
@@ -209,10 +155,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         />
         
         <main className="flex-1 lg:ml-72 flex flex-col h-full relative w-full overflow-hidden">
-          {/* Area Konten Utama
-              Kita gunakan h-full dan overflow-y-auto di sini agar hanya area konten yang discroll,
-              sedangkan Navbar tetap sticky.
-          */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
              {children}
           </div>
