@@ -3,8 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 
+// -----------------------------------------------------------------------------
+// [PENTING] BAGIAN INI UNTUK PREVIEW SAJA (MOCKING)
+// Saat di copy ke project asli:
+// 1. Hapus bagian "MOCK UTILITIES" ini.
+// 2. Uncomment import asli Next.js di bawah ini:
+// import Link from 'next/link';
+// import { usePathname } from 'next/navigation';
+// -----------------------------------------------------------------------------
+
+// MOCK UTILITIES START
 const NAV_EVENT = 'route-change-event';
 
+// Simulasi usePathname yang REAKTIF (Bisa mendeteksi perubahan URL)
 const usePathname = () => {
   const [pathname, setPathname] = useState('/');
 
@@ -27,15 +38,13 @@ const usePathname = () => {
   return pathname;
 };
 
+// Simulasi Link Next.js
 const Link = ({ href, children, className, onClick, ...props }: any) => {
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) onClick(e);
-
     e.preventDefault();
-    
     if (typeof window !== 'undefined') {
       window.history.pushState({}, '', href);
-
       window.dispatchEvent(new Event(NAV_EVENT));
     }
   };
@@ -46,6 +55,10 @@ const Link = ({ href, children, className, onClick, ...props }: any) => {
     </a>
   );
 };
+// MOCK UTILITIES END ----------------------------------------------------------
+
+
+// --- COMPONENTS (Bisa dipisah ke file lain jika mau lebih rapi) ---
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => (
   <nav className="fixed top-0 z-50 w-full bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 h-16 transition-colors">
@@ -99,6 +112,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
   ];
 
   const getLinkClass = (path: string) => {
+    // Logic active state yang lebih ketat
     const isActive = pathname === path || pathname.startsWith(`${path}/`);
     return isActive 
       ? 'bg-[#182d4e] shadow-lg border border-white/5 text-white' 
@@ -112,12 +126,11 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
   return (
     <>
-      {isOpen && (
-        <div 
-          onClick={onClose}
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity"
-        ></div>
-      )}
+      {/* Overlay Mobile */}
+      <div 
+        onClick={onClose}
+        className={`fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+      ></div>
 
       <aside className={`
         fixed top-16 bottom-0 left-0 z-50 w-72 bg-[#1b2636] text-white border-r border-slate-800/50 flex flex-col transition-transform duration-300 ease-in-out shadow-xl
@@ -145,7 +158,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
         <div className="p-4 border-t border-slate-800 bg-[#151e2c]">
           <Link href="/profile" onClick={onClose} className="flex items-center gap-3 p-3 rounded-xl border border-slate-700 hover:border-[#00BCD4] transition-all group cursor-pointer">
-            <div className="relative size-9 flex-shrink: 0">
+            <div className="relative size-9 shrink-0">
                <div className="size-9 rounded-full bg-slate-600 overflow-hidden relative">
                  <img 
                   src="https://ui-avatars.com/api/?name=Alex+Morgan&background=00BCD4&color=fff" 
@@ -174,49 +187,38 @@ const Footer = () => (
   </footer>
 );
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+// --- MAIN SHELL ---
+
+export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname(); 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
+  
+  // Tutup sidebar otomatis saat pindah halaman (Mobile)
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
-
-  const isPlainPage = pathname === '/' || pathname === '/login' || pathname === '/register';
-
-  if (isPlainPage) {
-    return (
-      <main className="min-h-screen bg-background-light dark:bg-background-dark">
-        {children}
-      </main>
-    );
-  }
 
   return (
     <div className="flex flex-col min-h-screen font-sans bg-[#f8fafc] dark:bg-[#0f111a]">
       <Navbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
       
-      <div className="flex flex-1 pt-16 h-[calc(100vh)] overflow-hidden">
+      <div className="flex flex-1 pt-16 h-screen overflow-hidden">
         <Sidebar 
           isOpen={isSidebarOpen} 
           onClose={() => setIsSidebarOpen(false)} 
         />
-
+        
         <main className="flex-1 lg:ml-72 flex flex-col h-full relative w-full overflow-hidden">
+          {/* Area Konten Utama
+              Kita gunakan h-full dan overflow-y-auto di sini agar hanya area konten yang discroll,
+              sedangkan Navbar tetap sticky.
+          */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
              {children}
           </div>
           <Footer />
         </main>
       </div>
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-      `}</style>
     </div>
   );
 }
