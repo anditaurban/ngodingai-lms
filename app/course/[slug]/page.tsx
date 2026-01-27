@@ -298,7 +298,7 @@ export default function CourseDetailPage() {
               </div>
 
               {/* Playlist - Perhatikan h-[600px] agar list tetap bisa discroll meski halaman utama discroll */}
-              <div className="lg:col-span-4 flex flex-col h-[600px] lg:h-auto">
+              <div className="lg:col-span-4 flex flex-col h-150 lg:h-auto">
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col h-full overflow-hidden shadow-sm">
                   <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Select Batch</label>
@@ -358,7 +358,7 @@ export default function CourseDetailPage() {
 
       {/* MODAL SLIDES (FIXED OVERLAY) */}
       {showSlideModal && foundCourse.tabs.preparation.slides_id && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[85vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col relative">
             <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
               <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">

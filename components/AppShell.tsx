@@ -3,31 +3,49 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-// --- MOCK COMPONENTS & HOOKS (Agar berjalan di preview) ---
+const NAV_EVENT = 'route-change-event';
 
-// Simulasi usePathname agar tidak error modul next/navigation
 const usePathname = () => {
   const [pathname, setPathname] = useState('/');
+
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setPathname(window.location.pathname);
-    }
+    const updatePath = () => {
+      if (typeof window !== 'undefined') setPathname(window.location.pathname);
+    };
+
+    updatePath();
+
+    window.addEventListener(NAV_EVENT, updatePath);
+    window.addEventListener('popstate', updatePath);
+
+    return () => {
+      window.removeEventListener(NAV_EVENT, updatePath);
+      window.removeEventListener('popstate', updatePath);
+    };
   }, []);
+
   return pathname;
 };
 
-// Simulasi Link agar tidak error modul next/link
-const Link = ({ href, children, className, onClick }: any) => (
-  <a href={href} className={className} onClick={(e) => {
-     // Prevent default untuk demo agar tidak reload
-     // e.preventDefault(); 
-     if(onClick) onClick();
-  }}>
-    {children}
-  </a>
-);
+const Link = ({ href, children, className, onClick, ...props }: any) => {
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) onClick(e);
 
-// --- KOMPONEN INTERNAL ---
+    e.preventDefault();
+    
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', href);
+
+      window.dispatchEvent(new Event(NAV_EVENT));
+    }
+  };
+
+  return (
+    <a href={href} onClick={handleClick} className={className} {...props}>
+      {children}
+    </a>
+  );
+};
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => (
   <nav className="fixed top-0 z-50 w-full bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 h-16 transition-colors">
@@ -127,8 +145,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
         <div className="p-4 border-t border-slate-800 bg-[#151e2c]">
           <Link href="/profile" onClick={onClose} className="flex items-center gap-3 p-3 rounded-xl border border-slate-700 hover:border-[#00BCD4] transition-all group cursor-pointer">
-            <div className="relative size-9 flex-shrink-0">
-               {/* Fallback image jika next/image bermasalah di preview */}
+            <div className="relative size-9 flex-shrink: 0">
                <div className="size-9 rounded-full bg-slate-600 overflow-hidden relative">
                  <img 
                   src="https://ui-avatars.com/api/?name=Alex+Morgan&background=00BCD4&color=fff" 
@@ -157,37 +174,37 @@ const Footer = () => (
   </footer>
 );
 
-// --- MAIN APPSHELL ---
-
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathname = usePathname(); 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
-  // Reset sidebar saat pindah halaman
+
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
 
-  const isLoginPage = pathname === '/';
+  const isPlainPage = pathname === '/' || pathname === '/login' || pathname === '/register';
 
-  if (isLoginPage) {
-    return <main className="min-h-screen bg-white">{children}</main>;
+  if (isPlainPage) {
+    return (
+      <main className="min-h-screen bg-background-light dark:bg-background-dark">
+        {children}
+      </main>
+    );
   }
 
   return (
-    <div className="flex flex-col min-h-screen font-sans">
+    <div className="flex flex-col min-h-screen font-sans bg-[#f8fafc] dark:bg-[#0f111a]">
       <Navbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
       
-      <div className="flex flex-1 pt-16 h-screen overflow-hidden">
+      <div className="flex flex-1 pt-16 h-[calc(100vh)] overflow-hidden">
         <Sidebar 
           isOpen={isSidebarOpen} 
           onClose={() => setIsSidebarOpen(false)} 
         />
-        
-        <main className="flex-1 lg:ml-72 flex flex-col h-full relative w-full bg-[#f8fafc] dark:bg-[#0f111a]">
-          {/* Kontainer Scrollable */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-             {children || <div className="p-8">Konten Halaman</div>}
+
+        <main className="flex-1 lg:ml-72 flex flex-col h-full relative w-full overflow-hidden">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
+             {children}
           </div>
           <Footer />
         </main>
@@ -196,8 +213,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
       `}</style>
     </div>
   );
