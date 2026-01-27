@@ -1,3 +1,4 @@
+// --- USER PROFILE TYPES ---
 export interface UserProfile {
   name: string;
   role: string;
@@ -32,4 +33,58 @@ export interface UserProfile {
     date: string;
     image: string;
   }[];
+}
+
+// --- COURSE & LEARNING TYPES ---
+
+export interface Video {
+  id: string;
+  title: string;
+  youtube_id?: string;
+  url?: string;
+  duration: string;
+  // PERBAIKAN: Menambahkan 'gdrive' ke dalam tipe union
+  type?: 'youtube' | 'drive' | 'gdrive'; 
+}
+
+export interface Module {
+  title: string;
+  videos: Video[];
+}
+
+export interface Batch {
+  id: string;
+  name: string;
+}
+
+export interface ArticleStep {
+  title: string;
+  content: string;
+}
+
+export interface CourseData {
+  slug: string;
+  title: string;
+  description: string;
+  instructor: string;
+  thumbnail: string;
+  progress: number;
+  tabs: {
+    overview: {
+      about: string;
+      tools: string[];
+      audience?: string[];
+    };
+    preparation: {
+      content_html: string;
+      slides_id?: string;
+      steps?: ArticleStep[];
+    };
+    curriculum?: Module[];
+  };
+}
+
+export interface CurriculumData {
+  batches: Batch[];
+  content: Record<string, Module[]>;
 }

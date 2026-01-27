@@ -1,15 +1,14 @@
 import React from 'react';
-
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
-// PERBAIKAN: Gunakan Relative Path agar file ditemukan di semua environment
-// (Di VS Code Anda boleh tetap pakai @/ jika tsconfig mendukung, tapi ini lebih aman)
-import coursesDataRaw from '../../../../data/courses.json';
-import curriculumDataRaw from '../../../../data/curriculum.json';
-import CoursePlayer from '../../../../components/course/CoursePlayer';
-import { CourseData, CurriculumData } from '../../../../types';
+// Menggunakan alias @/ untuk path yang lebih aman dan rapi
+// Pastikan tsconfig.json Anda mendukung path alias "@/*"
+import coursesDataRaw from '@/data/courses.json';
+import curriculumDataRaw from '@/data/curriculum.json';
+import CoursePlayer from '@/components/course/CoursePlayer';
+import { CourseData, CurriculumData } from '@/types';
 
 // Helper casting data agar TypeScript tidak komplain
 const courses = coursesDataRaw as unknown as CourseData[];
@@ -41,7 +40,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   // 2. Validasi: Jika data tidak ditemukan, tampilkan halaman 404
   if (!course) {
-    return notFound();
+    notFound();
   }
 
   return (
@@ -69,7 +68,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                fill
                className="object-cover group-hover:scale-105 transition-transform duration-700"
                priority
-               unoptimized // Aktifkan unoptimized untuk menghindari error domain di development
+               // unoptimized // Aktifkan jika gambar tidak muncul karena masalah domain config
              />
           </div>
 
@@ -105,8 +104,6 @@ export default async function CourseDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* --- CLIENT PLAYER (Interaktif) --- */}
-      {/* Komponen ini menangani Tabs (Overview, Preparation, Classroom) */}
       <CoursePlayer course={course} curriculum={curriculum} />
 
     </div>
