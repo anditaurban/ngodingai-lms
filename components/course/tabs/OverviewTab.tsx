@@ -48,7 +48,7 @@ export default function OverviewTab({ data }: OverviewTabProps) {
 
             <div className="space-y-8 relative">
                 {/* Garis Konektor Vertical */}
-                <div className="absolute left-[22px] top-8 bottom-8 w-0.5 bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                <div className="absolute left-5.5 top-8 bottom-8 w-0.5 bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
 
                 {/* --- STEP 1 --- */}
                 <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:border-cyan-400 transition-colors">
@@ -118,7 +118,7 @@ export default function OverviewTab({ data }: OverviewTabProps) {
                         </div>
 
                         {/* Project Description */}
-                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-indigo-100 dark:border-indigo-900/30">
+                        <div className="bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-indigo-100 dark:border-indigo-900/30">
                             <h4 className="font-bold text-indigo-900 dark:text-indigo-200 mb-4 flex items-center gap-2">
                                 <span className="material-symbols-outlined">laptop_mac</span> 
                                 Project: Admin Dashboard Web App
@@ -246,7 +246,7 @@ export default function OverviewTab({ data }: OverviewTabProps) {
           </div>
 
           {/* 2. PRO TIP CARD (Gradient) */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-[#00BCD4]/10 to-blue-500/10 border border-[#00BCD4]/20 relative overflow-hidden group">
+          <div className="p-6 rounded-3xl bg-linear-to-br from-[#00BCD4]/10 to-blue-500/10 border border-[#00BCD4]/20 relative overflow-hidden group">
             <div className="absolute -right-6 -top-6 size-24 bg-[#00BCD4]/20 rounded-full blur-2xl group-hover:bg-[#00BCD4]/30 transition-colors"></div>
             
             <div className="flex items-center gap-2 mb-3 text-[#00BCD4] relative z-10">

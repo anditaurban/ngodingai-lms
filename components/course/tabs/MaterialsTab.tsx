@@ -38,7 +38,7 @@ export default function MaterialsTab({ materials = [] }: MaterialsTabProps) {
               </span>
             </div>
             
-            <div className="max-h-[600px] overflow-y-auto custom-scrollbar p-2 space-y-1">
+            <div className="max-h-150 overflow-y-auto custom-scrollbar p-2 space-y-1">
               {materials.map((item) => (
                 <button
                   key={item.id}
@@ -98,7 +98,7 @@ export default function MaterialsTab({ materials = [] }: MaterialsTabProps) {
               </div>
 
               {/* Iframe Viewer */}
-              <div className="bg-slate-200 dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 shadow-inner relative aspect-[4/3] lg:aspect-[16/10]">
+              <div className="bg-slate-200 dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 shadow-inner relative aspect-4/3 lg:aspect-16/10">
                 <iframe
                   src={selectedFile.url}
                   title={selectedFile.title}
@@ -109,7 +109,7 @@ export default function MaterialsTab({ materials = [] }: MaterialsTabProps) {
 
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-[500px] bg-slate-50 dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400">
+            <div className="flex flex-col items-center justify-center h-125 bg-slate-50 dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400">
               <span className="material-symbols-outlined text-5xl mb-4 opacity-50">description</span>
               <p>Select a file to preview</p>
             </div>
