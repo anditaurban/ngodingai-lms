@@ -82,29 +82,5 @@
         }
       ]
     }
-  },
-  "esp32-access": {
-    "batches": [
-      { "id": "b1", "name": "Batch 1 (Regular)" },
-      { "id": "b2", "name": "Batch 2 (Intensive)" },
-      { "id": "b3", "name": "Batch 3 (Weekend)" }
-    ],
-    "content": {
-      "b1": [ { "title": "Module 1", "videos": [ { "id": "e1", "type": "youtube", "title": "Intro ESP32", "url": "3M6jJ924jAA", "duration": "10:00" } ] } ],
-      "b2": [ { "title": "Module 1", "videos": [ { "id": "e2", "type": "youtube", "title": "Wiegand Deep Dive", "url": "7Q4j8j8j8j8", "duration": "15:00" } ] } ],
-      "b3": [ { "title": "Module 1", "videos": [ { "id": "e3", "type": "youtube", "title": "Project Showcase", "url": "3M6jJ924jAA", "duration": "12:00" } ] } ]
-    }
-  },
-  "n8n-chatbot": {
-    "batches": [
-      { "id": "b1", "name": "Batch 1 (Startups)" },
-      { "id": "b2", "name": "Batch 2 (Corporate)" },
-      { "id": "b3", "name": "Batch 3 (General)" }
-    ],
-    "content": {
-      "b1": [ { "title": "Module 1", "videos": [ { "id": "n1", "type": "youtube", "title": "N8n Webhooks", "url": "A4j8j8j8j8", "duration": "14:00" } ] } ],
-      "b2": [ { "title": "Module 1", "videos": [ { "id": "n2", "type": "youtube", "title": "JSON Manipulation", "url": "A4j8j8j8j8", "duration": "20:00" } ] } ],
-      "b3": [ { "title": "Module 1", "videos": [ { "id": "n3", "type": "youtube", "title": "WhatsApp API", "url": "A4j8j8j8j8", "duration": "25:00" } ] } ]
-    }
   }
 }
