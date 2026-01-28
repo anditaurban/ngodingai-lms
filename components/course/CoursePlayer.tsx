@@ -3,27 +3,30 @@
 import React, { useState } from 'react';
 import { CourseData, CurriculumData } from '@/types';
 
-// Import Tabs yang sudah dipecah
+// Import Tabs
 import OverviewTab from './tabs/OverviewTab';
 import PreparationTab from './tabs/PreparationTab';
 import ClassroomTab from './tabs/ClassroomTab';
+import MaterialsTab from './tabs/MaterialsTab'; // <-- Import Baru
 
 interface CoursePlayerProps {
   course: CourseData;
-  curriculum?: CurriculumData; // Optional, untuk support data lama
+  curriculum?: CurriculumData; 
 }
 
 export default function CoursePlayer({ course, curriculum }: CoursePlayerProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'preparation' | 'classroom'>('classroom');
+  // Tambahkan 'materials' ke tipe state
+  const [activeTab, setActiveTab] = useState<'overview' | 'preparation' | 'materials' | 'classroom'>('classroom');
 
   return (
     <div className="flex flex-col h-full">
       {/* STICKY TAB NAVIGATION */}
-      <div className="sticky top-0 z-20 bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 px-6">
-        <div className="flex items-center gap-8">
+      <div className="sticky top-0 z-20 bg-white dark:bg-[#1b2636] border-b border-slate-200 dark:border-slate-700 px-6 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-8 min-w-max">
           {[
             { id: 'overview', icon: 'info', label: 'Overview' },
             { id: 'preparation', icon: 'article', label: 'Preparation' },
+            { id: 'materials', icon: 'folder_open', label: 'Materi & Slides' }, // <-- Tab Baru
             { id: 'classroom', icon: 'play_circle', label: 'Classroom' },
           ].map((tab) => (
             <button
@@ -52,11 +55,13 @@ export default function CoursePlayer({ course, curriculum }: CoursePlayerProps) 
           <PreparationTab data={course.tabs.preparation} />
         )}
 
+        {/* Render Materials Tab */}
+        {activeTab === 'materials' && (
+          <MaterialsTab materials={course.tabs.materials} />
+        )}
+
         {activeTab === 'classroom' && (
           <ClassroomTab 
-            // Support Dual Structure:
-            // 1. Data Baru: course.tabs.curriculum (Array langsung)
-            // 2. Data Lama: curriculum object (Batch system)
             curriculum={course.tabs.curriculum} 
             legacyCurriculum={curriculum}
             slug={course.slug}

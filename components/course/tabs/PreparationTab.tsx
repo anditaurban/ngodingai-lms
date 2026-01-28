@@ -243,64 +243,9 @@ export default function PreparationTab({ data }: PreparationTabProps) {
              ))}
            </div>
 
-           {/* 3. RESOURCES & FILES */}
-           <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-              <p className="px-2 text-xs font-bold text-slate-500 uppercase tracking-wider">Resources & Files</p>
-              
-              {/* Slides Button */}
-              {data.slides_id && (
-                <button 
-                  onClick={() => setShowSlideModal(true)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-100 transition-colors text-sm font-bold"
-                >
-                  <span className="material-symbols-outlined text-[20px]">slideshow</span>
-                  <div className="flex flex-col text-left">
-                    <span>Lecture Slides</span>
-                    <span className="text-[10px] font-normal opacity-80">Google Slides • View Only</span>
-                  </div>
-                </button>
-              )}
-
-              {/* Dummy Download File */}
-              <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 transition-colors text-sm font-medium text-left">
-                 <span className="material-symbols-outlined text-[20px]">folder_zip</span>
-                 <div className="flex-col flex">
-                    <span>Source_Code.zip</span>
-                    <span className="text-[10px] opacity-70">Starter Kit • 2.4 MB</span>
-                 </div>
-              </button>
-           </div>
-
         </aside>
 
       </div>
-
-      {/* --- MODAL SLIDES (Fixed Overlay) --- */}
-      {showSlideModal && data.slides_id && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-[#1b2636]/90 backdrop-blur-md animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-7xl h-[85vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-700 ring-4 ring-white/10">
-            <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-              <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-3">
-                <div className="size-8 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600">
-                   <span className="material-symbols-outlined text-[20px]">slideshow</span> 
-                </div>
-                Lecture Presentation
-              </h3>
-              <button onClick={() => setShowSlideModal(false)} className="size-10 rounded-full bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 flex items-center justify-center transition-all">
-                <span className="material-symbols-outlined text-[24px]">close</span>
-              </button>
-            </div>
-            <div className="flex-1 bg-black relative">
-              <iframe 
-                src={`https://docs.google.com/presentation/d/${data.slides_id}/embed?start=false&loop=false&delayms=3000`} 
-                frameBorder="0" width="100%" height="100%" allowFullScreen 
-                className="absolute inset-0 w-full h-full"
-              ></iframe>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

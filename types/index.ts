@@ -43,7 +43,6 @@ export interface Video {
   youtube_id?: string;
   url?: string;
   duration: string;
-  // PERBAIKAN: Menambahkan 'gdrive' ke dalam tipe union
   type?: 'youtube' | 'drive' | 'gdrive'; 
 }
 
@@ -62,6 +61,14 @@ export interface ArticleStep {
   content: string;
 }
 
+// Tipe Data Baru untuk Materi/Slides
+export interface MaterialItem {
+  id: string;
+  title: string;
+  url: string; // Google Drive Link
+  type: 'pdf' | 'slide' | 'doc';
+}
+
 export interface CourseData {
   slug: string;
   title: string;
@@ -77,9 +84,11 @@ export interface CourseData {
     };
     preparation: {
       content_html: string;
-      slides_id?: string;
+      slides_id?: string; // Legacy, bisa dihapus nanti
       steps?: ArticleStep[];
     };
+    // Tab Baru
+    materials?: MaterialItem[];
     curriculum?: Module[];
   };
 }

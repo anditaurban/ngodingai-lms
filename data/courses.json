@@ -17,6 +17,14 @@
         "slides_id": "11292gqnEGDcSk2USp94MempgBfPt4ZHF",
         "content_html": "<h2><strong>Persiapan Environment Development</strong></h2><p>Sebelum memulai kelas ini, ada beberapa hal teknis yang wajib Anda persiapkan agar proses coding berjalan lancar. Jangan khawatir, kita akan setup satu per satu.</p><h3><strong>1. Instalasi Python &amp; Virtual Environment</strong></h3><p>Pastikan Anda menggunakan Python versi 3.10 ke atas. Buka terminal Anda dan jalankan:</p><pre style=\"background-color: #1e293b; color: #fff; padding: 10px; border-radius: 5px;\"><code>python --version<br>pip install virtualenv<br>python -m venv venv</code></pre><h3><strong>2. Instalasi Library Utama</strong></h3><p>Kita akan menggunakan library standar industri. Silakan install via pip:</p><ul><li><code>openai</code> - Untuk akses model GPT-4</li><li><code>langchain</code> - Framework orkestrasi LLM</li><li><code>streamlit</code> - Untuk membuat UI Chatbot sederhana</li></ul><h3><strong>3. API Keys</strong></h3><p>Anda wajib memiliki API Key dari OpenAI. Jika belum punya:</p><ol><li>Masuk ke <a href=\"https://platform.openai.com\" target=\"_blank\" rel=\"noopener\">platform.openai.com</a></li><li>Klik menu API Keys &gt; Create New Secret Key</li><li>Copy key tersebut (dimulai dengan <code>sk-...</code>) dan simpan aman.</li></ol><blockquote><p><strong>Penting:</strong> Jangan pernah share API Key Anda di Github public repository!</p></blockquote>"
       },
+      "materials": [
+        { "id": "m1", "type": "slide", "title": "AI in Web Development", "url": "https://drive.google.com/file/d/1IhECdethlLyijelFcFfW2AiAIgeotrG-/preview" },
+        { "id": "m2", "type": "doc", "title": "Prompt Engineering Sample", "url": "https://drive.google.com/file/d/1WzoSJcjhItd398jyC1XmpnPUvDgocOr1/preview" },
+        { "id": "m3", "type": "slide", "title": "Web Development Intro", "url": "https://drive.google.com/file/d/1TY2IU1oRVe6Bdhyc5az7y_Ps0w0j2LzC/preview" },
+        { "id": "m4", "type": "slide", "title": "Web Development Flow", "url": "https://drive.google.com/file/d/179fLaymrUDKeWwwnHLxyv2loaUp_PrYE/preview" },
+        { "id": "m5", "type": "slide", "title": "Frontend Development Deep Dive", "url": "https://drive.google.com/file/d/1xNHi8nlM0K0Kc4PcwazDSlt5MMOVbZOI/preview" },
+        { "id": "m6", "type": "slide", "title": "Backend Development Flow", "url": "https://drive.google.com/file/d/1z0vgJGv7U1q5BujNM69Aiv_12dOcEdfl/preview" }
+      ],
       "curriculum": [
         {
           "title": "Module 1: Foundation",
