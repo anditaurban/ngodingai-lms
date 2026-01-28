@@ -92,12 +92,12 @@ export default function PreparationTab({ data }: PreparationTabProps) {
             ========================================================= */}
         <main className="lg:col-span-9 order-1">
           
-          <div className="bg-white dark:bg-slate-800 p-6 md:p-10 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm relative min-h-[600px]">
+          <div className="bg-white dark:bg-slate-800 p-6 md:p-10 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm relative min-h-150">
               
               {/* Header Artikel */}
               <div className="flex justify-between items-start mb-8 pb-6 border-b border-slate-100 dark:border-slate-700">
                  <div>
-                    <span className="text-[#00BCD4] text-xs font-bold uppercase tracking-wider mb-2 block flex items-center gap-2">
+                    <span className="text-[#00BCD4] text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
                       <span className="size-2 rounded-full bg-[#00BCD4] animate-pulse"></span>
                       Step {activeStepIndex + 1}
                     </span>
@@ -128,7 +128,7 @@ export default function PreparationTab({ data }: PreparationTabProps) {
                       value={currentContent} 
                       onChange={setCurrentContent}
                       modules={modules}
-                      className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white min-h-[400px]"
+                      className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white min-h-100"
                     />
                   </div>
                   <div className="flex justify-end">
@@ -277,7 +277,7 @@ export default function PreparationTab({ data }: PreparationTabProps) {
 
       {/* --- MODAL SLIDES (Fixed Overlay) --- */}
       {showSlideModal && data.slides_id && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1b2636]/90 backdrop-blur-md animate-fade-in">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-[#1b2636]/90 backdrop-blur-md animate-fade-in">
           <div className="bg-white dark:bg-slate-900 w-full max-w-7xl h-[85vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-700 ring-4 ring-white/10">
             <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
               <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-3">

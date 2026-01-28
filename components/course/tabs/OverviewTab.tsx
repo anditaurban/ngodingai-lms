@@ -125,7 +125,7 @@ export default function OverviewTab({ data }: OverviewTabProps) {
           </div>
 
           {/* 2. PRO TIP / UPSELL (Gradient Style) */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-[#00BCD4]/10 to-blue-500/10 border border-[#00BCD4]/20 relative overflow-hidden group">
+          <div className="p-6 rounded-3xl bg-linear-to-br from-[#00BCD4]/10 to-blue-500/10 border border-[#00BCD4]/20 relative overflow-hidden group">
             {/* Decoration */}
             <div className="absolute -right-6 -top-6 size-24 bg-[#00BCD4]/20 rounded-full blur-2xl group-hover:bg-[#00BCD4]/30 transition-colors"></div>
             
