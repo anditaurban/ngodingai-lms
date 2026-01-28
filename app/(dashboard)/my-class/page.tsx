@@ -16,8 +16,8 @@ export default function MyClassPage() {
     
     let category = 'All';
     if(course.slug.includes('ngoding') || course.slug.includes('ai')) category = 'AI';
-    if(course.slug.includes('esp32') || course.slug.includes('iot')) category = 'IoT';
-    if(course.slug.includes('n8n') || course.slug.includes('auto')) category = 'Automation';
+    // if(course.slug.includes('esp32') || course.slug.includes('iot')) category = 'IoT';
+    // if(course.slug.includes('n8n') || course.slug.includes('auto')) category = 'Automation';
     
     const matchesFilter = filter === 'All' || category === filter;
     
