@@ -9,7 +9,7 @@
     "description": "Pelajari cara membangun aplikasi berbasis LLM menggunakan Python, OpenAI API, dan LangChain dari dasar hingga mahir.",
     "tabs": {
       "overview": {
-        "about": "Kelas ini dirancang untuk developer yang ingin terjun ke dunia Generative AI. Anda akan belajar memahami arsitektur Transformer, Fine-tuning, hingga RAG (Retrieval Augmented Generation).",
+        "about": "Belajar ngoding pakai AI, bangun project website dalam waktu singkat, bebas berkreasi tanpa hambatan coding manual!",
         "audience": ["Python Developer", "Data Scientist", "AI Enthusiast"],
         "tools": ["VS Code", "Python 3.10+", "OpenAI API Key"]
       },

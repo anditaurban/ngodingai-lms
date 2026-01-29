@@ -1,5 +1,14 @@
 import React from 'react';
 import Image from 'next/image';
+import { 
+  SiHtml5, 
+  SiCss3, 
+  SiJavascript, 
+  SiTailwindcss, 
+  SiNodedotjs, 
+  SiGithub, 
+  SiVercel 
+} from "react-icons/si";
 
 interface OverviewTabProps {
   data: {
@@ -11,12 +20,23 @@ interface OverviewTabProps {
 
 export default function OverviewTab({ data }: OverviewTabProps) {
   
-  // --- MOCK DATA INSTRUCTOR (Bisa dipindah ke JSON nanti) ---
+  // 1. DATA TECH STACK (Disimpan di sini agar bisa dipanggil di bawah)
+  const stacks = [
+    { name: "HTML5", icon: SiHtml5, color: "text-orange-600" },
+    { name: "CSS3", icon: SiCss3, color: "text-blue-600" },
+    { name: "JavaScript", icon: SiJavascript, color: "text-yellow-500" },
+    { name: "TailwindCSS", icon: SiTailwindcss, color: "text-cyan-500" },
+    { name: "Node.js", icon: SiNodedotjs, color: "text-green-600" },
+    { name: "GitHub", icon: SiGithub, color: "text-gray-800 dark:text-white" },
+    { name: "Vercel", icon: SiVercel, color: "text-black dark:text-white" },
+  ];
+
+  // 2. DATA INSTRUKTUR
   const instructor = {
-    name: "Andita Permata Rahmawati",
-    role: "Senior AI Researcher",
-    bio: "PhD in Computer Science from Stanford. Former lead at Google DeepMind. Expert in LLM Fine-tuning & RAG Systems.",
-    avatar: "https://ui-avatars.com/api/?name=Sarah+Chen&background=00BCD4&color=fff"
+    name: "Andita Permata",
+    role: "Lecturer & Web Developer",
+    bio: "Dosen Ilmu Komputer. Web Developer Praktisi. Spesialis Pengembangan Aplikasi Web & Arsitektur Sistem.",
+    avatar: "https://ui-avatars.com/api/?name=Andita+Permata&background=00BCD4&color=fff"
   };
 
   return (
@@ -39,7 +59,7 @@ export default function OverviewTab({ data }: OverviewTabProps) {
             </article>
           </div>
 
-          {/* 2. TIMELINE MATERI (Konten Baru dari Anda) */}
+          {/* 2. TIMELINE MATERI */}
           <div>
             <div className="mb-8">
                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Roadmap Pembelajaran</h2>
@@ -62,21 +82,21 @@ export default function OverviewTab({ data }: OverviewTabProps) {
                     <div className="flex flex-col gap-6">
                         <div>
                             <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Pengenalan AI dalam Coding</h3>
-                            <p className="text-slate-600 dark:text-slate-400 mt-1">Memahami dasar-dasar AI, LLM, dan setup tools development.</p>
+                            <p className="text-slate-600 dark:text-slate-400 mt-1">Memahami dasar-dasar AI untuk programming dan setup tools</p>
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-6">
                             {/* Materi List */}
                             <div className="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl">
                                 <h4 className="font-bold text-slate-900 dark:text-white mb-3 text-sm uppercase tracking-wider flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-cyan-500 text-lg">menu_book</span> Materi
+                                  <span className="material-symbols-outlined text-cyan-500 text-lg">menu_book</span> Materi Pembelajaran:
                                 </h4>
                                 <ul className="space-y-3">
                                     {[
-                                      "Apa itu AI & LLM dalam programming?",
-                                      "AI-assisted vs AI-generated coding",
+                                      "Apa itu AI dalam programming?",
+                                      "Perbedaan AI-assisted coding vs AI-generated code",
                                       "Prompt Engineering 101",
-                                      "Instalasi Python & VS Code"
+                                      "Instalasi dan Setup Development Tools"
                                     ].map((item, i) => (
                                       <li key={i} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
                                           <span className="material-symbols-outlined text-cyan-500 text-[18px] shrink-0 mt-0.5">check_circle</span>
@@ -89,10 +109,10 @@ export default function OverviewTab({ data }: OverviewTabProps) {
                             {/* Tools Stack */}
                             <div className="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl">
                                 <h4 className="font-bold text-slate-900 dark:text-white mb-3 text-sm uppercase tracking-wider flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-cyan-500 text-lg">build</span> Tools
+                                  <span className="material-symbols-outlined text-cyan-500 text-lg">build</span> Tools AI yang Dipelajari:
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
-                                    {["ChatGPT", "GitHub Copilot", "Blackbox AI", "V0.dev", "DeepSeek", "Gemini"].map((tool, i) => (
+                                    {["ChatGPT", "GitHub Copilot", "Blackbox AI", "V0", "DeepSeek", "Gemini", "Dan lainnya"].map((tool, i) => (
                                       <span key={i} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300">
                                         {tool}
                                       </span>
@@ -113,45 +133,77 @@ export default function OverviewTab({ data }: OverviewTabProps) {
 
                     <div className="flex flex-col gap-6">
                         <div>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Build Project dengan Bantuan AI</h3>
-                            <p className="text-slate-600 dark:text-slate-400 mt-1">Hands-on membuat website lengkap (Dashboard / Landing Page) dengan fitur CRUD.</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Membuat Project dengan Bantuan AI</h3>
+                            <p className="text-slate-600 dark:text-slate-400 mt-1">Hands-on membuat website lengkap dengan fitur CRUD dan API</p>
                         </div>
 
                         {/* Project Description */}
                         <div className="bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-indigo-100 dark:border-indigo-900/30">
                             <h4 className="font-bold text-indigo-900 dark:text-indigo-200 mb-4 flex items-center gap-2">
                                 <span className="material-symbols-outlined">laptop_mac</span> 
-                                Project: Admin Dashboard Web App
+                                Project: Website Informatif / Dashboard Admin Web Application
                             </h4>
                             
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div>
-                                    <h5 className="font-bold text-slate-800 dark:text-white mb-2 text-sm">Frontend (UI/UX)</h5>
+                                    <h5 className="font-bold text-slate-800 dark:text-white mb-2 text-sm">Frontend Development:</h5>
                                     <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Generate Wireframe UI</li>
-                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> HTML5 + Tailwind CSS</li>
-                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Responsive Layout</li>
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Membuat desain wireframe dengan AI</li>
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Generasi kode HTML Responsive & TailwindCSS</li>
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Menambahkan fitur Create, Read, Update, Delete</li>
                                     </ul>
                                 </div>
                                 <div>
-                                    <h5 className="font-bold text-slate-800 dark:text-white mb-2 text-sm">Backend (Logic)</h5>
+                                    <h5 className="font-bold text-slate-800 dark:text-white mb-2 text-sm">Backend Development:</h5>
                                     <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Node.js / Express API</li>
-                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Database Integration</li>
-                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Debugging with AI</li>
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Membuat API sederhana (Node.js + Express)</li>
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Debugging dengan AI</li>
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Testing dan optimasi performa</li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Tech Stack */}
+                        <div className="bg-linear-to-r from-green-50 to-green-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-indigo-100 dark:border-indigo-900/30">
+                            <h4 className="font-bold text-indigo-900 dark:text-indigo-200 mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-3xl text-emerald-600 mb-2">rocket_launch</span> 
+                                Deployment Project
+                            </h4>
+                            
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <h5 className="font-bold text-slate-800 dark:text-white mb-2 text-sm">Frontend Development:</h5>
+                                    <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Upload ke <strong>GitHub</strong> repository</li>
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Aktifkan <strong>GitHub Pages</strong> untuk hosting gratis</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 className="font-bold text-slate-800 dark:text-white mb-2 text-sm">Backend Development:</h5>
+                                    <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Deploy Node.js/Express ke <strong>Vercel / Railway</strong></li>
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Konfigurasi <strong>API Routes</strong> di Vercel / Railway</li>
+                                        <li className="flex gap-2"><span className="material-symbols-outlined text-indigo-500 text-[18px]">arrow_right_alt</span> Testing dan optimasi performa</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* =======================================================
+                            TECH STACK ICONS (UPDATED)
+                            Menggunakan array 'stacks' yang sudah didefinisikan di atas
+                        ======================================================= */}
                         <div className="flex flex-wrap gap-2">
-                            {["HTML5", "CSS3", "JavaScript", "TailwindCSS", "Node.js", "GitHub", "Vercel"].map((tech, i) => (
-                                <span key={i} className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg flex items-center gap-1">
-                                    <span className="size-1.5 rounded-full bg-indigo-500"></span> {tech}
+                            {stacks.map((tech, i) => (
+                                <span key={i} className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg flex items-center gap-2 hover:scale-105 transition-transform">
+                                    {/* Logo Tech Stack */}
+                                    <tech.icon className={`text-sm ${tech.color}`} />
+                                    {tech.name}
                                 </span>
                             ))}
                         </div>
+                        {/* ======================================================= */}
+
                     </div>
                 </div>
 
@@ -165,25 +217,25 @@ export default function OverviewTab({ data }: OverviewTabProps) {
 
                     <div className="flex flex-col gap-6">
                         <div>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Deployment & Showcase</h3>
-                            <p className="text-slate-600 dark:text-slate-400 mt-1">Online-kan websitemu, challenge mandiri, dan sesi tanya jawab expert.</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Hands-on dan Challenge</h3>
+                            <p className="text-slate-600 dark:text-slate-400 mt-1">Praktek mandiri dengan bimbingan mentor dan sesi tanya jawab</p>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-4">
                              <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-2xl text-center border border-emerald-100 dark:border-emerald-900/30">
-                                 <span className="material-symbols-outlined text-3xl text-emerald-600 mb-2">rocket_launch</span>
-                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Deployment</h4>
-                                 <p className="text-xs text-slate-500 dark:text-slate-400">Upload ke GitHub & Vercel/Railway</p>
+                                 <span className="material-symbols-outlined text-green-600 text-2xl"> manage_accounts </span>
+                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Project Pribadi</h4>
+                                 <p className="text-xs text-slate-500 dark:text-slate-400">Peserta membuat project pribadi dengan bantuan AI sesuai kebutuhan masing-masing</p>
                              </div>
                              <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-2xl text-center border border-blue-100 dark:border-blue-900/30">
                                  <span className="material-symbols-outlined text-3xl text-blue-600 mb-2">bug_report</span>
                                  <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Live Debugging</h4>
-                                 <p className="text-xs text-slate-500 dark:text-slate-400">Fix error real-time dibantu Mentor</p>
+                                 <p className="text-xs text-slate-500 dark:text-slate-400">Debugging real-time dan optimasi kode dengan bantuan AI dan mentor</p>
                              </div>
                              <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-2xl text-center border border-purple-100 dark:border-purple-900/30">
                                  <span className="material-symbols-outlined text-3xl text-purple-600 mb-2">forum</span>
-                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Q & A</h4>
-                                 <p className="text-xs text-slate-500 dark:text-slate-400">Sharing best practice & tips karir</p>
+                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Q & A Session</h4>
+                                 <p className="text-xs text-slate-500 dark:text-slate-400">Tanya jawab dan sharing best practices penggunaan AI untuk coding</p>
                              </div>
                         </div>
 
@@ -193,7 +245,7 @@ export default function OverviewTab({ data }: OverviewTabProps) {
                             <div>
                                 <h5 className="font-bold text-yellow-800 dark:text-yellow-500 text-sm">Bonus Materi:</h5>
                                 <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
-                                    Tips mengoptimalkan workflow developer, akses komunitas alumni, dan rekaman sesi live selamanya.
+                                    Tips & tricks mengoptimalkan workflow development dengan AI, resource pembelajaran lanjutan, dan akses ke komunitas alumni.
                                 </p>
                             </div>
                         </div>
@@ -241,26 +293,8 @@ export default function OverviewTab({ data }: OverviewTabProps) {
             </p>
 
             <button className="w-full py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold hover:opacity-90 transition-opacity">
-               View Profile
+                View Profile
             </button>
-          </div>
-
-          {/* 2. PRO TIP CARD (Gradient) */}
-          <div className="p-6 rounded-3xl bg-linear-to-br from-[#00BCD4]/10 to-blue-500/10 border border-[#00BCD4]/20 relative overflow-hidden group">
-            <div className="absolute -right-6 -top-6 size-24 bg-[#00BCD4]/20 rounded-full blur-2xl group-hover:bg-[#00BCD4]/30 transition-colors"></div>
-            
-            <div className="flex items-center gap-2 mb-3 text-[#00BCD4] relative z-10">
-              <span className="material-symbols-outlined">tips_and_updates</span>
-              <span className="text-xs font-bold uppercase tracking-wider">Pro Tip</span>
-            </div>
-            
-            <p className="text-sm text-slate-800 dark:text-slate-200 font-medium mb-4 relative z-10 leading-relaxed">
-              Kesulitan setup lokal? Gunakan <strong>Google Colab</strong> atau <strong>GitHub Codespaces</strong> untuk langsung coding di browser tanpa instalasi berat.
-            </p>
-            
-            <a href="#" className="inline-flex items-center gap-1 text-sm font-bold text-[#00BCD4] hover:underline relative z-10">
-              Coba Cloud Environment <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-            </a>
           </div>
 
         </aside>

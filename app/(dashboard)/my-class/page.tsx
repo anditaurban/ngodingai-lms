@@ -45,21 +45,6 @@ export default function MyClassPage() {
             </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 mb-8 overflow-x-auto pb-2 no-scrollbar">
-            {['All', 'AI', 'IoT', 'Automation'].map((cat) => (
-                <button 
-                    key={cat}
-                    onClick={() => setFilter(cat)}
-                    className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap border ${
-                        filter === cat 
-                        ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900' 
-                        : 'bg-white text-slate-600 border-transparent hover:border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                    }`}
-                >
-                    {cat === 'All' ? 'All Courses' : cat}
-                </button>
-            ))}
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredCourses.map((course) => (
