@@ -16,7 +16,7 @@ interface CoursePlayerProps {
 
 export default function CoursePlayer({ course, curriculum }: CoursePlayerProps) {
   // Tambahkan 'materials' ke tipe state
-  const [activeTab, setActiveTab] = useState<'overview' | 'preparation' | 'materials' | 'classroom'>('classroom');
+  const [activeTab, setActiveTab] = useState<'overview' | 'preparation' | 'materials' | 'classroom'>('overview');
 
   return (
     <div className="flex flex-col h-full">
