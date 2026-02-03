@@ -78,7 +78,7 @@ export default function LoginPage() {
     setErrorMessage('');
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const baseUrl = "https://dev.katib.cloud";
       
       // Format ulang nomor hp agar konsisten
       let cleanPhone = phoneNumber.replace(/\D/g, '');
