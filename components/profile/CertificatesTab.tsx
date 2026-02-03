@@ -37,7 +37,7 @@ export default function CertificatesTab() {
                    className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                    unoptimized
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
                 <div className="absolute bottom-3 left-4 right-4">
                    <p className="text-white text-xs font-medium opacity-90">{cert.issuer}</p>
                    <h4 className="text-white font-bold text-lg leading-tight">{cert.title}</h4>

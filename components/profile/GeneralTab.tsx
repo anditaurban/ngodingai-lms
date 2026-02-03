@@ -71,7 +71,7 @@ export default function GeneralTab({ user }: { user: UserData }) {
       </div>
 
       {/* Status Card */}
-      <div className="p-6 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/10 dark:to-blue-900/10 rounded-2xl border border-cyan-100 dark:border-cyan-900/30 flex justify-between items-center">
+      <div className="p-6 bg-linear-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/10 dark:to-blue-900/10 rounded-2xl border border-cyan-100 dark:border-cyan-900/30 flex justify-between items-center">
           <div>
             <h3 className="text-sm font-bold text-cyan-800 dark:text-cyan-300 uppercase tracking-wider">Account Status</h3>
             <p className="text-xs text-cyan-600 dark:text-cyan-400 mt-1">Keaktifan akun pembelajaran</p>
