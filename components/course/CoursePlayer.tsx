@@ -5,7 +5,7 @@ import { CourseData, CurriculumData } from '@/types';
 
 // Import Tabs
 import OverviewTab from './tabs/OverviewTab';
-import PreparationTab from './tabs/PreparationTab';
+// import PreparationTab from './tabs/PreparationTab';
 import ClassroomTab from './tabs/ClassroomTab';
 import MaterialsTab from './tabs/MaterialsTab'; // <-- Import Baru
 
@@ -25,7 +25,7 @@ export default function CoursePlayer({ course, curriculum }: CoursePlayerProps) 
         <div className="flex items-center gap-8 min-w-max">
           {[
             { id: 'overview', icon: 'info', label: 'Overview' },
-            { id: 'preparation', icon: 'article', label: 'Preparation' },
+            // { id: 'preparation', icon: 'article', label: 'Preparation' },
             { id: 'materials', icon: 'folder_open', label: 'Materi & Slides' }, // <-- Tab Baru
             { id: 'classroom', icon: 'play_circle', label: 'Classroom' },
           ].map((tab) => (
@@ -51,9 +51,9 @@ export default function CoursePlayer({ course, curriculum }: CoursePlayerProps) 
           <OverviewTab data={course.tabs.overview} />
         )}
 
-        {activeTab === 'preparation' && (
+        {/* {activeTab === 'preparation' && (
           <PreparationTab data={course.tabs.preparation} />
-        )}
+        )} */}
 
         {/* Render Materials Tab */}
         {activeTab === 'materials' && (

@@ -61,8 +61,6 @@ export default async function CourseDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* --- CLIENT PLAYER (Interaktif) --- */}
-      {/* Komponen ini menangani Tabs (Overview, Preparation, Classroom) */}
       <CoursePlayer course={course} curriculum={curriculum} />
 
     </div>
