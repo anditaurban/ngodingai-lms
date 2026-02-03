@@ -3,15 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-// IMPORT KOMPONEN (Pastikan path import ini benar!)
+// 1. IMPORT FOOTER DISINI
 import Navbar from './Navbar';
-import Sidebar from './Sidebar'; // <-- Ini memanggil file Sidebar.tsx di atas
+import Sidebar from './Sidebar';
+import Footer from './Footer'; // <-- Pastikan import ini ada
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname(); 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // Tutup sidebar otomatis saat pindah halaman (Mobile UX)
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
@@ -19,24 +19,31 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   return (
     <div className="flex flex-col min-h-screen font-sans bg-[#f8fafc] dark:bg-[#0f111a]">
       
-      {/* 1. NAVBAR (Header) */}
+      {/* 1. Navbar (Header Atas) */}
       <Navbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
       
       <div className="flex flex-1 pt-16 h-screen overflow-hidden">
         
-        {/* 2. SIDEBAR (Menu Kiri) */}
-        {/* Kita oper state isOpen ke Sidebar agar dia tau kapan harus muncul (mobile) */}
+        {/* 2. Sidebar (Menu Kiri) */}
         <Sidebar 
           isOpen={isSidebarOpen} 
           onClose={() => setIsSidebarOpen(false)} 
         />
         
-        {/* 3. MAIN CONTENT (Isi Halaman) */}
+        {/* 3. Main Content Area (Kanan) */}
         <main className="flex-1 lg:ml-72 flex flex-col h-full relative w-full overflow-hidden">
+          
+          {/* A. Konten Halaman (Scrollable) */}
+          {/* Gunakan flex-1 agar dia mengisi sisa ruang, dan menekan footer ke bawah */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
-             {/* Di sinilah halaman Dashboard, My Class, Profile, dll akan muncul */}
              {children}
+             
+             {/* B. FOOTER (Ditaruh di sini agar ikut ke-scroll di bawah konten) */}
+             <div className="mt-auto">
+                <Footer /> 
+             </div>
           </div>
+          
         </main>
       </div>
     </div>

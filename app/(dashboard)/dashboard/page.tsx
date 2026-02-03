@@ -1,24 +1,38 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
+  const [userName, setUserName] = useState('Student');
+
+  // 2. Ambil data dari Local Storage saat komponen dimuat
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedData = localStorage.getItem('user_profile');
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          if (parsedData.name) {
+            setUserName(parsedData.name);
+          }
+        }
+      } catch (error) {
+        console.error("Gagal memuat data user:", error);
+      }
+    }
+  }, []);
+
   return (
-    <div className="p-6">
+    <div className="p-6 md:p-10 min-h-screen">
       
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Dashboard Overview</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Welcome back, Alex! You have <span className="text-primary font-bold">2 assignments</span> pending.
+          Welcome back, <span className="font-bold text-slate-800 dark:text-white capitalize">{userName.toLowerCase()}</span>! You have <span className="text-[#00BCD4] font-bold">2 assignments</span> pending.
           </p>
-        </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 hover:border-slate-300 dark:hover:bg-slate-700 transition-all shadow-sm">
-            <span className="material-symbols-outlined text-[18px]">download</span> Export Report
-          </button>
         </div>
       </div>
 
