@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import Cookies from 'js-cookie'; // Pastikan sudah install: npm install js-cookie
+import Cookies from 'js-cookie';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // --- STATE USER ---
+  // --- STATE USER PROFILE ---
   const [user, setUser] = useState({
     name: 'Loading...',
     role: 'Student',
@@ -28,13 +28,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         const storedData = localStorage.getItem('user_profile');
         if (storedData) {
           const parsedData = JSON.parse(storedData);
-          
-          // Mengambil nama dari API
           const userName = parsedData.name || 'Student';
           
           setUser({
             name: userName,
-            role: 'Student PRO', // Role default (karena tidak ada di API)
+            role: 'Student PRO',
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=00BCD4&color=fff&bold=true`
           });
         }
@@ -44,17 +42,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     }
   }, []);
 
-  // --- LOGOUT LOGIC ---
+  // --- LOGOUT ---
   const handleLogout = () => {
-    // 1. Hapus data sesi
     Cookies.remove('token');
     localStorage.removeItem('user_profile');
-    
-    // 2. Redirect ke halaman Login
     router.push('/');
   };
 
-  // --- MENU CONFIG ---
+  // --- MENU ITEMS ---
   const menuGroups = [
     {
       title: "Main Menu",
@@ -74,6 +69,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const isActiveLink = (path: string) => pathname === path || pathname?.startsWith(`${path}/`);
 
+  const getLinkClass = (path: string) => {
+    const active = isActiveLink(path);
+    return active 
+      ? 'bg-[#182d4e] shadow-lg border border-white/5 text-white' 
+      : 'hover:bg-white/5 text-slate-400 hover:text-white border-transparent';
+  };
+
+  const getIconClass = (path: string) => {
+    const active = isActiveLink(path);
+    return active ? 'text-[#00BCD4]' : 'group-hover:text-[#00BCD4]';
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -89,7 +96,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         
-        {/* Menu Area */}
+        {/* Menu Scrollable */}
         <div className="flex flex-col gap-2 p-4 pt-6 flex-1 overflow-y-auto custom-scrollbar">
           <nav className="flex flex-col gap-6">
             {menuGroups.map((group, idx) => (
@@ -97,39 +104,32 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                   {group.title}
                 </p>
-                {group.items.map((item) => {
-                  const active = isActiveLink(item.href);
-                  return (
-                    <Link 
-                      key={item.href}
-                      href={item.href} 
-                      onClick={onClose}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group border ${
-                        active 
-                        ? 'bg-[#182d4e] shadow-lg border-white/5 text-white' 
-                        : 'hover:bg-white/5 text-slate-400 hover:text-white border-transparent'
-                      }`}
-                    >
-                      <span className={`material-symbols-outlined transition-colors ${active ? 'text-[#00BCD4]' : 'group-hover:text-[#00BCD4]'}`}>
-                        {item.icon}
-                      </span>
-                      <div className="flex-1 flex justify-between items-center">
-                        <p className="text-sm font-medium">{item.label}</p>
-                        {item.badge && (
-                          <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">
-                            {item.badge}
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
+                {group.items.map((item) => (
+                  <Link 
+                    key={item.href}
+                    href={item.href} 
+                    onClick={onClose}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group border ${getLinkClass(item.href)}`}
+                  >
+                    <span className={`material-symbols-outlined transition-colors ${getIconClass(item.href)}`}>
+                      {item.icon}
+                    </span>
+                    <div className="flex-1 flex justify-between items-center">
+                      <p className="text-sm font-medium">{item.label}</p>
+                      {item.badge && (
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))}
               </div>
             ))}
           </nav>
         </div>
 
-        {/* Footer Profile Section */}
+        {/* Footer Profile */}
         <div className="p-4 border-t border-slate-800 bg-[#151e2c]">
           <div className="flex items-center justify-between gap-2">
              <Link 
@@ -157,13 +157,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
              </Link>
 
-             {/* Tombol Logout Kecil */}
              <button 
                 onClick={handleLogout}
                 className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/5 transition-all"
                 title="Keluar"
              >
-                <span className="material-symbols-outlined text-[20px]">logout</span>
              </button>
           </div>
         </div>

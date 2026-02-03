@@ -1,42 +1,66 @@
-'use client';
-
 import React from 'react';
-import { UserProfile } from '@/types';
+import Image from 'next/image';
 
-export default function PortfolioTab({ user }: { user: UserProfile }) {
+// MOCK IMAGE UNTUK PREVIEW (Hapus di VS Code dan gunakan next/image)
+// const Image = (props: any) => <img {...props} alt={props.alt} />;
+
+export default function PortfolioTab() {
+  const projects = [
+    {
+      id: 1,
+      title: "AI Chatbot Assistant",
+      desc: "Chatbot customer service using OpenAI API & LangChain.",
+      tags: ["Python", "React", "OpenAI"],
+      image: "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?q=80&w=800&auto=format&fit=crop"
+    },
+    {
+      id: 2,
+      title: "Smart Home Dashboard",
+      desc: "IoT Dashboard for monitoring ESP32 sensors via MQTT.",
+      tags: ["IoT", "Next.js", "Tailwind"],
+      image: "https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?q=80&w=800&auto=format&fit=crop"
+    }
+  ];
+
   return (
     <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="font-bold text-lg text-slate-900 dark:text-white">My Projects</h3>
-        <button className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
-          <span className="material-symbols-outlined text-[16px]">add</span>
-          Upload Project
-        </button>
-      </div>
+       <div className="flex justify-between items-center mb-6">
+          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Featured Projects</h3>
+          <button className="px-4 py-2 bg-[#1b2636] text-white rounded-lg text-xs font-bold hover:bg-[#263548] transition-colors flex items-center gap-2">
+             <span className="material-symbols-outlined text-[16px]">add</span> Upload Project
+          </button>
+       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {user.projects.map((project) => (
-          <div key={project.id} className="group bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-md transition-all">
-            <div className="h-40 bg-gray-200 bg-cover bg-center" style={{ backgroundImage: `url('${project.image}')` }}></div>
-            <div className="p-5">
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2 py-1 rounded">{project.category}</span>
-              <h4 className="font-bold text-lg mt-2 text-slate-900 dark:text-white">{project.title}</h4>
-              <p className="text-sm text-slate-500 mt-1">{project.description}</p>
-              <div className="mt-4 flex gap-2">
-                <button className="text-xs font-bold text-slate-500 hover:text-primary">Edit</button>
-                <button className="text-xs font-bold text-red-500 hover:text-red-700">Delete</button>
-              </div>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {projects.map((project) => (
+            <div key={project.id} className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:border-[#00BCD4] transition-colors">
+               <div className="flex p-4 gap-4">
+                  <div className="relative w-24 h-24 rounded-lg overflow-hidden shrink-0">
+                     <Image 
+                        src={project.image} 
+                        alt={project.title} 
+                        fill 
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        unoptimized
+                     />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-between">
+                     <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white group-hover:text-[#00BCD4] transition-colors">{project.title}</h4>
+                        <p className="text-xs text-slate-500 line-clamp-2 mt-1">{project.desc}</p>
+                     </div>
+                     <div className="flex flex-wrap gap-2 mt-3">
+                        {project.tags.map((tag, i) => (
+                           <span key={i} className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md font-medium">
+                             {tag}
+                           </span>
+                        ))}
+                     </div>
+                  </div>
+               </div>
             </div>
-          </div>
-        ))}
-
-        <button className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center h-full min-h-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
-          <div className="size-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <span className="material-symbols-outlined text-slate-400">cloud_upload</span>
-          </div>
-          <span className="text-sm font-bold text-slate-500">Upload New Project</span>
-        </button>
-      </div>
+          ))}
+       </div>
     </div>
   );
 }

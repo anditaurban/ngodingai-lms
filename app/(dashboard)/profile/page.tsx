@@ -1,143 +1,133 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+import React, { useState } from 'react';
+import Image from 'next/image';
+
+// Import Logic
+import { useProfileLogic } from '@/hooks/useProfileLogic';
+
+// Import Tabs UI (Direct from components/profile)
+import GeneralTab from '@/components/profile/GeneralTab';
+import AttendanceTab from '@/components/profile/AttendanceTab';
+import CertificatesTab from '@/components/profile/CertificatesTab';
+import PortfolioTab from '@/components/profile/PortfolioTab';
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Ambil data dari Local Storage
-    const storedData = localStorage.getItem('user_profile');
-    if (storedData) {
-      try {
-        setUser(JSON.parse(storedData));
-      } catch (e) {
-        console.error("Data user corrupt", e);
-      }
-    }
-    setLoading(false);
-  }, []);
-
-  const handleLogout = () => {
-    Cookies.remove('token');
-    localStorage.removeItem('user_profile');
-    router.push('/');
-  };
+  const { user, loading, handleLogout } = useProfileLogic();
+  const [activeTab, setActiveTab] = useState<'general' | 'attendance' | 'certificates' | 'portfolio'>('general');
 
   if (loading) {
-    return <div className="p-10 text-center text-slate-500">Memuat profil...</div>;
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#00BCD4]"></div>
+            <p className="text-slate-500 text-sm font-medium animate-pulse">Memuat data profil...</p>
+        </div>
+    );
   }
 
+  // Jika user null (Fallback)
   if (!user) {
     return (
-      <div className="p-10 text-center">
-        <p className="mb-4">Data user tidak ditemukan.</p>
-        <button onClick={() => router.push('/')} className="text-[#00BCD4] font-bold">Login Kembali</button>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
+        <h2 className="text-xl font-bold mb-2">Profil Tidak Ditemukan</h2>
+        <button onClick={handleLogout} className="text-[#00BCD4] font-bold">Login Kembali</button>
       </div>
     );
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-5xl mx-auto min-h-screen">
+    <div className="p-6 md:p-10 max-w-5xl mx-auto min-h-screen animate-fade-in">
       
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">My Profile</h1>
+      {/* Header Halaman */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">My Profile</h1>
+           <p className="text-slate-500 text-sm mt-1">Kelola informasi akun dan aktivitas belajar Anda.</p>
+        </div>
         <button 
            onClick={handleLogout}
-           className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors flex items-center gap-2 border border-red-200"
+           className="px-5 py-2.5 bg-white dark:bg-slate-800 text-red-500 rounded-xl text-sm font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2 border border-slate-200 dark:border-slate-700 shadow-sm"
         >
-           <span className="material-symbols-outlined text-[18px]">logout</span> Log Out
+           <span className="material-symbols-outlined text-[20px]">logout</span> 
+           <span>Keluar</span>
         </button>
       </div>
       
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden relative">
+      <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden relative">
         
-        {/* Banner Background */}
-        <div className="h-40 bg-linear-to-r from-[#1b2636] to-[#2d4059] relative">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+        {/* Banner */}
+        <div className="h-48 bg-gradient-to-r from-[#00BCD4] to-blue-600 relative">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle, #fff 2px, transparent 2.5px)', backgroundSize: '24px 24px' }}></div>
         </div>
         
-        <div className="px-8 pb-10">
-          <div className="relative flex flex-col md:flex-row justify-between items-end md:items-end -mt-16 mb-8 gap-4">
-             <div className="flex items-end gap-6">
-                <div className="relative">
-                    <div className="size-32 rounded-full border-[6px] border-white dark:border-slate-800 bg-slate-200 overflow-hidden shadow-lg">
-                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                       <img 
-                          src={`https://ui-avatars.com/api/?name=${user.name}&background=00BCD4&color=fff&size=256&bold=true`} 
-                          alt="Profile" 
-                          className="w-full h-full object-cover"
-                       />
-                    </div>
+        <div className="px-6 md:px-10 pb-10">
+          
+          {/* Header Profile Info */}
+          <div className="relative flex flex-col md:flex-row items-center md:items-end -mt-20 mb-10 gap-6 text-center md:text-left">
+             <div className="relative group">
+                <div className="size-36 md:size-40 rounded-full border-[6px] border-white dark:border-slate-800 bg-white shadow-2xl overflow-hidden relative">
+                   <Image 
+                      src={user.avatar} 
+                      alt="Profile" 
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 160px"
+                      priority
+                      unoptimized
+                   />
                 </div>
-                <div className="mb-2">
-                   <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white capitalize">{user.name.toLowerCase()}</h2>
-                   <p className="text-slate-500 font-medium flex items-center gap-2">
-                     <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded uppercase font-bold">Student</span>
-                     <span>ID: {user.customer_id}</span>
-                   </p>
-                </div>
+                <div className="absolute bottom-4 right-4 size-5 bg-green-500 border-4 border-white dark:border-slate-800 rounded-full"></div>
              </div>
-          </div>
-
-          {/* User Details Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              
-             {/* Card: Contact Info */}
-             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2">Contact Info</h3>
-                
-                <div className="space-y-4">
-                    <div>
-                        <p className="text-xs text-slate-500 mb-1">WhatsApp Number</p>
-                        <p className="text-base font-bold text-slate-800 dark:text-slate-200 font-mono tracking-wide">{user.phone}</p>
-                    </div>
-                    <div>
-                        <p className="text-xs text-slate-500 mb-1">Email</p>
-                        <p className="text-base font-bold text-slate-800 dark:text-slate-200">-</p>
-                    </div>
+             <div className="flex-1 mb-2">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white capitalize tracking-tight">
+                    {user.name.toLowerCase()}
+                </h2>
+                <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 mt-3">
+                     <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-xs px-3 py-1.5 rounded-lg uppercase font-bold tracking-wider border border-blue-100 dark:border-blue-800">
+                        {user.role}
+                     </span>
+                     <div className="h-4 w-px bg-slate-300 dark:bg-slate-600 hidden md:block"></div>
+                     <span className="text-slate-500 dark:text-slate-400 text-sm font-mono flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[16px]">fingerprint</span>
+                        {user.customer_id}
+                     </span>
                 </div>
              </div>
-
-             {/* Card: Location Info */}
-             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2">Location</h3>
-                
-                <div className="space-y-4">
-                    <div>
-                        <p className="text-xs text-slate-500 mb-1">Address</p>
-                        <p className="text-base font-medium text-slate-800 dark:text-slate-200 leading-snug">{user.address || '-'}</p>
-                    </div>
-                    <div>
-                        <p className="text-xs text-slate-500 mb-1">Region / City</p>
-                        <p className="text-base font-medium text-slate-800 dark:text-slate-200 leading-snug">{user.region_name || '-'}</p>
-                    </div>
-                </div>
-             </div>
-
-             {/* Card: Account Stats (Opsional/Dummy dulu) */}
-             <div className="md:col-span-2 p-6 bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30 flex justify-between items-center">
-                 <div>
-                    <h3 className="text-sm font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider">Learning Progress</h3>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Status keaktifan akun Anda</p>
-                 </div>
-                 <div className="flex gap-8 text-center">
-                    <div>
-                        <p className="text-2xl font-extrabold text-slate-900 dark:text-white">Active</p>
-                        <p className="text-xs text-slate-500">Status</p>
-                    </div>
-                    <div>
-                        <p className="text-2xl font-extrabold text-slate-900 dark:text-white">0</p>
-                        <p className="text-xs text-slate-500">Certificates</p>
-                    </div>
-                 </div>
-             </div>
-
           </div>
+
+          {/* TAB NAVIGATION */}
+          <div className="flex items-center gap-2 md:gap-8 border-b border-slate-200 dark:border-slate-700 mb-8 overflow-x-auto no-scrollbar pb-1">
+             {[
+                { id: 'general', label: 'General', icon: 'person' },
+                { id: 'attendance', label: 'Attendance', icon: 'event_available' },
+                { id: 'certificates', label: 'Certificates', icon: 'workspace_premium' },
+                { id: 'portfolio', label: 'Portfolio', icon: 'folder_open' },
+             ].map((tab) => (
+                <button
+                   key={tab.id}
+                   onClick={() => setActiveTab(tab.id as any)}
+                   className={`flex items-center gap-2 pb-4 px-2 text-sm font-bold transition-all whitespace-nowrap border-b-[3px] rounded-t-lg ${
+                       activeTab === tab.id 
+                       ? 'text-[#00BCD4] border-[#00BCD4]' 
+                       : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'
+                   }`}
+                >
+                   <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
+                   {tab.label}
+                </button>
+             ))}
+          </div>
+
+          {/* TAB CONTENT RENDERER */}
+          <div className="min-h-[300px]">
+             {activeTab === 'general' && <GeneralTab user={user} />}
+             {activeTab === 'attendance' && <AttendanceTab />}
+             {activeTab === 'certificates' && <CertificatesTab />}
+             {activeTab === 'portfolio' && <PortfolioTab />}
+          </div>
+
         </div>
       </div>
     </div>
