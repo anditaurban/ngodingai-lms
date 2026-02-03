@@ -27,8 +27,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const appId = process.env.NEXT_PUBLIC_APP_ID;
+      const baseUrl = "https://dev.katib.cloud";
+      const appId = 4409;
       
       // Bersihkan nomor (hanya angka)
       // Pastikan format sesuai yang diterima API (misal 08xxx)
@@ -200,7 +200,7 @@ export default function LoginPage() {
                       <div className="pl-4 pr-3 border-r border-transparent font-semibold text-slate-500">+62</div>
                       <input 
                         className="flex-1 w-full bg-transparent border-none focus:ring-0 text-base font-medium h-full px-3"
-                        placeholder="812 3456 7890"
+                        placeholder="8xx xxxx xxxx"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         readOnly={loginState === 'otp'}
