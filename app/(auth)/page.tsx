@@ -2,55 +2,145 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 
 export default function LoginPage() {
   const router = useRouter();
+  
+  // State UI
   const [loginState, setLoginState] = useState<'phone' | 'otp'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleCheckPhone = () => {
+  // --- 1. HANDLE REQUEST OTP (GET) ---
+  const handleCheckPhone = async () => {
     setErrorMessage('');
+    
+    // Validasi sederhana
     if (phoneNumber.length < 9) {
-      setErrorMessage('Nomor HP terlalu pendek');
+      setErrorMessage('Nomor WhatsApp terlalu pendek');
       return;
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setLoginState('otp');
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const appId = process.env.NEXT_PUBLIC_APP_ID;
+      
+      // Bersihkan nomor (hanya angka)
+      // Pastikan format sesuai yang diterima API (misal 08xxx)
+      let cleanPhone = phoneNumber.replace(/\D/g, ''); 
+      if (!cleanPhone.startsWith('0')) {
+        cleanPhone = '0' + cleanPhone;
+      }
+
+      // Hit API: GET {{baseURL}}/customer_login/162/08xxxxx
+      const response = await fetch(`${baseUrl}/customer_login/${appId}/${cleanPhone}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const responseJson = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseJson.message || 'Gagal mengirim OTP');
+      }
+
+      // Cek struktur data respons GET (sesuai info sebelumnya: { data: { status: "success" } })
+      if (responseJson.data?.status === 'success' || response.status === 201) {
+        console.log('OTP Sent:', responseJson);
+        setLoginState('otp');
+      } else {
+        throw new Error('Gagal mengirim OTP, coba cek nomor kembali.');
+      }
+
+    } catch (error: any) {
+      console.error('Error Request OTP:', error);
+      setErrorMessage(error.message || 'Terjadi kesalahan koneksi server.');
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
-  const handleVerifyLogin = () => {
+  // --- 2. HANDLE VERIFY OTP (POST) ---
+  const handleVerifyLogin = async () => {
     const otpCode = otpValues.join('');
+    
     if (otpCode.length < 6) {
-      setErrorMessage('Lengkapi kode 6 digit');
+      setErrorMessage('Harap masukkan 6 digit kode OTP');
       return;
     }
 
     setIsLoading(true);
     setErrorMessage('');
 
-    setTimeout(() => {
-      if (otpCode === '123456') {
-        router.push('/dashboard'); 
-      } else {
-        setErrorMessage('Kode OTP salah! Gunakan 123456');
-        setOtpValues(['', '', '', '', '', '']); 
-        setIsLoading(false);
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      
+      // Format ulang nomor hp agar konsisten
+      let cleanPhone = phoneNumber.replace(/\D/g, '');
+      if (!cleanPhone.startsWith('0')) {
+        cleanPhone = '0' + cleanPhone;
       }
-    }, 1000);
+
+      // Payload POST
+      // Kita kirim phone + otp untuk memastikan identifikasi user
+      const payload = {
+        phone: cleanPhone, 
+        otp: otpCode 
+      };
+
+      // Hit API: POST {{baseURL}}/otp/customer_login
+      const response = await fetch(`${baseUrl}/otp/customer_login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Kode OTP salah.');
+      }
+
+      // --- LOGIN SUKSES ---
+      // Struktur Data: { message: "...", customer_id: 32557, name: "Fayyadh", ... }
+      console.log('Login Success Data:', data);
+      
+      // 1. Simpan Data User Lengkap ke LocalStorage
+      // Data ini akan dibaca oleh Sidebar untuk menampilkan nama & info user
+      localStorage.setItem('user_profile', JSON.stringify(data));
+
+      // 2. Simpan Cookie untuk Middleware
+      // Karena tidak ada field "token", kita gunakan customer_id sebagai penanda sesi
+      if (data.customer_id) {
+        Cookies.set('token', data.customer_id.toString(), { expires: 1, path: '/' });
+      }
+      
+      // 3. Redirect ke Dashboard
+      router.push('/dashboard');
+
+    } catch (error: any) {
+      console.error('Error Verify OTP:', error);
+      setErrorMessage(error.message || 'Verifikasi gagal. Silakan coba lagi.');
+      setOtpValues(['', '', '', '', '', '']); // Reset input OTP
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // --- HELPER UI ---
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otpValues];
-    newOtp[index] = value;
+    // Ambil digit terakhir jika user paste banyak angka
+    newOtp[index] = value.substring(value.length - 1);
     setOtpValues(newOtp);
+    
+    // Pindah fokus ke kotak selanjutnya
     if (value && index < 5) document.getElementById(`otp-${index + 1}`)?.focus();
   };
 
@@ -60,8 +150,23 @@ export default function LoginPage() {
     }
   };
 
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').slice(0, 6);
+    if (!/^\d+$/.test(pastedData)) return;
+
+    const newOtp = [...otpValues];
+    pastedData.split('').forEach((char, i) => {
+      if (i < 6) newOtp[i] = char;
+    });
+    setOtpValues(newOtp);
+    const nextIndex = Math.min(pastedData.length, 5);
+    document.getElementById(`otp-${nextIndex}`)?.focus();
+  };
+
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-white dark:bg-[#0f111a] text-[#121217] dark:text-white font-sans">
+    <div className="min-h-screen flex flex-col relative overflow-hidden bg-white dark:bg-[#0f111a] text-[#121217] dark:text-white font-sans selection:bg-indigo-500 selection:text-white">
+       
        <div className="absolute inset-0 z-0 mesh-gradient opacity-90"></div>
        <div className="absolute top-[-10%] right-[-5%] w-150 h-150 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -83,7 +188,7 @@ export default function LoginPage() {
 
             <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-6">
                 {errorMessage && (
-                  <div className="p-4 rounded-xl bg-red-50 text-red-600 text-sm font-bold border border-red-100 flex items-center gap-2">
+                  <div className="p-4 rounded-xl bg-red-50 text-red-600 text-sm font-bold border border-red-100 flex items-center gap-2 animate-pulse">
                     <span className="material-symbols-outlined text-[18px]">error</span>
                     <span>{errorMessage}</span>
                   </div>
@@ -91,15 +196,25 @@ export default function LoginPage() {
 
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-bold uppercase tracking-wider mb-1">WhatsApp Number</label>
-                    <div className={`flex w-full items-center rounded-xl border border-[#eaeaef] dark:border-gray-700 bg-white dark:bg-[#0f111a] h-14 overflow-hidden relative ${loginState === 'otp' ? 'opacity-75 pointer-events-none bg-gray-50' : ''}`}>
-                      <div className="pl-4 pr-3 border-r border-transparent font-semibold">+62</div>
+                    <div className={`flex w-full items-center rounded-xl border border-[#eaeaef] dark:border-gray-700 bg-white dark:bg-[#0f111a] h-14 overflow-hidden relative transition-all ${loginState === 'otp' ? 'opacity-70 pointer-events-none bg-gray-50' : 'focus-within:ring-2 focus-within:ring-indigo-500/20'}`}>
+                      <div className="pl-4 pr-3 border-r border-transparent font-semibold text-slate-500">+62</div>
                       <input 
                         className="flex-1 w-full bg-transparent border-none focus:ring-0 text-base font-medium h-full px-3"
                         placeholder="812 3456 7890"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         readOnly={loginState === 'otp'}
+                        autoFocus
                       />
+                      {loginState === 'otp' && (
+                        <button 
+                          type="button" 
+                          onClick={() => { setLoginState('phone'); setErrorMessage(''); setOtpValues(['','','','','','']); }}
+                          className="absolute right-3 px-3 py-1 text-[10px] font-bold bg-slate-200 dark:bg-slate-700 rounded-lg hover:bg-slate-300 transition-colors"
+                        >
+                          GANTI
+                        </button>
+                      )}
                     </div>
                 </div>
 
@@ -116,24 +231,29 @@ export default function LoginPage() {
                           value={digit}
                           onChange={(e) => handleOtpChange(idx, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                          onPaste={handleOtpPaste}
+                          autoFocus={idx === 0}
                         />
                       ))}
                     </div>
-                    <p className="text-xs text-center text-slate-500">Dummy OTP: <span className="font-bold text-indigo-600">123456</span></p>
+                    <p className="text-xs text-center text-slate-500">
+                      Kode dikirim via WhatsApp ke +62{phoneNumber}
+                    </p>
                   </div>
                 )}
 
                 <button
                   onClick={loginState === 'phone' ? handleCheckPhone : handleVerifyLogin}
                   disabled={isLoading}
-                  className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg hover:shadow-indigo-600/40 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? 'Loading...' : (loginState === 'phone' ? 'Send Verification Code' : 'Verify & Login')}
+                  {isLoading ? 'Processing...' : (loginState === 'phone' ? 'Send Verification Code' : 'Verify & Login')}
                   {!isLoading && <span className="material-symbols-outlined">arrow_forward</span>}
                 </button>
             </form>
 
          </div>
+         <p className="mt-8 text-xs text-slate-400">&copy; 2026 Inovasia Digital Academy.</p>
        </div>
     </div>
   );

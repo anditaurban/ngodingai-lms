@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -12,12 +12,40 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
-  // --- CONFIGURATION ---
+  // --- 1. STATE USER PROFILE ---
+  const [user, setUser] = useState({
+    name: 'Guest User',
+    role: 'Student',
+    avatar: ''
+  });
+
+  // --- 2. LOAD DATA DARI LOCAL STORAGE ---
+  useEffect(() => {
+    // Cek apakah kode berjalan di browser
+    if (typeof window !== 'undefined') {
+      const storedData = localStorage.getItem('user_profile');
+      if (storedData) {
+        try {
+          const parsedData = JSON.parse(storedData);
+          setUser({
+            // Ambil nama dari API, atau default
+            name: parsedData.name || 'Student', 
+            role: 'Student PRO', 
+            // Generate avatar berdasarkan nama jika API tidak menyediakan gambar
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(parsedData.name || 'User')}&background=00BCD4&color=fff`
+          });
+        } catch (e) {
+          console.error("Gagal memuat data user:", e);
+        }
+      }
+    }
+  }, []);
+
+  // --- 3. MENU CONFIGURATION ---
   const menuGroups = [
     {
       title: "Main Menu",
       items: [
-        // PERBAIKAN: Hapus '/(dashboard)' dari href
         { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
         { label: 'My Courses', href: '/my-class', icon: 'school' },
       ]
@@ -25,16 +53,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     {
       title: "Academic",
       items: [
-        // Pastikan halaman ini juga ada di dalam folder app/ (entah di dalam (dashboard) atau root)
         { label: 'Schedule', href: '/schedule', icon: 'event_upcoming' },
         { label: 'Assignments', href: '/assignments', icon: 'assignment', badge: 2 },
       ]
     }
   ];
 
-  // --- HELPERS ---
+  // --- 4. HELPERS ---
   const isActiveLink = (path: string) => {
-    // Logic: Active jika path sama persis ATAU path diawali dengan path menu
     return pathname === path || pathname?.startsWith(`${path}/`);
   };
 
@@ -103,7 +129,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </nav>
         </div>
 
-        {/* Footer Profile Section */}
+        {/* Footer Profile Section (Dynamic Data) */}
         <div className="p-4 border-t border-slate-800 bg-[#151e2c]">
           <Link 
             href="/profile" 
@@ -111,17 +137,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             className={`flex items-center gap-3 p-3 rounded-xl border transition-all group ${getLinkClass('/profile')}`}
           >
             <div className="relative shrink-0">
+              {/* Menggunakan tag img standar agar aman dari isu domain config Next.js */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
-                src="https://ui-avatars.com/api/?name=Alex+Morgan&background=00BCD4&color=fff" 
+                src={user.avatar || "https://ui-avatars.com/api/?name=Guest&background=random"} 
                 className="size-9 rounded-full border border-slate-600 object-cover" 
                 alt="Profile" 
               />
               <div className="absolute -bottom-0.5 -right-0.5 bg-teal-400 size-2.5 rounded-full border-2 border-[#1b2636]"></div>
             </div>
+            
             <div className="flex flex-col overflow-hidden text-left">
-              <p className="text-white text-sm font-bold truncate">Alex Morgan</p>
-              <p className="text-slate-400 text-[10px] uppercase font-bold truncate">Student PRO</p>
+              {/* Nama User Dinamis */}
+              <p className="text-white text-sm font-bold truncate capitalize">
+                {user.name.toLowerCase()}
+              </p>
+              <p className="text-slate-400 text-[10px] uppercase font-bold truncate">
+                {user.role}
+              </p>
             </div>
           </Link>
         </div>
