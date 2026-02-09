@@ -35,16 +35,25 @@ export const useAuthLogic = () => {
     setIsLoading(true);
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const appId = process.env.NEXT_PUBLIC_APP_ID;
-      const cleanPhone = formatPhoneNumber(phoneNumber);
+      // --- PERBAIKAN: TAMBAH FALLBACK VALUE ---
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
+      const appId = process.env.NEXT_PUBLIC_APP_ID || '4409';
       
-      console.log("Mengirim OTP ke:", cleanPhone); 
+      const cleanPhone = formatPhoneNumber(phoneNumber);
+      const endpoint = `${baseUrl}/customer_login/${appId}/${cleanPhone}`;
+      
+      console.log("Menembak API ke:", endpoint); // Cek Console Browser!
 
-      const response = await fetch(`${baseUrl}/customer_login/${appId}/${cleanPhone}`, {
+      const response = await fetch(endpoint, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
+
+      // Cek apakah response berupa JSON valid
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server Error: Endpoint tidak ditemukan (404/500)");
+      }
 
       const responseJson = await response.json();
 
@@ -80,7 +89,8 @@ export const useAuthLogic = () => {
     setErrorMessage('');
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      // --- PERBAIKAN: TAMBAH FALLBACK VALUE ---
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
       const cleanPhone = formatPhoneNumber(phoneNumber);
 
       const payload = {
@@ -123,7 +133,7 @@ export const useAuthLogic = () => {
     }
   };
 
-  // --- HELPER UI: INPUT HANDLING ---
+  // --- HELPER UI ---
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otpValues];
@@ -149,22 +159,18 @@ export const useAuthLogic = () => {
     document.getElementById(`otp-${nextIndex}`)?.focus();
   };
 
-  // Reset State (Tombol Ubah)
   const resetLogin = () => {
     setLoginState('phone');
     setErrorMessage('');
     setOtpValues(['', '', '', '', '', '']);
   };
 
-  // Return semua data dan fungsi yang dibutuhkan UI
   return {
-    // Data (State)
     loginState,
     phoneNumber,
     otpValues,
     isLoading,
     errorMessage,
-    // Fungsi (Actions)
     setPhoneNumber,
     handleCheckPhone,
     handleVerifyLogin,
