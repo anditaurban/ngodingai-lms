@@ -3,48 +3,41 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  
-  // 1. Ambil token dari cookies
   const token = request.cookies.get('token')?.value;
-
-  // Definisi Halaman Public (Login)
   const isPublicPath = path === '/';
 
-  // --- LOGIKA REDIRECT (Sama seperti sebelumnya) ---
-  
-  // Jika User SUDAH Login tapi buka halaman Login -> Lempar ke Dashboard
+  // --- LOGIKA REDIRECT ---
   if (isPublicPath && token) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // Jika User BELUM Login tapi buka halaman Private -> Lempar ke Login
   if (!isPublicPath && !token) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  // --- FITUR BARU: ROLLING SESSION (PERPANJANG OTOMATIS) ---
-  
-  // Siapkan respons "Lanjut" (Allow)
+  // --- LOGIKA ROLLING SESSION & SECURITY HEADERS (PENTING!) ---
   const response = NextResponse.next();
 
-  // Jika user punya token (sedang login) dan sedang akses halaman private
+  // 1. Rolling Session (Perpanjang token jika user aktif)
   if (token && !isPublicPath) {
-    // Kita perbarui masa berlaku Cookie-nya jadi 7 hari LAGI dari DETIK INI
-    const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 hari dalam milidetik
-    
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
     response.cookies.set('token', token, {
       path: '/',
-      expires: new Date(Date.now() + oneWeek), // Reset timer kiamat
-      // Opsional: Tambahkan secure flag untuk produksi
-      // secure: process.env.NODE_ENV === 'production',
-      // httpOnly: false, // Biar bisa dibaca client-side js-cookie jika perlu
+      expires: new Date(Date.now() + oneWeek),
     });
+  }
+
+  // 2. SECURITY: Cegah Back Button Cache setelah Logout
+  // Ini memerintahkan browser untuk TIDAK menyimpan halaman ini di memori back/forward
+  if (!isPublicPath) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
   }
 
   return response;
 }
 
-// Konfigurasi halaman mana saja yang dijaga
 export const config = {
   matcher: [
     '/',              

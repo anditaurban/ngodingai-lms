@@ -31,7 +31,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Dashboard Overview</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          Welcome back, <span className="font-bold text-slate-800 dark:text-white capitalize">{userName.toLowerCase()}</span>! You have <span className="text-[#00BCD4] font-bold">2 assignments</span> pending.
+          Welcome back, <span className="font-bold text-slate-800 dark:text-white capitalize">{userName.toLowerCase()}</span>! You have <span className="text-[#00BCD4] font-bold">1 assignments</span> pending.
           </p>
         </div>
       </div>
@@ -42,54 +42,57 @@ export default function DashboardPage() {
         {/* LEFT COLUMN (Main Activity) - Span 8 */}
         <div className="xl:col-span-8 flex flex-col gap-6">
           
-          {/* 1. Modern Stats Row (Metric Cards 2.0) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            
-            {/* Stat Card 1: Study Time */}
-            <div className="group bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 shadow-sm hover:shadow-md transition-all">
-              <div className="flex justify-between items-start mb-4">
-                <div className="size-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined text-[20px]">schedule</span>
-                </div>
-                {/* Badge Kenaikan */}
-                <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
-                  <span className="material-symbols-outlined text-[12px]">trending_up</span> +5%
-                </span>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Study Time</p>
-                <p className="text-3xl font-extrabold text-slate-900 dark:text-white">12.5<span className="text-lg text-slate-400 font-medium ml-1">hours</span></p>
-              </div>
-            </div>
+          {/* 1. Stat Cards Row (SEJAJAR 3 DI MOBILE) */}
+<div className="grid grid-cols-3 gap-2 md:gap-4">
+  
+  {/* Stat Card 1: Study Time */}
+  <div className="group bg-white dark:bg-slate-800 p-3 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+    {/* Badge Pojok Kanan Atas */}
+    <span className="absolute top-2 right-2 md:top-4 md:right-4 flex items-center gap-0.5 text-[8px] md:text-[10px] font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded-full border border-green-100 dark:border-green-800">
+       +5%
+    </span>
 
-            {/* Stat Card 2: Active Courses */}
-            <div className="group bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700 shadow-sm hover:shadow-md transition-all">
-              <div className="flex justify-between items-start mb-4">
-                <div className="size-10 rounded-xl bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined text-[20px]">school</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Enrolled Courses</p>
-                <p className="text-3xl font-extrabold text-slate-900 dark:text-white">3 <span className="text-lg text-slate-400 font-medium ml-1">active</span></p>
-              </div>
-            </div>
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 md:mb-4 gap-1">
+      <div className="size-7 md:size-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+        <span className="material-symbols-outlined text-[16px] md:text-[20px]">schedule</span>
+      </div>
+    </div>
+    <div>
+      <p className="text-[9px] md:text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5 truncate pr-4">Study Time</p>
+      <p className="text-base md:text-3xl font-extrabold text-slate-900 dark:text-white leading-none">12.5<span className="text-[10px] md:text-lg text-slate-400 font-medium ml-0.5">h</span></p>
+    </div>
+  </div>
 
-            {/* Stat Card 3: Points */}
-            <div className="group bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700 shadow-sm hover:shadow-md transition-all">
-              <div className="flex justify-between items-start mb-4">
-                <div className="size-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined text-[20px]">emoji_events</span>
-                </div>
-                <span className="flex items-center gap-1 text-[10px] font-bold text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded-full">
-                  Level 5
-                </span>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Points</p>
-                <p className="text-3xl font-extrabold text-slate-900 dark:text-white">1,450</p>
-              </div>
-            </div>
+  {/* Stat Card 2: Active Courses */}
+  <div className="group bg-white dark:bg-slate-800 p-3 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 md:mb-4 gap-1">
+      <div className="size-7 md:size-10 rounded-lg bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform">
+        <span className="material-symbols-outlined text-[16px] md:text-[20px]">school</span>
+      </div>
+    </div>
+    <div>
+      <p className="text-[9px] md:text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5 truncate">Courses</p>
+      <p className="text-base md:text-3xl font-extrabold text-slate-900 dark:text-white leading-none">3 <span className="text-[10px] md:text-lg text-slate-400 font-medium ml-0.5">act</span></p>
+    </div>
+  </div>
+
+  {/* Stat Card 3: Points */}
+  <div className="group bg-white dark:bg-slate-800 p-3 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+    {/* Badge Pojok Kanan Atas */}
+    <span className="absolute top-2 right-2 md:top-4 md:right-4 flex items-center gap-0.5 text-[8px] md:text-[10px] font-bold text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-1.5 py-0.5 rounded-full border border-purple-100 dark:border-purple-800">
+      Lvl 5
+    </span>
+
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 md:mb-4 gap-1">
+      <div className="size-7 md:size-10 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+        <span className="material-symbols-outlined text-[16px] md:text-[20px]">emoji_events</span>
+      </div>
+    </div>
+    <div>
+      <p className="text-[9px] md:text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5 truncate pr-4">Points</p>
+      <p className="text-base md:text-3xl font-extrabold text-slate-900 dark:text-white leading-none">1,450</p>
+    </div>
+  </div>
 
           </div>
 
@@ -216,15 +219,6 @@ export default function DashboardPage() {
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Project Deadline</h4>
                 <p className="text-xs text-slate-500 mt-0.5">23:59 WIB • NgodingAI</p>
               </div>
-
-              {/* Event 3 */}
-               <div className="relative pl-6 group cursor-pointer">
-                <span className="absolute -left-1.25 top-1 size-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-slate-800 group-hover:scale-125 transition-transform"></span>
-                <p className="text-xs font-bold text-slate-400 mb-1">JANUARY 05</p>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">New Batch Start</h4>
-                <p className="text-xs text-slate-500 mt-0.5">Automation with N8n</p>
-              </div>
-
             </div>
           </div>
 
@@ -242,28 +236,13 @@ export default function DashboardPage() {
                     <span className="material-symbols-outlined text-[12px]">timer</span> 2 Days Left
                   </span>
                 </div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1 group-hover:text-red-600 transition-colors">Create RAG Chatbot</h4>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1 group-hover:text-red-600 transition-colors">AI-Powered SaaS Dashboard</h4>
                 <div className="flex justify-between items-center text-xs text-slate-500 mb-3">
                   <span>Progress</span>
                   <span className="font-bold">80%</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full">
                   <div className="bg-green-500 h-1.5 rounded-full" style={{ width: "80%" }}></div>
-                </div>
-              </div>
-               {/* Task 2 */}
-               <div className="p-4 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-purple-200 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-all bg-white dark:bg-slate-900/30 group">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">IoT</span>
-                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">Next Week</span>
-                </div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1 group-hover:text-purple-600 transition-colors">Solder ESP32 Header</h4>
-                <div className="flex justify-between items-center text-xs text-slate-500 mb-3">
-                  <span>Progress</span>
-                  <span className="font-bold">0%</span>
-                </div>
-                <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full">
-                  <div className="bg-slate-300 h-1.5 rounded-full" style={{ width: "0%" }}></div>
                 </div>
               </div>
             </div>

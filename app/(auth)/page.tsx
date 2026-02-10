@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
-import { useAuthLogic } from '@/hooks/useAuthLogic'; // Import Logic
+import Image from 'next/image';
+// Pastikan path import ini sesuai dengan struktur folder Anda
+import { useAuthLogic } from '../../hooks/useAuthLogic'; 
 
 export default function LoginPage() {
-  // Panggil Logic di sini
+  // 1. Panggil Logic (Hapus currentYear dari sini)
   const {
     loginState,
     phoneNumber,
@@ -20,6 +22,9 @@ export default function LoginPage() {
     resetLogin
   } = useAuthLogic();
 
+  // 2. Definisi Tahun Copyright secara lokal di UI
+  const currentYear = new Date().getFullYear();
+
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-white dark:bg-[#0f111a] text-[#121217] dark:text-white font-sans">
        
@@ -33,8 +38,15 @@ export default function LoginPage() {
             
             <header className="flex flex-col gap-6">
               <div className="flex items-center gap-3">
-                <div className="size-10 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                  <span className="material-symbols-outlined text-[24px]">token</span>
+                 {/* LOGO */}
+                <div className="relative w-10 h-10 shadow-sm rounded-lg overflow-hidden bg-white">
+                   <Image 
+                      src="/logongodingai.png" 
+                      alt="Logo" 
+                      fill
+                      className="object-contain p-1"
+                      priority
+                   />
                 </div>
                 <span className="text-xl font-bold tracking-tight text-[#121217] dark:text-white">Inovasia</span>
               </div>
@@ -132,20 +144,11 @@ export default function LoginPage() {
             </form>
 
             <footer className="flex justify-center gap-6 pt-2">
-              <a href="#" className="text-sm font-semibold text-[#666685] hover:text-indigo-600 transition-colors flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[18px]">help</span> Help Center
-              </a>
-              <a href="#" className="text-sm font-semibold text-[#666685] hover:text-indigo-600 transition-colors flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[18px]">lock</span> Privacy Policy
-              </a>
+               <p className="text-xs text-[#666685] font-medium">
+                  &copy; {currentYear} Inovasia Digital Academy.
+               </p>
             </footer>
 
-         </div>
-         
-         <div className="mt-8 text-center relative z-10 opacity-60 hover:opacity-100 transition-opacity">
-           <p className="text-xs font-medium text-[#666685] dark:text-gray-500">
-             © 2026 Inovasia Digital Academy.
-           </p>
          </div>
        </div>
     </div>
