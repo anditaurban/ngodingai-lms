@@ -108,15 +108,12 @@ export default function ClassroomTab({ curriculum, legacyCurriculum, slug }: Cla
                 <select 
                   value={activeBatch} 
                   onChange={(e) => setActiveBatch(e.target.value)}
-                  className="w-full bg-white dark:bg-[#0f111a] border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg p-2.5 pr-8 appearance-none focus:ring-2 focus:ring-[#00BCD4] focus:border-[#00BCD4] cursor-pointer"
+                  className="w-full bg-white dark:bg-[#0f111a] border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#00BCD4] focus:border-[#00BCD4] cursor-pointer"
                 >
                   {legacyCurriculum.batches.map((batch) => (
                     <option key={batch.id} value={batch.id}>{batch.name}</option>
                   ))}
                 </select>
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                  <span className="material-symbols-outlined text-[20px]">expand_more</span>
-                </span>
               </div>
             </div>
           )}
