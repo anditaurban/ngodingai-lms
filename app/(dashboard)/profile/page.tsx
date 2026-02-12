@@ -122,7 +122,7 @@ export default function ProfilePage() {
 
           {/* TAB CONTENT RENDERER */}
           <div className="min-h-7">
-             {activeTab === 'general' && <GeneralTab user={user} />}
+             {activeTab === 'general' && <GeneralTab />}
              {activeTab === 'attendance' && <AttendanceTab />}
              {activeTab === 'certificates' && <CertificatesTab />}
              {activeTab === 'portfolio' && <PortfolioTab />}
