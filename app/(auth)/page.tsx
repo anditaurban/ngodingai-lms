@@ -2,11 +2,12 @@
 
 import React from 'react';
 import Image from 'next/image';
-// Pastikan path import ini sesuai dengan struktur folder Anda
+// Pastikan path import ini sesuai (naik 2 level ke folder hooks)
 import { useAuthLogic } from '../../hooks/useAuthLogic'; 
 
 export default function LoginPage() {
-  // 1. Panggil Logic (Hapus currentYear dari sini)
+  // 1. Panggil Logic dari Custom Hook
+  // (Semua fungsi router.push dan fetch API ada di dalam hook ini)
   const {
     loginState,
     phoneNumber,
@@ -48,7 +49,7 @@ export default function LoginPage() {
                       priority
                    />
                 </div>
-                <span className="text-xl font-bold tracking-tight text-[#121217] dark:text-white">Inovasia</span>
+                <span className="text-xl font-bold tracking-tight text-[#121217] dark:text-white">NgodingAI</span>
               </div>
               <div className="space-y-2">
                 <h1 className="text-3xl font-extrabold tracking-tight">Digital Academy</h1>

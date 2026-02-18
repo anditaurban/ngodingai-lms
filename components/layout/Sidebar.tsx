@@ -14,14 +14,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // --- STATE USER PROFILE ---
   const [user, setUser] = useState({
     name: 'Loading...',
     role: 'Student',
     avatar: 'https://ui-avatars.com/api/?name=User&background=random'
   });
 
-  // --- LOAD DATA ---
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -42,29 +40,22 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     }
   }, []);
 
-  // --- LOGOUT ---
   const handleLogout = () => {
     Cookies.remove('token');
     localStorage.removeItem('user_profile');
     router.push('/');
   };
 
-  // --- MENU ITEMS ---
+  // --- MENU CONFIGURATION ---
   const menuGroups = [
     {
-      title: "Main Menu",
+      title: "Learning Center",
       items: [
-        { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
         { label: 'My Courses', href: '/my-class', icon: 'school' },
+        { label: 'Assignments', href: '/assignments', icon: 'assignment', badge: 1 },
       ]
     },
-    {
-      title: "Academic",
-      items: [
-        { label: 'Schedule', href: '/schedule', icon: 'event_upcoming' },
-        { label: 'Assignments', href: '/assignments', icon: 'assignment', badge: 2 },
-      ]
-    }
+    // Tambahkan grup menu lain di sini jika diperlukan
   ];
 
   const isActiveLink = (path: string) => pathname === path || pathname?.startsWith(`${path}/`);
@@ -96,7 +87,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         
-        {/* Menu Scrollable */}
+        {/* Menu Area */}
         <div className="flex flex-col gap-2 p-4 pt-6 flex-1 overflow-y-auto custom-scrollbar">
           <nav className="flex flex-col gap-6">
             {menuGroups.map((group, idx) => (
@@ -129,7 +120,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </nav>
         </div>
 
-        {/* Footer Profile */}
+        {/* Footer Profile Section */}
         <div className="p-4 border-t border-slate-800 bg-[#151e2c]">
           <div className="flex items-center justify-between gap-2">
              <Link 
@@ -141,7 +132,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={user.avatar} 
-                    className="size-9 rounded-full border border-slate-600 object-cover" 
+                    className="size-9 rounded-full border border-slate-600 object-cover bg-slate-700" 
                     alt="Profile" 
                   />
                   <div className="absolute -bottom-0.5 -right-0.5 bg-teal-400 size-2.5 rounded-full border-2 border-[#1b2636]"></div>
@@ -157,11 +148,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
              </Link>
 
+             {/* Tombol Logout Kecil */}
              <button 
                 onClick={handleLogout}
                 className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/5 transition-all"
                 title="Keluar"
              >
+                <span className="material-symbols-outlined text-[20px]">logout</span>
              </button>
           </div>
         </div>
