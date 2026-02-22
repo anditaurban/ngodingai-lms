@@ -70,22 +70,36 @@ export const useProfileLogic = () => {
   }, []);
 
   // --- 2. FUNGSI CARI REGION (PROXY) ---
-  const searchRegion = async (keyword: string) => {
-    if (keyword.length < 3) return; 
+const searchRegion = async (keyword: string) => {
     setIsSearchingRegion(true);
-    
     try {
       const response = await fetch(`/api/region?keyword=${encodeURIComponent(keyword)}`);
-      const data = await response.json();
       
-      if (data && data.tableData) {
-        setRegionOptions(data.tableData);
+      if (!response.ok) throw new Error("Gagal mengambil data region");
+      
+      const result = await response.json();
+
+      // =================================================================
+      // ✨ KUNCI PENYELESAIANNYA DI SINI ✨
+      // Kita harus mengekstrak "tableData" agar regionOptions menjadi Array
+      // =================================================================
+      if (Array.isArray(result)) {
+        // Jika dari proxy sudah berbentuk array
+        setRegionOptions(result);
+      } else if (result && result.tableData && Array.isArray(result.tableData)) {
+        // Jika dari proxy masih berbentuk format asli Katib { tableData: [...] }
+        setRegionOptions(result.tableData);
+      } else if (result && result.data && Array.isArray(result.data)) {
+        // Jaga-jaga jika Katib sewaktu-waktu merubah formatnya menjadi 'data'
+        setRegionOptions(result.data);
       } else {
+        // Jika tidak ada hasil, pastikan state menjadi array kosong agar tidak error
         setRegionOptions([]);
       }
+
     } catch (error) {
-      console.error("Gagal cari region:", error);
-      setRegionOptions([]);
+      console.error("Error saat mencari region:", error);
+      setRegionOptions([]); // Reset ke array kosong saat error
     } finally {
       setIsSearchingRegion(false);
     }

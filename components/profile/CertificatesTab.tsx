@@ -1,28 +1,91 @@
 'use client';
 
-import React, { useState } from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCertificate } from '@/hooks/useCertificate';
-import { generateCertificatePDF } from '@/lib/certificateGenerator';
+import { Inter } from 'next/font/google';
+
+// IMPORT LIBRARY MODERN (Pengganti html2canvas)
+import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export default function CertificatesTab() {
   const { data: certificateData, loading, error } = useCertificate();
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const certificateRef = useRef<HTMLDivElement>(null);
 
-  const handleDownload = async () => {
-    if (!certificateData) return;
-    setIsProcessing(true);
-    const doc = await generateCertificatePDF(certificateData);
-    if (doc) {
-      const safeName = certificateData.full_name.replace(/[^a-z0-9]/gi, '_');
-      doc.save(`Sertifikat_NgodingAI_${safeName}.pdf`);
-    } else {
-      alert("Gagal mengunduh sertifikat.");
+  const [sessionName, setSessionName] = useState("Nama Peserta");
+
+  useEffect(() => {
+    try {
+      const storedProfile = localStorage.getItem('user_profile');
+      if (storedProfile) {
+        const parsedProfile = JSON.parse(storedProfile);
+        const name = parsedProfile.customer_name || parsedProfile.full_name || parsedProfile.name;
+        if (name) setSessionName(name);
+      }
+    } catch (err) {
+      console.error("Gagal membaca sesi user:", err);
     }
-    setIsProcessing(false);
+  }, []);
+
+  const dynamicSampleCert = {
+    customer_id: "SMPL-99999",
+    full_name: sessionName,
+    achievement: "Has been awarded a Certificate of Completion for the comprehensive<br>Fullstack Web Development & AI Bootcamp.",
+    issued: "21 February 2026",
+    course_url: "https://ngodingai.inovasia.co.id/verify/SMPL-99999"
   };
 
-  // State UI: Loading
+  const isSample = !certificateData || error !== null;
+  const displayData = certificateData || dynamicSampleCert;
+
+  // ====================================================================
+  // MESIN DOWNLOAD MODERN: html-to-image + jsPDF
+  // ====================================================================
+  const handleDownload = async () => {
+    if (isSample) {
+        alert("Ini hanya sertifikat contoh. Selesaikan kursus Anda untuk mendapatkan sertifikat asli!");
+        return;
+    }
+    
+    if (!certificateRef.current) return;
+    setIsProcessing(true);
+
+    try {
+      // 1. Potret Elemen menggunakan HTML-TO-IMAGE 
+      const dataUrl = await toPng(certificateRef.current, {
+        quality: 1,
+        pixelRatio: 3, // Kualitas HD/Retina
+        cacheBust: true, // Mencegah error cache gambar
+        fontEmbedCSS: '', // <-- ✨ KODE SAKTI: Bypass SecurityError CORS Font ✨
+        style: {
+           backgroundColor: '#ffffff' // Pastikan background solid
+        }
+      });
+
+      // 2. Buat Kertas PDF A4 Landscape
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // 3. Tempel Foto UI ke Kertas PDF
+      pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+      // 4. Unduh!
+      const safeName = displayData.full_name.replace(/[^a-z0-9]/gi, '_');
+      pdf.save(`Sertifikat_NgodingAI_${safeName}.pdf`);
+      
+    } catch (err: any) {
+      console.error("DETAIL ERROR HTML-TO-IMAGE:", err);
+      alert(`Terjadi kesalahan saat membuat file PDF. Cek Console F12.`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3 animate-fade-in">
@@ -32,38 +95,32 @@ export default function CertificatesTab() {
     );
   }
 
-  // State UI: Error / Data Kosong
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 gap-3 animate-fade-in text-center">
-        <div className="size-12 bg-red-100 rounded-full flex items-center justify-center text-red-500 mb-2">
-            <span className="material-symbols-outlined text-2xl">error</span>
-        </div>
-        <p className="text-slate-700 font-medium">Sertifikat Belum Tersedia</p>
-        <p className="text-slate-500 text-sm max-w-md">{error}</p>
-      </div>
-    );
-  }
-
-  // State UI: Data Ditemukan
   return (
     <div className="animate-fade-in relative max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+      
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-           <h3 className="text-lg font-bold text-slate-800 dark:text-white">
+           <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
              Sertifikat Pencapaian
+             {isSample && (
+                 <span className="bg-amber-100 text-amber-600 text-[10px] px-2 py-1 rounded-full uppercase tracking-wider border border-amber-200">
+                     Mode Preview
+                 </span>
+             )}
            </h3>
            <p className="text-sm text-slate-500 mt-1">
-             Bukti kelulusan resmi Anda dari program Inovasia.
+             {isSample 
+                ? "Selesaikan program untuk membuka kunci dan mengunduh sertifikat resmi Anda." 
+                : "Bukti kelulusan resmi Anda dari program NgodingAI by Inovasia."}
            </p>
         </div>
         
-        {/* Tombol Download di Atas */}
-        {certificateData && (
+        {!isSample && (
           <button 
               onClick={handleDownload}
               disabled={isProcessing}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md ${
+              className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md w-full md:w-auto ${
                 isProcessing
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'bg-[#00BCD4] text-white hover:bg-[#00a3b8] hover:shadow-lg hover:-translate-y-0.5'
@@ -74,136 +131,153 @@ export default function CertificatesTab() {
               ) : (
                  <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
               )}
-              {isProcessing ? 'Memproses...' : 'Unduh PDF Asli'}
+              {isProcessing ? 'Menyiapkan HD PDF...' : 'Unduh PDF Asli'}
           </button>
         )}
       </div>
-      
-      {certificateData && (
-        /* ====================================================================
-           TAMPILAN SERTIFIKAT HTML (PREVIEW)
-           Menggunakan aspect-ratio standar kertas A4 Landscape (1.414 / 1)
-           ==================================================================== */
-        <div className="relative w-full aspect-[1.414/1] bg-white rounded-xl overflow-hidden shadow-2xl border border-slate-200 select-none group">
-            
-            {/* 1. BACKGROUND GAMBAR (Template) */}
-            <Image 
-              src="/assets/certificates/blank-template.jpg"
-              alt="Certificate Background"
-              fill
-              className="object-cover opacity-30 pointer-events-none" 
-              unoptimized
-            />
-            {/* Overlay Putih Halus untuk memastikan teks selalu terbaca meski background gelap */}
-            <div className="absolute inset-0 bg-white/70 pointer-events-none"></div> 
 
-            {/* 2. BINGKAI ORNAMEN EMAS (Simulasi CSS) */}
-            <div className="absolute inset-4 border-[3px] border-double border-[#d4af37]/60 pointer-events-none rounded"></div>
-            <div className="absolute inset-6 border border-[#d4af37]/30 pointer-events-none rounded"></div>
-
-            {/* 3. ISI KONTEN SERTIFIKAT (Absolute Positioning) */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 md:p-12 text-center">
-                
-                {/* Logo Perusahaan (Atas Tengah) */}
-                <div className="absolute top-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                   <div className="relative h-12 w-32 md:h-16 md:w-40 mb-2">
-                       <Image 
-                          src="/assets/inovasia.jpg"
-                          alt="Logo Inovasia"
-                          fill
-                          className="object-contain"
-                          unoptimized
-                       />
-                   </div>
-                </div>
-
-                {/* Judul Sertifikat */}
-                <div className="mt-16 md:mt-20">
-                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif text-[#1e293b] tracking-widest uppercase mb-2">
-                     Certificate
-                   </h1>
-                   <p className="text-sm md:text-base text-[#d4af37] tracking-[0.3em] uppercase font-bold">
-                     of Completion
-                   </p>
-                </div>
-
-                {/* Tulisan 'Diberikan kepada' */}
-                <p className="mt-8 md:mt-12 text-sm md:text-base text-slate-500 italic">
-                   This certificate is proudly presented to
-                </p>
-
-                {/* Nama Peserta (API) */}
-                <h2 className="mt-4 text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-[#0f172a] capitalize drop-shadow-sm border-b-2 border-slate-300 pb-2 px-8 inline-block">
-                   {certificateData.full_name}
-                </h2>
-
-                {/* Teks Pencapaian / Achievement (API) */}
-                {/* Kita menggunakan dangerouslySetInnerHTML karena API mengirimkan tag <br> */}
-                <p 
-                  className="mt-6 md:mt-8 max-w-2xl text-sm md:text-base lg:text-lg text-slate-600 leading-relaxed font-sans"
-                  dangerouslySetInnerHTML={{ __html: certificateData.achievement }}
-                />
-
-                {/* Area Tanda Tangan & Info Bawah */}
-                <div className="absolute bottom-12 left-12 right-12 flex justify-between items-end">
-                    
-                    {/* Kiri: Tanggal & URL */}
-                    <div className="text-left">
-                       <p className="text-xs md:text-sm text-slate-500 font-bold uppercase tracking-wider mb-1">
-                         Date Issued
-                       </p>
-                       <p className="text-sm md:text-base text-slate-800 font-serif border-b border-slate-300 pb-1 mb-4 inline-block">
-                         {certificateData.issued}
-                       </p>
-                       
-                       <p className="text-[10px] md:text-xs text-slate-400 mt-2">
-                         Verify Authenticity:<br/>
-                         <a href={certificateData.course_url} target="_blank" rel="noreferrer" className="text-[#00BCD4] hover:underline">
-                           {certificateData.course_url}
-                         </a>
-                       </p>
-                    </div>
-
-                    {/* Kanan: Tanda Tangan */}
-                    <div className="flex flex-col items-center">
-                       <div className="relative h-16 w-32 md:h-20 md:w-40 mb-1">
-                           <Image 
-                              src="/assets/certificates/ttd.png" 
-                              alt="Signature"
-                              fill
-                              className="object-contain drop-shadow-md"
-                              unoptimized
-                           />
-                       </div>
-                       <div className="w-48 border-t border-slate-400 pt-2 text-center">
-                          <p className="text-sm md:text-base font-bold text-slate-800">Lead Instructor</p>
-                          <p className="text-xs text-slate-500">NgodingAI by Inovasia</p>
-                       </div>
-                    </div>
-                </div>
-
+      {isSample && (
+        <div className="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-4">
+            <div className="bg-white p-2 rounded-full shadow-sm border border-slate-100 text-slate-400">
+                <span className="material-symbols-outlined">info</span>
             </div>
-
-            {/* Hover Effect: Klik untuk Download */}
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm cursor-pointer z-50">
-                <button 
-                  onClick={handleDownload}
-                  disabled={isProcessing}
-                  className="flex flex-col items-center justify-center text-white gap-3 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300"
-                >
-                   {isProcessing ? (
-                       <span className="size-16 border-4 border-white/30 border-t-[#00BCD4] rounded-full animate-spin"></span>
-                   ) : (
-                       <span className="material-symbols-outlined text-6xl text-[#00BCD4] drop-shadow-[0_0_15px_rgba(0,188,212,0.5)]">download_for_offline</span>
-                   )}
-                   <span className="text-xl font-bold tracking-wide">
-                       {isProcessing ? 'Menyiapkan PDF...' : 'Unduh Sertifikat PDF Asli'}
-                   </span>
-                   <span className="text-sm text-slate-300">Format A4 High Resolution (Siap Cetak)</span>
-                </button>
+            <div>
+                <h4 className="font-bold text-slate-700 text-sm">Sertifikat Belum Tersedia</h4>
+                <p className="text-sm text-slate-500 mt-0.5">
+                    Data sertifikat Anda belum diterbitkan oleh sistem atau Anda belum menyelesaikan kursus. Berikut adalah <strong className="text-slate-700">pratinjau (contoh)</strong> desain sertifikat yang akan Anda terima nanti.
+                </p>
             </div>
         </div>
       )}
+      
+      {/* ====================================================================
+          TAMPILAN SERTIFIKAT HTML
+          ==================================================================== */}
+      <div className="relative w-full aspect-[1.414/1] bg-white rounded-xl shadow-2xl border border-slate-200 select-none group overflow-hidden">
+          
+          {/* AREA YANG AKAN DIPOTRET (Di dalam ref) */}
+          <div ref={certificateRef} className="absolute inset-0 w-full h-full bg-white overflow-hidden">
+              
+              {isSample && (
+                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40 overflow-hidden">
+                     <span className="text-[150px] md:text-[200px] font-black text-slate-900/3 -rotate-45 select-none tracking-widest uppercase">
+                         Sample
+                     </span>
+                 </div>
+              )}
+
+              {/* 1. BACKGROUND GAMBAR (Native <img>) */}
+              <img 
+                src="/assets/certificates/blank-template.jpg"
+                alt="Certificate Background"
+                crossOrigin="anonymous"
+                className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none" 
+              />
+
+              {/* 2. BINGKAI ORNAMEN EMAS */}
+              <div className="absolute inset-4 border-[3px] border-double border-[#d4af37]/60 pointer-events-none rounded"></div>
+              <div className="absolute inset-6 border border-[#d4af37]/30 pointer-events-none rounded"></div>
+
+              {/* 3. ISI KONTEN SERTIFIKAT (100% Desain Anda) */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 md:p-12 text-center">
+                  
+                  <div className="absolute top-12 left-1/2 -translate-x-1/2 flex flex-col items-center z-10">
+                     <div className="relative h-12 w-32 md:h-16 md:w-40 mb-2">
+                         <img 
+                            src="/assets/certificates/inovasia.png"
+                            alt="Logo Inovasia"
+                            crossOrigin="anonymous"
+                            className="w-full h-full object-contain"
+                         />
+                     </div>
+                  </div>
+
+                  <div className="-mt-6 md:-mt-12 z-10">
+                     <h1 className={`text-4xl md:text-5xl lg:text-6xl font-serif text-[#ffffff] tracking-widest uppercase mb-2 ${inter.className}`}>
+                       Certificate
+                     </h1>
+                     <p className="text-sm md:text-base text-[#d4af37] tracking-[0.3em] uppercase font-bold">
+                       For Participant
+                     </p>
+                  </div>
+
+                  <p className="mt-4 md:mt-6 text-sm md:text-base text-slate-500 italic z-10">
+                     This certificate is proudly presented to
+                  </p>
+
+                  <h2 className={`mt-2 text-2xl md:text-3xl lg:text-4xl font-serif font-bold text-[#ffffff] capitalize border-slate-300 pb-2 px-8 inline-block z-10 ${inter.className}`}>
+                     {displayData.full_name}
+                  </h2>
+
+                  <p 
+                    className="mt-2 md:mt-4 max-w-xl text-[10px] md:text-xs lg:text-sm text-slate-400 leading-relaxed font-sans z-10"
+                    dangerouslySetInnerHTML={{ __html: displayData.achievement }}
+                  />
+
+                  <div className="absolute bottom-12 left-12 right-4 md:right-6 flex justify-between items-end z-10">
+                      
+                      <div className="text-left mb-0">
+                         <p className="text-xs md:text-sm text-slate-500 font-bold uppercase tracking-wider mb-1">
+                           Date Issued
+                         </p>
+                         <p className={`text-sm md:text-base text-slate-200 font-serif border-b border-slate-300 pb-1 mb-1 inline-block ${inter.className}`}>
+                           {displayData.issued}
+                         </p>
+                         <p className="text-[10px] md:text-xs text-slate-400 mt-1">
+                           <span className="text-[#00BCD4] italic">
+                             {displayData.course_url}
+                           </span>
+                         </p>
+                      </div>
+
+                      <div className="flex flex-col items-center mb-0">
+                         <div className="relative h-16 w-32 md:h-20 md:w-40 mb-0">
+                             <img 
+                                src="/assets/certificates/ttd.jpg" 
+                                alt="Signature"
+                                crossOrigin="anonymous"
+                                className="w-full h-full object-contain drop-shadow-md"
+                             />
+                         </div>
+                         <div className="w-48 text-center pt-1">
+                            <p className="text-sm md:text-base font-bold text-slate-200 leading-tight">Andita Permata</p>
+                            <p className="text-xs text-[#00BCD4]">Instructor</p>
+                         </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          {/* AKHIR AREA POTRET */}
+
+          {/* Hover Effect: Klik untuk Download */}
+          {!isSample ? (
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm cursor-pointer z-50">
+                  <button 
+                    onClick={handleDownload}
+                    disabled={isProcessing}
+                    className="flex flex-col items-center justify-center text-white gap-3 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300"
+                  >
+                     {isProcessing ? (
+                         <span className="size-16 border-4 border-white/30 border-t-[#00BCD4] rounded-full animate-spin"></span>
+                     ) : (
+                         <span className="material-symbols-outlined text-6xl text-[#00BCD4] drop-shadow-[0_0_15px_rgba(0,188,212,0.5)]">download_for_offline</span>
+                     )}
+                     <span className="text-xl font-bold tracking-wide">
+                         {isProcessing ? 'Menyiapkan HD PDF...' : 'Unduh Sertifikat PDF Asli'}
+                     </span>
+                     <span className="text-sm text-slate-300">Format A4 High Resolution (Siap Cetak)</span>
+                  </button>
+              </div>
+          ) : (
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px] z-50 cursor-not-allowed">
+                  <div className="bg-white/90 px-6 py-4 rounded-xl text-center shadow-2xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+                      <span className="material-symbols-outlined text-4xl text-amber-500 mb-2">lock</span>
+                      <p className="font-bold text-slate-800">Sertifikat Belum Terbuka</p>
+                      <p className="text-xs text-slate-500 mt-1">Selesaikan program untuk mengunduh</p>
+                  </div>
+              </div>
+          )}
+      </div>
 
     </div>
   );

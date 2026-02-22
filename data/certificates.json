@@ -7,14 +7,5 @@
     "instructor": "Andita Permata",
     "course_thumbnail": "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1000&auto=format&fit=crop",
     "certificate_image": "/assets/certificates/sertifikat-ai.jpg"
-  },
-  {
-    "id": "CERT-2025-088",
-    "title": "Fullstack Web Development",
-    "course_name": "React & Next.js Masterclass",
-    "issue_date": "15 Dec 2025",
-    "instructor": "Deni Sumarna",
-    "course_thumbnail": "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1000&auto=format&fit=crop",
-    "certificate_image": "/assets/certificates/sertifikat-ai.jpg"
   }
 ]

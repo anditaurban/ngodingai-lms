@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 // Gunakan Relative Path
 import { useProfileLogic, UserData } from '../../hooks/useProfileLogic';
 
-// --- KOMPONEN UI REUSABLE (Agar Kode Rapi) ---
+// --- KOMPONEN UI REUSABLE ---
 
 const InputField = ({ label, icon, type = "text", value, onChange, placeholder, disabled = false, className = "" }: any) => (
   <div className={`space-y-1.5 ${className}`}>
@@ -35,7 +35,6 @@ const ReadOnlyField = ({ label, value }: any) => (
   </div>
 );
 
-// Komponen Info Row (View Mode)
 const InfoRow = ({ icon, label, value }: any) => (
   <div className="flex items-start gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl transition-colors border border-transparent hover:border-slate-100 dark:hover:border-slate-700">
     <div className="size-12 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center text-[#00BCD4] shrink-0 border border-slate-100 dark:border-slate-700 shadow-sm">
@@ -61,6 +60,19 @@ export default function GeneralTab() {
       setSearchQuery(user.region_name || '');
     }
   }, [user, isEditing]);
+
+  // DEBOUNCE ANTI-SPAM API
+  useEffect(() => {
+    if (!searchQuery || searchQuery.length < 3) return;
+    if (formData.region_name && searchQuery === formData.region_name) return;
+
+    const delayDebounceFn = setTimeout(() => {
+      searchRegion(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, formData.region_name]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +104,6 @@ export default function GeneralTab() {
       </div>
 
       {isEditing ? (
-        /* --- FORM EDIT MODE (MODERN LAYOUT) --- */
         <form onSubmit={handleSubmit} className="space-y-8">
            
            {/* GROUP 1: DATA DIRI */}
@@ -143,11 +154,10 @@ export default function GeneralTab() {
                       value={searchQuery} 
                       onChange={e => {
                         setSearchQuery(e.target.value);
-                        searchRegion(e.target.value);
                         setShowDropdown(true);
                       }}
                       onFocus={() => setShowDropdown(true)}
-                      placeholder="Ketik minimal 3 huruf (cth: Bojong Gede)..."
+                      placeholder="Ketik minimal 3 huruf (cth: Ciater)..."
                       className="w-full pl-12 pr-10 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:border-[#00BCD4] focus:ring-4 focus:ring-[#00BCD4]/10 outline-none transition-all font-semibold text-sm"
                     />
                     {isSearchingRegion && (
@@ -161,32 +171,65 @@ export default function GeneralTab() {
                       <div className="sticky top-0 bg-slate-50 dark:bg-slate-900 p-2 text-xs font-bold text-slate-500 border-b border-slate-200 dark:border-slate-700">
                         Hasil Pencarian:
                       </div>
-                      {regionOptions.map((region: any) => (
-                        <div 
-                          key={region.region_id}
-                          onClick={() => {
-                            setFormData({
-                              ...formData, 
-                              region_id: region.region_id,
-                              region_name: region.region_name,
-                              kelurahan: region.kelurahan,
-                              kecamatan: region.kecamatan,
-                              kota: region.kota,
-                              provinsi: region.provinsi,
-                              kode_pos: region.kode_pos
-                            });
-                            setSearchQuery(region.region_name);
-                            setShowDropdown(false);
-                          }}
-                          className="p-4 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 cursor-pointer border-b border-slate-100 dark:border-slate-700 last:border-0 group transition-colors"
-                        >
-                          <p className="font-bold text-slate-800 dark:text-white text-sm group-hover:text-[#00BCD4]">{region.kelurahan}, {region.kecamatan}</p>
-                          <p className="text-xs text-slate-500 mt-1 flex items-center gap-2">
-                             <span className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] font-mono">{region.kode_pos}</span>
-                             {region.kota}, {region.provinsi}
-                          </p>
-                        </div>
-                      ))}
+                      
+                      {regionOptions.map((region: any, index: number) => {
+                        // ==============================================================
+                        // ✨ LOGIKA SUPER PARSER (REGEX) ✨
+                        // ==============================================================
+                        const regionNameStr = region.region_name || "";
+                        
+                        // 1. Ekstrak 5 digit angka (Kode Pos) dari string menggunakan Regex
+                        const postalCodeMatch = regionNameStr.match(/\b\d{5}\b/);
+                        const extractedKodePos = postalCodeMatch ? postalCodeMatch[0] : "";
+
+                        // 2. Bersihkan string dari kode pos agar tidak menempel di provinsi
+                        let cleanRegionName = regionNameStr.replace(extractedKodePos, '').trim();
+                        // Bersihkan koma yang menggantung di akhir kalimat (misal "Banten, " jadi "Banten")
+                        cleanRegionName = cleanRegionName.replace(/,\s*$/, ""); 
+
+                        // 3. Pecah berdasarkan koma, dan filter array kosong
+                        const parts = cleanRegionName.split(',').map((s: string) => s.trim()).filter(Boolean);
+                        
+                        // 4. Set variabel dengan prioritas: Data asli Katib -> Hasil Belahan -> String Kosong
+                        const kelurahan = region.kelurahan || parts[0] || '';
+                        const kecamatan = region.kecamatan || parts[1] || '';
+                        const kota = region.kota || parts[2] || '';
+                        const provinsi = region.provinsi || parts[3] || '';
+                        const kode_pos = region.kode_pos || extractedKodePos;
+
+                        return (
+                          <div 
+                            key={region.region_id || index}
+                            onClick={() => {
+                              setFormData({
+                                ...formData, 
+                                region_id: region.region_id,
+                                region_name: region.region_name,
+                                kelurahan: kelurahan,
+                                kecamatan: kecamatan,
+                                kota: kota,
+                                provinsi: provinsi,
+                                kode_pos: kode_pos
+                              });
+                              setSearchQuery(region.region_name);
+                              setShowDropdown(false);
+                            }}
+                            className="p-4 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 cursor-pointer border-b border-slate-100 dark:border-slate-700 last:border-0 group transition-colors"
+                          >
+                            <p className="font-bold text-slate-800 dark:text-white text-sm group-hover:text-[#00BCD4]">
+                                {kelurahan}, {kecamatan}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+                               {kode_pos && (
+                                 <span className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] font-mono">
+                                     {kode_pos}
+                                 </span>
+                               )}
+                               {kota}, {provinsi}
+                            </p>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -225,7 +268,7 @@ export default function GeneralTab() {
 
         </form>
       ) : (
-        /* --- VIEW MODE (TAMPILAN DATA) --- */
+        /* --- VIEW MODE --- */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
            <div className="space-y-6">
               <h4 className="text-sm font-bold text-slate-400 border-b border-slate-200 dark:border-slate-700 pb-2 mb-4">DATA DIRI</h4>

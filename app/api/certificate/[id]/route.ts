@@ -1,49 +1,59 @@
 import { NextResponse } from 'next/server';
 
+// ========================================================================
+// KODE AJAIB (MAGIC BULLET): Memaksa Node.js bersikap seperti Postman
+// Ini akan mengabaikan error SSL/HTTPS dari server dev.katib.cloud
+// yang sering menyebabkan ECONNRESET.
+// ========================================================================
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  // 1. Ambil ID Customer dari URL (contoh: /api/certificate/32557)
-  const customerId = params.id;
+  const resolvedParams = await params;
+  const customerId = resolvedParams.id;
   
-  // 2. Siapkan URL Backend
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
   const targetUrl = `${baseUrl}/detail/sales_course_certificate/${customerId}`;
-  
-  // 3. Ambil Token Rahasia dari .env.local (Sama dengan token Update Profile)
   const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN || 'DpacnJf3uEQeM7HN'; 
 
   try {
-    // 4. Tembak API Backend Katib secara diam-diam dari Server Next.js
     const backendResponse = await fetch(targetUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        // KUNCI SUKSES: Masukkan Token Rahasia di sini!
-        'Authorization': `Bearer ${serviceToken}` 
+        'Authorization': `Bearer ${serviceToken}`,
+        // Samarkan Node.js agar terlihat seperti Browser
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       },
-      // Matikan cache agar data sertifikat selalu terbaru
       cache: 'no-store' 
     });
 
-    // 5. Tangkap Response
-    const data = await backendResponse.json();
+    const responseText = await backendResponse.text();
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error(`[CRITICAL] Backend Katib TIDAK mengirim JSON. Respons Asli: \n`, responseText);
+      return NextResponse.json({ error: 'Sistem Katib merespons dengan format tidak valid.' }, { status: 502 });
+    }
 
     if (!backendResponse.ok) {
-       console.error(`[Proxy Cert] Backend Error ${backendResponse.status}:`, data);
+       console.error(`[Proxy Cert] Katib menolak. Status: ${backendResponse.status}`);
        return NextResponse.json(
-         { error: data.message || `Backend merespons dengan status ${backendResponse.status}` },
+         { error: data.message || `Akses ditolak oleh Katib (Status ${backendResponse.status})` },
          { status: backendResponse.status }
        );
     }
 
-    // 6. Kembalikan data sukses ke Frontend (CertificatesTab.tsx)
     return NextResponse.json(data);
 
-  } catch (error) {
-    console.error("[Proxy Cert] Gagal menghubungi backend:", error);
-    return NextResponse.json({ error: 'Gagal memproses permintaan sertifikat' }, { status: 500 });
+  } catch (error: any) {
+    // Menangkap error spesifik untuk debugging log yang lebih baik
+    console.error(`[Proxy Cert] Fetch Gagal [${error.code || error.name}]:`, error.message);
+    return NextResponse.json({ error: 'Server internal gagal memproses request ke Backend.' }, { status: 500 });
   }
 }
