@@ -25,6 +25,15 @@ export interface UserData {
   [key: string]: any;
 }
 
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 export const useProfileLogic = () => {
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
@@ -34,34 +43,36 @@ export const useProfileLogic = () => {
   const [isSearchingRegion, setIsSearchingRegion] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
-  // ✨ FUNGSI SWR (STALE-WHILE-REVALIDATE) ✨
-  // Menarik data paling segar dari Katib secara diam-diam (Background Sync)
   const syncProfileWithServer = async (customerId: string | number) => {
     try {
       const response = await fetch(`/api/profile/get-detail?id=${customerId}`);
       if (!response.ok) return;
 
       const result = await response.json();
-      const serverData = result.detail; // Mengambil object "detail" dari Katib
-      
-      if (serverData) {
-        const currentSessionString = localStorage.getItem('user_profile');
-        const currentSession = currentSessionString ? JSON.parse(currentSessionString) : {};
+      const serverData = result.detail; 
+      if (!serverData) return;
 
-        // Timpa data lokal dengan data fresh Katib
-        // Termasuk field "photo" yang sudah berisi URL lengkap!
-        const updatedSession = {
-          ...currentSession,
-          ...serverData,
-          name: serverData.nama || currentSession.name,
-          last_name: serverData.nama_belakang || currentSession.last_name,
-        };
+      const currentSessionString = localStorage.getItem('user_profile');
+      const currentSession = currentSessionString ? JSON.parse(currentSessionString) : {};
 
-        localStorage.setItem('user_profile', JSON.stringify(updatedSession));
-        setUser(updatedSession as UserData);
-      }
+      const localPhoto = currentSession.photo || '';
+      const isLocalBase64 = localPhoto.startsWith('data:image');
+
+      // ✨ FIX: Jangan biarkan GET API Katib yang lambat menimpa Base64 segar kita!
+      const finalSyncPhoto = isLocalBase64 ? localPhoto : (serverData.photo || localPhoto);
+
+      const updatedSession = {
+        ...currentSession,
+        ...serverData,
+        photo: finalSyncPhoto, 
+        name: serverData.nama || currentSession.name,
+        last_name: serverData.nama_belakang || currentSession.last_name,
+      };
+
+      localStorage.setItem('user_profile', JSON.stringify(updatedSession));
+      setUser(updatedSession as UserData);
     } catch (error) {
-      console.error("Auto-sync background gagal:", error);
+       // silent
     }
   };
 
@@ -70,12 +81,11 @@ export const useProfileLogic = () => {
       try {
         const storedProfile = localStorage.getItem('user_profile');
         if (storedProfile) {
-          const parsedData = JSON.parse(storedProfile);
-          
-          // 1. Tampilkan UI seketika pakai data lokal (Loading = 0 detik)
+          let parsedData = JSON.parse(storedProfile);
+          if (parsedData.photo && parsedData.photo.startsWith('blob:')) {
+              parsedData.photo = null; 
+          }
           setUser(parsedData); 
-          
-          // 2. Tarik update terbaru dari Katib di background
           if (parsedData.customer_id) {
              syncProfileWithServer(parsedData.customer_id);
           }
@@ -97,7 +107,7 @@ export const useProfileLogic = () => {
     router.push('/login');
   };
 
-  const searchRegion = async (keyword: string) => {
+  const searchRegion = async (keyword: string) => { 
     setIsSearchingRegion(true);
     try {
       const response = await fetch(`/api/region?keyword=${encodeURIComponent(keyword)}`);
@@ -114,7 +124,7 @@ export const useProfileLogic = () => {
     }
   };
 
-  const updateProfile = async (formData: Partial<UserData>) => {
+  const updateProfile = async (formData: Partial<UserData>) => { 
     try {
       const payloadToBackend = {
         customer_id: formData.customer_id,
@@ -137,10 +147,7 @@ export const useProfileLogic = () => {
       });
 
       if (!response.ok) throw new Error("Gagal menyimpan ke Katib");
-
-      // Sinkronisasi ulang data setelah berhasil update teks
       if (formData.customer_id) await syncProfileWithServer(formData.customer_id);
-      
       setIsEditing(false);
       alert("Hebat! Profile Anda berhasil diupdate.");
     } catch (error: any) {
@@ -157,8 +164,19 @@ export const useProfileLogic = () => {
     setIsUploadingPhoto(true);
 
     try {
+      // 1. Ubah ke Base64 (Super Aman) dan simpan seketika di LocalStorage agar sinkron
+      const base64LocalImage = await fileToBase64(file);
+      
+      const sessionStr = localStorage.getItem('user_profile');
+      let currentSession = sessionStr ? JSON.parse(sessionStr) : {};
+      
+      const optimisticSession = { ...currentSession, photo: base64LocalImage };
+      localStorage.setItem('user_profile', JSON.stringify(optimisticSession));
+      setUser(optimisticSession as UserData);
+
+      // 2. Kirim ke Katib
       const formData = new FormData();
-      formData.append('file', file); // Pasti sukses karena key 'file' sudah dikonfirmasi Head Team
+      formData.append('file', file); 
 
       const response = await fetch(`/api/profile/upload-photo?id=${user.customer_id}`, {
         method: 'POST',
@@ -166,31 +184,22 @@ export const useProfileLogic = () => {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Gagal mengunggah foto.");
+        throw new Error("Gagal mengunggah foto ke server.");
       }
 
-      // ✨ OPTIMISTIC UI: LANGSUNG UBAH FOTO DI LAYAR ✨
-      const instantLocalUrl = URL.createObjectURL(file);
-      const currentSessionString = localStorage.getItem('user_profile');
-      let currentSession = currentSessionString ? JSON.parse(currentSessionString) : {};
-      
-      const updatedSession = { ...currentSession, photo: instantLocalUrl };
-      localStorage.setItem('user_profile', JSON.stringify(updatedSession));
-      setUser(updatedSession as UserData);
-      
-      alert("Hebat! Foto profil berhasil diperbarui.");
+      alert("Foto profil berhasil diperbarui.");
 
-      // 🔥 AUTO-SYNC: 2 detik setelah upload, tarik URL asli dari Katib secara diam-diam
-      setTimeout(() => {
-        if (user && user.customer_id) {
-          syncProfileWithServer(user.customer_id);
-        }
-      }, 2000);
+      // ✨ FIX: KITA TIDAK MEMANGGIL `syncProfileWithServer` DI SINI! ✨
+      // Memanggil GET API Katib sesaat setelah upload adalah penyebab foto Anda
+      // kembali menjadi foto lama (karena database Katib lambat update). 
+      // Kita percayakan 100% pada Base64 lokal kita untuk sesi saat ini!
 
     } catch (error: any) {
       console.error("Upload Error:", error);
       alert(error.message || "Terjadi kesalahan saat mengunggah.");
+      
+      // Kembalikan ke foto awal jika upload error
+      if (user && user.customer_id) syncProfileWithServer(user.customer_id);
     } finally {
       setIsUploadingPhoto(false);
     }
