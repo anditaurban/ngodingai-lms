@@ -18,31 +18,29 @@ export function useCertificate() {
       try {
         const storedProfile = localStorage.getItem('user_profile');
         if (!storedProfile) {
-            throw new Error("Sesi pengguna tidak ditemukan. Silakan login kembali.");
+          throw new Error("Sesi pengguna tidak ditemukan. Silakan login kembali.");
         }
-        
-        // --- PRODUCTION MODE: BACA ID DINAMIS DARI USER YANG SEDANG LOGIN ---
+
         const { customer_id } = JSON.parse(storedProfile);
 
-        // Menembak ke Proxy Lokal yang sudah kita buat sebelumnya
+        // Menembak ke Proxy Lokal
         const response = await fetch(`/api/certificate/${customer_id}`);
         const result = await response.json();
 
-        // Tangani jika respons dari server adalah error (misal: 401, 404, 500)
         if (!response.ok) {
-           throw new Error(result.error || `Error API Katib: ${response.status}`);
+          throw new Error(result.error || `Error API Katib: ${response.status}`);
         }
-        
-        // Pastikan struktur data dari Katib benar (memiliki property 'detail')
-        if (result.detail) {
-           setData(result.detail);
+
+        // ✨ PERBAIKAN STRUKTUR DATA: Mengambil dari result.detail.data ✨
+        if (result.detail && result.detail.data) {
+          setData(result.detail.data);
+        } else if (result.detail) {
+          setData(result.detail); // Jaga-jaga jika Katib merubah struktur di masa depan
         } else {
-           throw new Error("Format data dari API Katib tidak sesuai.");
+          throw new Error("Format data dari API Katib tidak sesuai.");
         }
 
       } catch (err: any) {
-        // Jika terjadi error (koneksi mati, user belum lulus, sesi hilang, dll),
-        // catat di console dan set state error agar UI beralih ke Mode Preview.
         console.warn("Info Sertifikat:", err.message);
         setError(err.message);
       } finally {

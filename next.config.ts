@@ -1,11 +1,11 @@
 import type { NextConfig } from "next";
 
-// 1. Definisikan Kebijakan Keamanan (Daftar Tamu VIP)
+// ✨ 1. UPDATE DAFTAR VIP (TAMBAH DEV.KATIB.CLOUD DI IMG-SRC)
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://ui-avatars.com https://images.unsplash.com https://upload.wikimedia.org https://lh3.googleusercontent.com;
+    img-src 'self' blob: data: https://dev.katib.cloud https://ui-avatars.com https://images.unsplash.com https://upload.wikimedia.org https://lh3.googleusercontent.com;
     font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
@@ -17,12 +17,8 @@ const cspHeader = `
 `;
 
 const nextConfig: NextConfig = {
-  // Matikan strict mode agar tidak render 2x saat dev (optional)
+  // Matikan strict mode agar tidak render 2x saat dev
   reactStrictMode: false,
-
-  // Solusi Warning: Pindahkan 'allowedDevOrigins' ke root / level teratas next.config
-  // @ts-ignore - Abaikan error TS sementara karena ini fitur baru Next.js
-  allowedDevOrigins: ['192.168.0.100', '192.168.1.10', 'localhost', '127.0.0.1'],
 
   // Izinkan akses dari IP lokal (agar bisa dibuka di HP saat dev)
   experimental: {
@@ -34,7 +30,8 @@ const nextConfig: NextConfig = {
   // Konfigurasi Image Next.js
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "**" }, // Terima semua gambar (Dev Mode)
+      { protocol: "https", hostname: "dev.katib.cloud" }, // ✨ Daftarkan Katib secara eksplisit
+      { protocol: "https", hostname: "**" }, // Terima semua gambar lainnya
     ],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -48,9 +45,8 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: cspHeader.replace(/\n/g, ''), // Minify string CSP
+            value: cspHeader.replace(/\n/g, ' ').trim(), // Lebih aman pakai spasi untuk replace newline
           },
-          // Header keamanan tambahan standar industri
           {
             key: 'X-Frame-Options',
             value: 'DENY',

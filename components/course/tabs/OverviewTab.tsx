@@ -257,7 +257,7 @@ export default function OverviewTab({ data }: OverviewTabProps) {
                   alt={instructor.name}
                   fill
                   className="rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-md"
-                  unoptimized
+                  unoptimized={true}
                 />
                 <div className="absolute bottom-0 right-0 size-4 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full" title="Online"></div>
               </div>

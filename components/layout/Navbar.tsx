@@ -29,6 +29,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-contain"
+                  unoptimized={true}
                />
             </div>
             <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white hidden sm:block">
