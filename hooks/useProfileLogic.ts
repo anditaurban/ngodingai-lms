@@ -22,6 +22,11 @@ export interface UserData {
   role?: string;
   avatar?: string;
   photo?: string; 
+  kelurahan?: string;
+  kecamatan?: string;
+  kota?: string;
+  provinsi?: string;
+  kode_pos?: string;
   [key: string]: any;
 }
 
@@ -32,6 +37,13 @@ const fileToBase64 = (file: File): Promise<string> => {
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = (error) => reject(error);
   });
+};
+
+// ✨ HELPER: Pemancar Sinyal Global
+const broadcastProfileUpdate = () => {
+  if (typeof window !== 'undefined') {
+     window.dispatchEvent(new Event('ngodingai_profile_updated'));
+  }
 };
 
 export const useProfileLogic = () => {
@@ -45,7 +57,7 @@ export const useProfileLogic = () => {
 
   const syncProfileWithServer = async (customerId: string | number) => {
     try {
-      const response = await fetch(`/api/profile/get-detail?id=${customerId}`);
+      const response = await fetch(`/api/profile/get-detail?id=${customerId}&t=${Date.now()}`);
       if (!response.ok) return;
 
       const result = await response.json();
@@ -57,8 +69,6 @@ export const useProfileLogic = () => {
 
       const localPhoto = currentSession.photo || '';
       const isLocalBase64 = localPhoto.startsWith('data:image');
-
-      // ✨ FIX: Jangan biarkan GET API Katib yang lambat menimpa Base64 segar kita!
       const finalSyncPhoto = isLocalBase64 ? localPhoto : (serverData.photo || localPhoto);
 
       const updatedSession = {
@@ -71,6 +81,9 @@ export const useProfileLogic = () => {
 
       localStorage.setItem('user_profile', JSON.stringify(updatedSession));
       setUser(updatedSession as UserData);
+      
+      // ✨ Siarkan ke seluruh aplikasi bahwa sinkronisasi selesai!
+      broadcastProfileUpdate();
     } catch (error) {
        // silent
     }
@@ -99,6 +112,16 @@ export const useProfileLogic = () => {
       }
     };
     checkSession();
+
+    // ✨ TELINGA GLOBAL ✨
+    // Mendengarkan sinyal perubahan profil dari komponen mana pun!
+    const handleGlobalUpdate = () => {
+       const freshData = localStorage.getItem('user_profile');
+       if (freshData) setUser(JSON.parse(freshData));
+    };
+
+    window.addEventListener('ngodingai_profile_updated', handleGlobalUpdate);
+    return () => window.removeEventListener('ngodingai_profile_updated', handleGlobalUpdate);
   }, [router]);
 
   const handleLogout = () => {
@@ -126,6 +149,24 @@ export const useProfileLogic = () => {
 
   const updateProfile = async (formData: Partial<UserData>) => { 
     try {
+      const currentSessionString = localStorage.getItem('user_profile');
+      let currentSession = currentSessionString ? JSON.parse(currentSessionString) : {};
+      
+      const optimisticSession = { 
+          ...currentSession, 
+          ...formData, 
+          nama: formData.name || formData.nama,
+          nama_belakang: formData.last_name || formData.nama_belakang,
+          tanggal_lahir: formData.birth || formData.tanggal_lahir,
+          alamat: formData.address || formData.alamat,
+      };
+
+      localStorage.setItem('user_profile', JSON.stringify(optimisticSession));
+      setUser(optimisticSession as UserData); 
+      
+      // ✨ Siarkan ke seluruh aplikasi bahwa form baru saja di-save!
+      broadcastProfileUpdate();
+
       const payloadToBackend = {
         customer_id: formData.customer_id,
         owner_id: formData.owner_id || 4409,
@@ -147,11 +188,17 @@ export const useProfileLogic = () => {
       });
 
       if (!response.ok) throw new Error("Gagal menyimpan ke Katib");
-      if (formData.customer_id) await syncProfileWithServer(formData.customer_id);
+      
       setIsEditing(false);
       alert("Hebat! Profile Anda berhasil diupdate.");
+
+      setTimeout(() => {
+          if (formData.customer_id) syncProfileWithServer(formData.customer_id);
+      }, 2000);
+
     } catch (error: any) {
       alert(error.message || "Terjadi kesalahan saat menyimpan data.");
+      if (user && user.customer_id) syncProfileWithServer(user.customer_id);
     }
   };
 
@@ -164,9 +211,7 @@ export const useProfileLogic = () => {
     setIsUploadingPhoto(true);
 
     try {
-      // 1. Ubah ke Base64 (Super Aman) dan simpan seketika di LocalStorage agar sinkron
       const base64LocalImage = await fileToBase64(file);
-      
       const sessionStr = localStorage.getItem('user_profile');
       let currentSession = sessionStr ? JSON.parse(sessionStr) : {};
       
@@ -174,7 +219,9 @@ export const useProfileLogic = () => {
       localStorage.setItem('user_profile', JSON.stringify(optimisticSession));
       setUser(optimisticSession as UserData);
 
-      // 2. Kirim ke Katib
+      // ✨ Siarkan ke Sidebar dan Header bahwa ada foto baru!
+      broadcastProfileUpdate();
+
       const formData = new FormData();
       formData.append('file', file); 
 
@@ -183,22 +230,13 @@ export const useProfileLogic = () => {
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error("Gagal mengunggah foto ke server.");
-      }
+      if (!response.ok) throw new Error("Gagal mengunggah foto ke server.");
 
       alert("Foto profil berhasil diperbarui.");
-
-      // ✨ FIX: KITA TIDAK MEMANGGIL `syncProfileWithServer` DI SINI! ✨
-      // Memanggil GET API Katib sesaat setelah upload adalah penyebab foto Anda
-      // kembali menjadi foto lama (karena database Katib lambat update). 
-      // Kita percayakan 100% pada Base64 lokal kita untuk sesi saat ini!
 
     } catch (error: any) {
       console.error("Upload Error:", error);
       alert(error.message || "Terjadi kesalahan saat mengunggah.");
-      
-      // Kembalikan ke foto awal jika upload error
       if (user && user.customer_id) syncProfileWithServer(user.customer_id);
     } finally {
       setIsUploadingPhoto(false);

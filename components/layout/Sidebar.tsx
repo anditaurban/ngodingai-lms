@@ -20,23 +20,48 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     avatar: 'https://ui-avatars.com/api/?name=User&background=random'
   });
 
+  // ✨ FUNGSI SINKRONISASI REAL-TIME ✨
+  const loadProfile = () => {
+    try {
+      const storedData = localStorage.getItem('user_profile');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        
+        // 1. Ekstrak Nama Lengkap (Sama dengan logika di Profile Page)
+        const fullName = `${parsedData.nama || parsedData.name || ''} ${parsedData.nama_belakang || parsedData.last_name || ''}`.trim() || 'Student';
+        
+        // 2. Ekstrak dan Amankan URL Foto (Bypass Proxy)
+        let finalPhotoUrl = parsedData.photo || parsedData.avatar || "";
+        if (finalPhotoUrl.startsWith('http') && finalPhotoUrl.includes('dev.katib.cloud')) {
+            finalPhotoUrl = `/api/proxy-image?url=${encodeURIComponent(finalPhotoUrl)}`;
+        }
+
+        const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=00BCD4&color=fff&bold=true`;
+
+        setUser({
+          name: fullName,
+          role: parsedData.role || 'Student PRO', // Sesuaikan jika ada role dari API
+          avatar: finalPhotoUrl || defaultAvatar
+        });
+      }
+    } catch (e) {
+      console.error("Gagal load user:", e);
+    }
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      try {
-        const storedData = localStorage.getItem('user_profile');
-        if (storedData) {
-          const parsedData = JSON.parse(storedData);
-          const userName = parsedData.name || 'Student';
-          
-          setUser({
-            name: userName,
-            role: 'Student PRO',
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=00BCD4&color=fff&bold=true`
-          });
-        }
-      } catch (e) {
-        console.error("Gagal load user:", e);
-      }
+      // Panggil saat pertama kali load
+      loadProfile();
+
+      // ✨ TELINGA GLOBAL ✨
+      // Dengarkan sinyal dari Hook Profile setiap kali ada Save/Upload!
+      window.addEventListener('ngodingai_profile_updated', loadProfile);
+      
+      // Bersihkan pendengar saat komponen mati
+      return () => {
+        window.removeEventListener('ngodingai_profile_updated', loadProfile);
+      };
     }
   }, []);
 
@@ -129,11 +154,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 className="flex items-center gap-3 flex-1 overflow-hidden group"
              >
                 <div className="relative shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={user.avatar} 
                     className="size-9 rounded-full border border-slate-600 object-cover bg-slate-700" 
                     alt="Profile" 
+                    // ✨ Fallback jika proxy error
+                    onError={(e) => {
+                       const target = e.target as HTMLImageElement;
+                       target.onerror = null;
+                       target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=00BCD4&color=fff&bold=true`;
+                    }}
                   />
                   <div className="absolute -bottom-0.5 -right-0.5 bg-teal-400 size-2.5 rounded-full border-2 border-[#1b2636]"></div>
                 </div>
