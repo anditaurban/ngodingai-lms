@@ -160,7 +160,7 @@ export default function ProfilePage() {
 
          <div className="bg-white dark:bg-slate-800 rounded-4xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-visible relative">
             
-            <div className="h-40 md:h-48 bg-gradient-to-r from-[#00BCD4] to-blue-600 relative overflow-hidden rounded-t-4xl">
+            <div className="h-40 md:h-48 bg-linear-to-r from-[#00BCD4] to-blue-600 relative overflow-hidden rounded-t-4xl">
                <div className="absolute inset-0 bg-black/10"></div>
                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle, #fff 2px, transparent 2.5px)", backgroundSize: "24px 24px" }}></div>
             </div>
