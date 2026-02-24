@@ -1,14 +1,15 @@
 import React from 'react';
-import DashboardShell from '@/components/layout/DashboardShell'; 
+// Pastikan nama file di path ini juga sudah di-rename menjadi AppLayout.tsx
+import AppLayout from '@/components/layout/AppLayout'; 
 
-export default function DashboardLayout({
+export default function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <DashboardShell>
+    <AppLayout>
       {children}
-    </DashboardShell>
+    </AppLayout>
   );
 }

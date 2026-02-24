@@ -10,7 +10,12 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "Inovasia Digital Academy",
-  description: "LMS Dashboard Platform",
+  description: "Platform pembelajaran digital",
+  icons: {
+    icon: "/icon-inovasia2.png", 
+    shortcut: "/icon-inovasia2.png",
+    apple: "/icon-inovasia2.png",
+  },
 };
 
 export default function RootLayout({

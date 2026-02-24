@@ -83,7 +83,7 @@ export default function AssignmentsPage() {
                         <span className="material-symbols-outlined text-[#00BCD4] text-[32px]">assignment</span>
                         Manajemen Tugas
                     </h1>
-                    <p className="text-slate-500 text-sm mt-1">Kelola dan pantau seluruh pengumpulan tugas *course* Anda di sini.</p>
+                    <p className="text-slate-500 text-sm mt-1">Kelola dan pantau seluruh pengumpulan tugas course Anda di sini.</p>
                 </div>
                 <button 
                     onClick={handleOpenAdd}
@@ -114,7 +114,7 @@ export default function AssignmentsPage() {
                         )}
                     </div>
                     <div className="text-sm font-bold text-slate-500">
-                        Total: <span className="text-slate-900 dark:text-white px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded-md">{totalRecords}</span> Tugas
+                        Total: <span className="text-slate-900 dark:text-white px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded-md">{totalRecords || 0}</span> Tugas
                     </div>
                 </div>
 
@@ -124,11 +124,12 @@ export default function AssignmentsPage() {
                 <div className="overflow-x-auto min-h-100">
                     <table className="w-full text-left border-collapse">
                         <thead>
+                            {/* ✨ UPDATE: Menambahkan border-r untuk pemisah vertikal antar kolom */}
                             <tr className="bg-slate-100 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">
-                                <th className="p-5 font-bold border-b border-slate-200 dark:border-slate-700">Tugas & Proyek</th>
-                                <th className="p-5 font-bold border-b border-slate-200 dark:border-slate-700">Tautan & Deskripsi</th>
-                                <th className="p-5 font-bold border-b border-slate-200 dark:border-slate-700 text-center">Skor Evaluasi</th>
-                                <th className="p-5 font-bold border-b border-slate-200 dark:border-slate-700">Status & Komentar</th>
+                                <th className="p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700">Tugas & Proyek</th>
+                                <th className="p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700">Tautan & Deskripsi</th>
+                                <th className="p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700 text-center">Skor Evaluasi</th>
+                                <th className="p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700">Status & Komentar</th>
                                 <th className="p-5 font-bold border-b border-slate-200 dark:border-slate-700 text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -143,7 +144,7 @@ export default function AssignmentsPage() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : assignments.length === 0 ? (
+                            ) : (!assignments || assignments.length === 0) ? (
                                 <tr>
                                     <td colSpan={5} className="p-16 text-center">
                                         <div className="size-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
@@ -155,9 +156,10 @@ export default function AssignmentsPage() {
                                 </tr>
                             ) : (
                                 assignments.map((item) => (
-                                    <tr key={item.assignment_id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                    <tr key={item.assignment_id || Math.random()} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                                         
-                                        <td className="p-5 align-top">
+                                        {/* ✨ UPDATE: Menambahkan border-r di setiap td */}
+                                        <td className="p-5 align-top border-r border-slate-200 dark:border-slate-700/50">
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded w-fit uppercase">
                                                     {item.course || 'Project'}
@@ -172,7 +174,7 @@ export default function AssignmentsPage() {
                                             </div>
                                         </td>
 
-                                        <td className="p-5 align-top max-w-62.5">
+                                        <td className="p-5 align-top max-w-62.5 border-r border-slate-200 dark:border-slate-700/50">
                                             <div className="flex flex-col gap-2">
                                                 <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2" title={item.description}>
                                                     {item.description}
@@ -192,7 +194,7 @@ export default function AssignmentsPage() {
                                             </div>
                                         </td>
 
-                                        <td className="p-5 align-top text-center">
+                                        <td className="p-5 align-top text-center border-r border-slate-200 dark:border-slate-700/50">
                                             {item.reviewed === 'yes' ? (
                                                 <div className="inline-flex flex-col items-center justify-center size-14 rounded-2xl bg-linear-to-br from-amber-400 to-orange-500 shadow-lg shadow-orange-500/20 text-white border-2 border-white dark:border-slate-800">
                                                     <span className="text-xl font-black leading-none">{item.evaluation_score}</span>
@@ -203,7 +205,7 @@ export default function AssignmentsPage() {
                                             )}
                                         </td>
 
-                                        <td className="p-5 align-top max-w-50">
+                                        <td className="p-5 align-top max-w-50 border-r border-slate-200 dark:border-slate-700/50">
                                             <div className="flex flex-col items-start gap-2">
                                                 {renderStatusBadge(item.reviewed)}
                                                 {item.comment && (
@@ -219,9 +221,9 @@ export default function AssignmentsPage() {
                                             </div>
                                         </td>
 
-                                        {/* AKSI EDIT & DELETE */}
+                                        {/* ✨ UPDATE: Tombol Aksi dibuat selalu muncul (opacity-100) */}
                                         <td className="p-5 align-top text-center">
-                                            <div className="flex items-center justify-center gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-center gap-2">
                                                 <button 
                                                     onClick={() => handleOpenEdit(item)}
                                                     className="size-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-[#00BCD4] hover:bg-cyan-50 dark:hover:bg-cyan-900/30 flex items-center justify-center transition-colors" title="Edit Tugas"
@@ -271,14 +273,11 @@ export default function AssignmentsPage() {
             </div>
 
             {/* ==============================================================
-                BAGIAN 3: MODAL POP-UP (ADD & EDIT)
+                BAGIAN 3: MODAL POP-UP (ADD & EDIT) ... (TIDAK ADA PERUBAHAN)
             ============================================================== */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-100 flex items-center justify-center px-4">
-                    {/* Backdrop */}
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-                    
-                    {/* Modal Content */}
                     <div className="relative w-full max-w-2xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700">
                             <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
@@ -353,7 +352,7 @@ export default function AssignmentsPage() {
             )}
 
             {/* ==============================================================
-                BAGIAN 4: MODAL KONFIRMASI DELETE
+                BAGIAN 4: MODAL KONFIRMASI DELETE ... (TIDAK ADA PERUBAHAN)
             ============================================================== */}
             {deleteId !== null && (
                 <div className="fixed inset-0 z-110 flex items-center justify-center px-4">

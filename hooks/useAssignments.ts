@@ -45,9 +45,10 @@ export const useAssignments = () => {
 
             const result = await res.json();
             
-            // Filter Soft Delete (Jika API Katib masih mengembalikan data dengan visibilitas 'no')
-            // Asumsi: jika ada field 'visibility' atau sejenisnya, kita filter.
+            // ✨ PERBAIKAN: Membaca array dari dalam tableData
             const rawData = result.tableData || [];
+            
+            // Filter Soft Delete (Jika API Katib mengembalikan data dengan visibilitas 'no')
             const activeData = rawData.filter((item: any) => item.visibility !== 'no');
 
             setAssignments(activeData);
@@ -66,17 +67,27 @@ export const useAssignments = () => {
 
     // Initial Load & Pagination
     useEffect(() => {
-        if (!searchQuery) fetchAssignments(currentPage, "");
-    }, [currentPage, fetchAssignments]);
+        // Jika pencarian kosong, langsung ambil data berdasarkan halaman
+        if (searchQuery === "") {
+            fetchAssignments(currentPage, "");
+        }
+    }, [currentPage, fetchAssignments, searchQuery]);
 
     // Search Debounce
     useEffect(() => {
-        if (searchQuery === "") return;
+        // ✨ LOGIKA BARU: Jika user menghapus teks sampai kosong
+        if (searchQuery === "") {
+            setIsSearching(false); // 1. Matikan spinner nyangkut
+            setCurrentPage(1);     // 2. Reset ke halaman 1
+            return;                // 3. Batalkan debounce (biar useEffect ke-1 yang ambil data)
+        }
+
         setIsSearching(true);
         const delayDebounceFn = setTimeout(() => {
             setCurrentPage(1); 
             fetchAssignments(1, searchQuery);
         }, 500); 
+
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery, fetchAssignments]);
 
@@ -136,11 +147,11 @@ export const useAssignments = () => {
         try {
             const { owner_id, customer_id } = getAuthData();
             
-            // SOFT DELETE: Sesuai instruksi, kita update data dengan mengubah visibilitas
+            // SOFT DELETE: Update data dengan mengubah visibilitas
             const payload = {
                 owner_id,
                 customer_id,
-                visibility: 'no' // Keyword Soft Delete
+                visibility: 'no'
             };
 
             const res = await fetch(`/api/assignments/crud?id=${assignmentId}`, {

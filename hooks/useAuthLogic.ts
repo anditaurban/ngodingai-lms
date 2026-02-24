@@ -122,7 +122,7 @@ export const useAuthLogic = () => {
         Cookies.set('token', 'session_active', { expires: 1, path: '/' });
       }
       
-      router.push('/dashboard');
+      router.push('/my-class');
 
     } catch (error: any) {
       console.error('Error Verify OTP:', error);
