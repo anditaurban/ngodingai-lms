@@ -5,28 +5,24 @@ import Cookies from 'js-cookie';
 export interface UserData {
   customer_id: number | string;
   owner_id?: number | string;
-  name?: string;
-  last_name?: string;
-  email?: string;
-  phone?: string;
-  birth?: string;
-  address?: string;
-  region_id?: number;
-  region_name?: string;
   nama?: string;
   nama_belakang?: string;
+  email?: string;
+  phone?: string;
   tanggal_lahir?: string;
   alamat?: string;
+  region_id?: number;
+  region_name?: string;
   nik?: string | number | null;
   kategori_id?: number | null;
   role?: string;
-  avatar?: string;
   photo?: string; 
   kelurahan?: string;
   kecamatan?: string;
   kota?: string;
   provinsi?: string;
   kode_pos?: string;
+  name?: string; 
   [key: string]: any;
 }
 
@@ -39,85 +35,128 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-// ✨ HELPER: Pemancar Sinyal Global
-const broadcastProfileUpdate = () => {
+const broadcastProfileUpdate = (fullDataPayload?: any) => {
   if (typeof window !== 'undefined') {
-     window.dispatchEvent(new Event('ngodingai_profile_updated'));
+     window.dispatchEvent(new CustomEvent('ngodingai_profile_updated', { detail: fullDataPayload }));
   }
 };
 
 export const useProfileLogic = () => {
   const router = useRouter();
+  
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  
   const [isEditing, setIsEditing] = useState(false);
   const [regionOptions, setRegionOptions] = useState<any[]>([]);
   const [isSearchingRegion, setIsSearchingRegion] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
-  const syncProfileWithServer = async (customerId: string | number) => {
+  const syncProfileWithServer = async (customerId: string | number, fallbackData?: any) => {
     try {
       const response = await fetch(`/api/profile/get-detail?id=${customerId}&t=${Date.now()}`);
-      if (!response.ok) return;
-
       const result = await response.json();
       const serverData = result.detail; 
-      if (!serverData) return;
-
+      
       const currentSessionString = localStorage.getItem('user_profile');
       const currentSession = currentSessionString ? JSON.parse(currentSessionString) : {};
 
-      const localPhoto = currentSession.photo || '';
-      const isLocalBase64 = localPhoto.startsWith('data:image');
-      const finalSyncPhoto = isLocalBase64 ? localPhoto : (serverData.photo || localPhoto);
+      // Jika API Sukses dan menemukan user (minimal ada customer_id atau nama dari Katib)
+      if (serverData && (serverData.nama || serverData.customer_id)) {
+         const localPhoto = currentSession.photo || '';
+         const isLocalBase64 = localPhoto.startsWith('data:image');
+         const finalSyncPhoto = isLocalBase64 ? localPhoto : (serverData.photo || localPhoto);
 
-      const updatedSession = {
-        ...currentSession,
-        ...serverData,
-        photo: finalSyncPhoto, 
-        name: serverData.nama || currentSession.name,
-        last_name: serverData.nama_belakang || currentSession.last_name,
-      };
+         // ✨ JARING PENGAMAN: Jika Katib mengembalikan phone/email kosong, sedot dari memori OTP ✨
+         const finalUserData = { 
+             ...serverData, 
+             photo: finalSyncPhoto,
+             phone: serverData.phone || fallbackData?.phone || currentSession.phone || '',
+             email: serverData.email || fallbackData?.email || currentSession.email || ''
+         };
+         
+         setUser(finalUserData as UserData);
 
-      localStorage.setItem('user_profile', JSON.stringify(updatedSession));
-      setUser(updatedSession as UserData);
-      
-      // ✨ Siarkan ke seluruh aplikasi bahwa sinkronisasi selesai!
-      broadcastProfileUpdate();
+         const combinedName = `${serverData.nama || ''} ${serverData.nama_belakang || ''}`.trim();
+         const cleanSidebarSession = {
+            token: currentSession.token, 
+            customer_id: serverData.customer_id,
+            name: combinedName || currentSession.name, 
+            photo: finalSyncPhoto,
+         };
+         
+         localStorage.setItem('user_profile', JSON.stringify(cleanSidebarSession));
+         broadcastProfileUpdate(finalUserData);
+         
+      } 
+      // Jika API 404 (Belum didaftarkan ke Database Katib)
+      else {
+         console.warn("API Get Detail mengembalikan null/404:", result.message);
+         
+         if (fallbackData) {
+            let namaDepan = fallbackData.nama || fallbackData.name || '';
+            let namaBelakang = fallbackData.nama_belakang || fallbackData.last_name || '';
+
+            if (!fallbackData.nama && fallbackData.name) {
+                const nameParts = fallbackData.name.trim().split(' ');
+                namaDepan = nameParts[0] || '';
+                namaBelakang = nameParts.slice(1).join(' ') || '';
+            }
+            
+            // ✨ PAKSA EXTRACT NOMOR HP DARI SESI OTP ✨
+            const convertedFallback = {
+                ...fallbackData,
+                nama: namaDepan,
+                nama_belakang: namaBelakang,
+                phone: fallbackData.phone || currentSession.phone || '', // Nomor HP Wajib Tampil!
+                email: fallbackData.email || currentSession.email || '',
+                tanggal_lahir: fallbackData.tanggal_lahir || fallbackData.birth || '',
+                alamat: fallbackData.alamat || fallbackData.address || '',
+                photo: fallbackData.photo || currentSession.photo || ''
+            };
+            
+            setUser(convertedFallback as UserData);
+            broadcastProfileUpdate(convertedFallback);
+         } else {
+             handleLogout();
+         }
+      }
     } catch (error) {
-       // silent
+       console.error("Gagal sinkronisasi:", error);
+    } finally {
+       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const checkSession = () => {
+    const initProfile = () => {
       try {
         const storedProfile = localStorage.getItem('user_profile');
         if (storedProfile) {
-          let parsedData = JSON.parse(storedProfile);
-          if (parsedData.photo && parsedData.photo.startsWith('blob:')) {
-              parsedData.photo = null; 
-          }
-          setUser(parsedData); 
+          const parsedData = JSON.parse(storedProfile);
           if (parsedData.customer_id) {
-             syncProfileWithServer(parsedData.customer_id);
+             syncProfileWithServer(parsedData.customer_id, parsedData);
+          } else {
+             router.push('/login');
           }
         } else {
           router.push('/login');
         }
       } catch (error) {
         router.push('/login');
-      } finally {
-        setLoading(false);
       }
     };
-    checkSession();
+    initProfile();
 
-    // ✨ TELINGA GLOBAL ✨
-    // Mendengarkan sinyal perubahan profil dari komponen mana pun!
-    const handleGlobalUpdate = () => {
+    const handleGlobalUpdate = (event: any) => {
+       if (event.detail) {
+           setUser(prev => prev ? { ...prev, ...event.detail } : event.detail);
+       }
        const freshData = localStorage.getItem('user_profile');
-       if (freshData) setUser(JSON.parse(freshData));
+       if (freshData) {
+           const parsed = JSON.parse(freshData);
+           setUser(prev => prev ? { ...prev, name: parsed.name, photo: parsed.photo } as UserData : null);
+       }
     };
 
     window.addEventListener('ngodingai_profile_updated', handleGlobalUpdate);
@@ -134,7 +173,6 @@ export const useProfileLogic = () => {
     setIsSearchingRegion(true);
     try {
       const response = await fetch(`/api/region?keyword=${encodeURIComponent(keyword)}`);
-      if (!response.ok) throw new Error("Gagal mengambil region");
       const result = await response.json();
       if (Array.isArray(result)) setRegionOptions(result);
       else if (result?.tableData && Array.isArray(result.tableData)) setRegionOptions(result.tableData);
@@ -149,33 +187,33 @@ export const useProfileLogic = () => {
 
   const updateProfile = async (formData: Partial<UserData>) => { 
     try {
+      const updatedUser = { ...user, ...formData };
+      setUser(updatedUser as UserData);
+
       const currentSessionString = localStorage.getItem('user_profile');
       let currentSession = currentSessionString ? JSON.parse(currentSessionString) : {};
+      const combinedName = `${formData.nama || ''} ${formData.nama_belakang || ''}`.trim();
       
-      const optimisticSession = { 
-          ...currentSession, 
-          ...formData, 
-          nama: formData.name || formData.nama,
-          nama_belakang: formData.last_name || formData.nama_belakang,
-          tanggal_lahir: formData.birth || formData.tanggal_lahir,
-          alamat: formData.address || formData.alamat,
+      const cleanSidebarSession = { 
+          token: currentSession.token,
+          customer_id: formData.customer_id,
+          name: combinedName || currentSession.name,
+          photo: currentSession.photo || formData.photo
       };
-
-      localStorage.setItem('user_profile', JSON.stringify(optimisticSession));
-      setUser(optimisticSession as UserData); 
       
-      // ✨ Siarkan ke seluruh aplikasi bahwa form baru saja di-save!
-      broadcastProfileUpdate();
+      localStorage.setItem('user_profile', JSON.stringify(cleanSidebarSession));
+      broadcastProfileUpdate(updatedUser);
 
+      // ✨ BODY REQUEST STRICT KE KATIB API ✨
       const payloadToBackend = {
         customer_id: formData.customer_id,
         owner_id: formData.owner_id || 4409,
-        phone: formData.phone || '',
-        nama: formData.name || formData.nama || '',
-        nama_belakang: formData.last_name || formData.nama_belakang || '',
+        phone: formData.phone || '', // Nomor ini sekarang dijamin terisi
+        nama: formData.nama || '',
+        nama_belakang: formData.nama_belakang || '',
         email: formData.email || '',
-        tanggal_lahir: formData.birth || formData.tanggal_lahir || '',
-        alamat: formData.address || formData.alamat || '',
+        tanggal_lahir: formData.tanggal_lahir || '',
+        alamat: formData.alamat || '',
         region_id: formData.region_id,
         nik: formData.nik || null,
         kategori_id: formData.kategori_id || null,
@@ -193,51 +231,43 @@ export const useProfileLogic = () => {
       alert("Hebat! Profile Anda berhasil diupdate.");
 
       setTimeout(() => {
-          if (formData.customer_id) syncProfileWithServer(formData.customer_id);
-      }, 2000);
+          if (formData.customer_id) syncProfileWithServer(formData.customer_id, formData);
+      }, 1500);
 
     } catch (error: any) {
       alert(error.message || "Terjadi kesalahan saat menyimpan data.");
-      if (user && user.customer_id) syncProfileWithServer(user.customer_id);
+      if (user && user.customer_id) syncProfileWithServer(user.customer_id, user);
     }
   };
 
   const uploadPhoto = async (file: File) => {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) return alert("Gunakan format PNG, JPG, atau JPEG.");
+    if (!validTypes.includes(file.type)) return alert("Format tidak valid.");
     if (file.size > 5 * 1024 * 1024) return alert("Maksimal ukuran 5MB.");
-    if (!user || !user.customer_id) return alert("Sesi tidak valid.");
+    if (!user || !user.customer_id) return;
 
     setIsUploadingPhoto(true);
-
     try {
       const base64LocalImage = await fileToBase64(file);
+      const updatedUser = { ...user, photo: base64LocalImage };
+      setUser(updatedUser as UserData);
+
       const sessionStr = localStorage.getItem('user_profile');
       let currentSession = sessionStr ? JSON.parse(sessionStr) : {};
+      localStorage.setItem('user_profile', JSON.stringify({ ...currentSession, photo: base64LocalImage }));
       
-      const optimisticSession = { ...currentSession, photo: base64LocalImage };
-      localStorage.setItem('user_profile', JSON.stringify(optimisticSession));
-      setUser(optimisticSession as UserData);
-
-      // ✨ Siarkan ke Sidebar dan Header bahwa ada foto baru!
-      broadcastProfileUpdate();
+      broadcastProfileUpdate(updatedUser);
 
       const formData = new FormData();
       formData.append('file', file); 
-
       const response = await fetch(`/api/profile/upload-photo?id=${user.customer_id}`, {
-        method: 'POST',
-        body: formData,
+        method: 'POST', body: formData,
       });
 
-      if (!response.ok) throw new Error("Gagal mengunggah foto ke server.");
-
+      if (!response.ok) throw new Error("Gagal mengunggah ke server.");
       alert("Foto profil berhasil diperbarui.");
-
     } catch (error: any) {
-      console.error("Upload Error:", error);
-      alert(error.message || "Terjadi kesalahan saat mengunggah.");
-      if (user && user.customer_id) syncProfileWithServer(user.customer_id);
+      alert(error.message || "Terjadi kesalahan.");
     } finally {
       setIsUploadingPhoto(false);
     }

@@ -131,8 +131,10 @@ export default function ProfilePage() {
       );
    }
 
-   const fullName = `${user.nama || user.name || ''} ${user.nama_belakang || user.last_name || ''}`.trim() || 'Peserta NgodingAI';
-   const defaultAvatar = `https://ui-avatars.com/api/?name=${fullName}&background=00BCD4&color=fff`;
+   // ✨ PASTIKAN MENGAMBIL USER.NAMA dan USER.NAMA_BELAKANG TERLEBIH DAHULU ✨
+   const fullName = `${user.nama || ''} ${user.nama_belakang || ''}`.trim() || user.name || 'Peserta NgodingAI';
+   
+   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=00BCD4&color=fff`;
    let finalPhotoUrl = user.photo || user.avatar || "";
 
    if (finalPhotoUrl.startsWith('http') && finalPhotoUrl.includes('dev.katib.cloud')) {
@@ -142,7 +144,6 @@ export default function ProfilePage() {
 
    return (
       <div className="p-6 md:p-10 max-w-5xl mx-auto min-h-screen animate-fade-in">
-         {/* HEADER PAGE */}
          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
             <div>
                <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">My Profile</h1>
@@ -157,10 +158,8 @@ export default function ProfilePage() {
             </button>
          </div>
 
-         {/* MAIN CARD */}
          <div className="bg-white dark:bg-slate-800 rounded-4xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-visible relative">
             
-            {/* Banner Latar Belakang */}
             <div className="h-40 md:h-48 bg-gradient-to-r from-[#00BCD4] to-blue-600 relative overflow-hidden rounded-t-4xl">
                <div className="absolute inset-0 bg-black/10"></div>
                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle, #fff 2px, transparent 2.5px)", backgroundSize: "24px 24px" }}></div>
@@ -168,10 +167,8 @@ export default function ProfilePage() {
 
             <div className="px-6 md:px-10 pb-10">
                
-               {/* ✨ FLEX CONTAINER AVATAR + NAMA (Z-INDEX TINGGI) ✨ */}
                <div className="flex flex-col sm:flex-row sm:items-end gap-5 md:gap-6 -mt-12 md:-mt-16 mb-8 relative z-20">
                    
-                   {/* 1. AREA AVATAR */}
                    <div className="relative size-24 md:size-32 shrink-0" ref={avatarMenuRef}>
                       <div 
                          className="relative w-full h-full rounded-full ring-4 ring-white dark:ring-slate-800 bg-slate-100 shadow-xl overflow-hidden cursor-pointer group"
@@ -198,7 +195,6 @@ export default function ProfilePage() {
                          )}
                       </div>
 
-                      {/* DROPDOWN MENU KUSTOMISASI FOTO */}
                       {isAvatarMenuOpen && (
                          <div className="absolute top-[105%] left-0 sm:left-1/2 sm:-translate-x-1/2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden z-50 animate-fade-in origin-top">
                             <div className="py-1">
@@ -210,13 +206,12 @@ export default function ProfilePage() {
                                   Unggah Foto Baru
                                </button>
                                
-                               {!imageError && user.photo && (
+                               {user.photo && (
                                   <button 
-                                     onClick={handleRotateImage}
-                                     className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                     onClick={handleRotateImage} 
+                                     className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-slate-700 dark:text-slate-200"
                                   >
-                                     <span className="material-symbols-outlined text-[18px] text-slate-500">rotate_right</span>
-                                     Putar 90 Derajat
+                                     <span className="material-symbols-outlined text-[18px] text-slate-500">rotate_right</span> Putar 90&deg;
                                   </button>
                                )}
                             </div>
@@ -232,8 +227,6 @@ export default function ProfilePage() {
                       />
                    </div>
 
-                   {/* 2. AREA NAMA (DIBUNGKUS BACKGROUND PUTIH "BADGE") */}
-                   {/* ✨ Menyesuaikan ukuran lebar ke konten, rounded, padding, shadow, posisi ke atas agar aman dari background */}
                    <div className="flex-1 sm:pb-2">
                        <div className="inline-flex flex-col bg-white dark:bg-slate-800 px-5 py-3 rounded-2xl shadow-md border border-slate-100 dark:border-slate-700 relative -top-4 sm:top-0">
                            <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
@@ -241,6 +234,7 @@ export default function ProfilePage() {
                            </h2>
                            <div className="flex items-center gap-2 mt-1.5 text-slate-500 dark:text-slate-400">
                                <span className="material-symbols-outlined text-[14px]">mail</span>
+                               {/* ✨ Tampilkan email yang baru dilempar oleh Event ✨ */}
                                <span className="text-[13px] md:text-sm font-medium leading-none">{user.email || 'Email tidak tersedia'}</span>
                            </div>
                        </div>
@@ -248,7 +242,6 @@ export default function ProfilePage() {
 
                </div>
 
-               {/* TAB NAVIGATION */}
                <div className="flex items-center gap-2 md:gap-8 border-b border-slate-200 dark:border-slate-700 mb-8 overflow-x-auto no-scrollbar pb-1">
                   {[
                      { id: "general", label: "General", icon: "person" },
@@ -271,7 +264,6 @@ export default function ProfilePage() {
                   ))}
                </div>
 
-               {/* TAB CONTENT RENDERER */}
                <div className="min-h-7">
                   {activeTab === "general" && <GeneralTab />}
                   {activeTab === "attendance" && <AttendanceTab />}

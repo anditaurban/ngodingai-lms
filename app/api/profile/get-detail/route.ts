@@ -7,41 +7,42 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('id');
 
-    if (!customerId) return NextResponse.json({ detail: null }, { status: 200 });
+    if (!customerId) return NextResponse.json({ detail: null, message: "ID Kosong" }, { status: 200 });
 
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
-    const targetUrl = `${baseUrl}/detail/customer/${customerId}`;
+    // Pastikan path ini benar sesuai dokumentasi Postman Head Team Anda
+    const targetUrl = `${baseUrl}/detail/customer/${customerId}`; 
     
-    // ✨ SECURITY UPDATE: Wajib dari .env, hapus fallback hardcoded!
-    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN;
-    if (!serviceToken) {
-        console.error("CRITICAL SECURITY ALERT: CUSTOMER_UPDATE_TOKEN missing in .env");
-        return NextResponse.json({ detail: null, message: "Missing Env Token" }, { status: 500 });
-    }
+    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN || 'DpacnJf3uEQeM7HN';
 
     const backendResponse = await fetch(targetUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Authorization': `Bearer ${serviceToken}` 
+        'Authorization': `Bearer ${serviceToken}`
       },
       cache: 'no-store' 
     });
 
-    if (!backendResponse.ok) {
-       return NextResponse.json({ detail: null, message: "Silent Katib Error" }, { status: 200 });
-    }
-
     const responseText = await backendResponse.text();
+
+    if (!backendResponse.ok) {
+       console.error(`[Get Detail Proxy] Katib Error ${backendResponse.status}:`, responseText);
+       // Jika 404 (Data Tidak Ditemukan) atau error lain, kita kembalikan status 200 agar frontend tidak panik,
+       // tapi isi pesannya jelas.
+       return NextResponse.json({ detail: null, message: `Katib Error: ${backendResponse.status}` }, { status: 200 });
+    }
     
     try {
         const data = JSON.parse(responseText);
         return NextResponse.json(data, { status: 200 });
     } catch (e) {
-        return NextResponse.json({ detail: null, message: "Invalid JSON" }, { status: 200 });
+        console.error("[Get Detail Proxy] Format JSON Katib rusak:", responseText);
+        return NextResponse.json({ detail: null, message: "Invalid JSON dari Katib" }, { status: 200 });
     }
 
   } catch (error: any) {
-    return NextResponse.json({ detail: null, message: "Server Error" }, { status: 200 });
+    console.error("[Get Detail Proxy] Server Error:", error.message);
+    return NextResponse.json({ detail: null, message: error.message }, { status: 200 });
   }
 }

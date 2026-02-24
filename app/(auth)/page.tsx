@@ -35,23 +35,23 @@ export default function LoginPage() {
 
       <div className="relative z-10 flex flex-1 flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-lg glass-panel rounded-2xl sm:rounded-4xl shadow-soft border border-white/50 dark:border-white/10 p-8 sm:p-10 flex flex-col gap-8 transition-all duration-300">
-          <header className="flex flex-col gap-6">
-            <div className="flex items-center gap-3">
-              {/* LOGO */}
-              <div className="relative w-10 h-10 shadow-sm rounded-lg overflow-hidden bg-white">
-                <Image
-                  src="/logongodingai.png"
-                  alt="Logo"
-                  fill
-                  className="object-contain p-1"
-                  priority
-                  unoptimized={true}
-                />
-              </div>
-              <span className="text-xl font-bold tracking-tight text-[#121217] dark:text-white">
-                NgodingAI
-              </span>
+          
+          {/* HEADER DIBUAT RATA TENGAH DENGAN items-center & text-center */}
+          <header className="flex flex-col items-center text-center gap-6">
+            
+            {/* LOGO */}
+            {/* Ukuran logo diatur di className="relative w-64 h-24" */}
+            <div className="relative w-64 h-24">
+              <Image
+                src="/inovasia.png"
+                alt="Logo"
+                fill
+                className="object-contain"
+                priority
+                unoptimized={true}
+              />
             </div>
+
             <div className="space-y-2">
               <h1 className="text-3xl font-extrabold tracking-tight">
                 Digital Academy
