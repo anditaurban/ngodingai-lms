@@ -8,7 +8,7 @@ export interface AssignmentData {
     course: string;
     project_title: string;
     git_repo_url?: string;
-    git_repo?: string; 
+    git_repo?: string;
     deployment_url?: string;
     description: string;
     evaluation_score: number | string;
@@ -20,14 +20,14 @@ export interface AssignmentData {
 export const useAssignments = () => {
     const [assignments, setAssignments] = useState<AssignmentData[]>([]);
     const [loading, setLoading] = useState(true);
-    
+
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
-    
+
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearching, setIsSearching] = useState(false);
-    
+
     // State untuk Proses CRUD
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -44,10 +44,10 @@ export const useAssignments = () => {
             if (!res.ok) throw new Error("Gagal mengambil data");
 
             const result = await res.json();
-            
-            // ✨ PERBAIKAN: Membaca array dari dalam tableData
+
+            // ✨ Membaca array dari dalam tableData
             const rawData = result.tableData || [];
-            
+
             // Filter Soft Delete (Jika API Katib mengembalikan data dengan visibilitas 'no')
             const activeData = rawData.filter((item: any) => item.visibility !== 'no');
 
@@ -67,7 +67,6 @@ export const useAssignments = () => {
 
     // Initial Load & Pagination
     useEffect(() => {
-        // Jika pencarian kosong, langsung ambil data berdasarkan halaman
         if (searchQuery === "") {
             fetchAssignments(currentPage, "");
         }
@@ -75,18 +74,17 @@ export const useAssignments = () => {
 
     // Search Debounce
     useEffect(() => {
-        // ✨ LOGIKA BARU: Jika user menghapus teks sampai kosong
         if (searchQuery === "") {
-            setIsSearching(false); // 1. Matikan spinner nyangkut
-            setCurrentPage(1);     // 2. Reset ke halaman 1
-            return;                // 3. Batalkan debounce (biar useEffect ke-1 yang ambil data)
+            setIsSearching(false);
+            setCurrentPage(1);
+            return;
         }
 
         setIsSearching(true);
         const delayDebounceFn = setTimeout(() => {
-            setCurrentPage(1); 
+            setCurrentPage(1);
             fetchAssignments(1, searchQuery);
-        }, 500); 
+        }, 500);
 
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery, fetchAssignments]);
@@ -102,12 +100,11 @@ export const useAssignments = () => {
         return { owner_id: user.owner_id || 4409, customer_id: user.customer_id };
     };
 
+    // Fungsi Add / Edit
     const submitAssignment = async (mode: 'add' | 'edit', data: Partial<AssignmentData>) => {
         setIsProcessing(true);
         try {
             const { owner_id, customer_id } = getAuthData();
-            
-            // Format Tanggal (YYYY-MM-DD)
             const today = new Date().toISOString().split('T')[0];
 
             const payload = {
@@ -115,7 +112,7 @@ export const useAssignments = () => {
                 customer_id,
                 date: data.date || today,
                 project_title: data.project_title,
-                git_repo: data.git_repo || data.git_repo_url || '', 
+                git_repo: data.git_repo || data.git_repo_url || '',
                 deployment_url: data.deployment_url || '',
                 description: data.description || '',
             };
@@ -131,43 +128,47 @@ export const useAssignments = () => {
 
             if (!res.ok) throw new Error("Gagal menyimpan data ke server");
 
-            // Refresh Tabel
+            // Jeda 1.5 detik untuk sinkronisasi Katib
+            await new Promise(resolve => setTimeout(resolve, 1500));
             await fetchAssignments(currentPage, searchQuery);
-            return true;
+
+            return {
+                success: true,
+                message: mode === 'add' ? 'Tugas baru berhasil ditambahkan!' : 'Perubahan tugas berhasil disimpan!'
+            };
         } catch (error: any) {
-            alert(error.message);
-            return false;
+            return { success: false, message: error.message || 'Terjadi kesalahan sistem.' };
         } finally {
             setIsProcessing(false);
         }
     };
 
-    const deleteAssignment = async (assignmentId: number) => {
+    // ✨ FUNGSI DELETE (Dengan Optimistic Update)
+    const deleteAssignment = async (id: number) => {
         setIsProcessing(true);
         try {
-            const { owner_id, customer_id } = getAuthData();
-            
-            // SOFT DELETE: Update data dengan mengubah visibilitas
-            const payload = {
-                owner_id,
-                customer_id,
-                visibility: 'no'
-            };
-
-            const res = await fetch(`/api/assignments/crud?id=${assignmentId}`, {
+            const payload = { visibility: 'no' };
+            const res = await fetch(`/api/assignments/crud?id=${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error("Gagal menghapus data");
+            const result = await res.json();
+            const isSuccess = result?.data?.success || result?.success;
 
-            // Refresh Tabel
-            await fetchAssignments(currentPage, searchQuery);
-            return true;
+            if (res.ok && isSuccess) {
+                // ✨ OPTIMISTIC UI: Hapus data instan dari state React tanpa menunggu fetch ulang
+                setAssignments((prevData) => prevData.filter((item) => item.assignment_id !== id));
+                setTotalRecords((prev) => Math.max(0, prev - 1));
+
+                return { success: true, message: 'Tugas berhasil dihapus!' };
+            } else {
+                return { success: false, message: result?.error || 'Gagal menghapus tugas.' };
+            }
         } catch (error: any) {
-            alert(error.message);
-            return false;
+            console.error(error);
+            return { success: false, message: 'Terjadi kesalahan jaringan.' };
         } finally {
             setIsProcessing(false);
         }
