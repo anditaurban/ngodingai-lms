@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useProfileLogic, UserData } from "../../hooks/useProfileLogic";
+// ✨ IMPORT TOAST HOOK
+import { useToast } from "@/components/ui/ToastProvider";
 
 const InputField = ({ label, icon, type = "text", value, onChange, placeholder, disabled = false, className = "" }: any) => (
   <div className={`space-y-1.5 ${className}`}>
@@ -52,16 +54,19 @@ const parseRegionData = (regionString: string) => {
 
 export default function GeneralTab() {
   const { user, isEditing, setIsEditing, regionOptions, isSearchingRegion, searchRegion, updateProfile } = useProfileLogic();
+  
+  // ✨ PANGGIL FUNGSI TOAST
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState<Partial<UserData>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // ✨ State loading khusus untuk tombol simpan
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
       const parsedRegion = parseRegionData(user.region_name || "");
-      // Murni diisi oleh hasil API (user.nama, user.tanggal_lahir)
       setFormData({
          ...user,
          kelurahan: user.kelurahan || parsedRegion.kelurahan,
@@ -89,9 +94,32 @@ export default function GeneralTab() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // ✨ UPDATE FUNGSI SUBMIT DENGAN TOAST
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile(formData);
+    
+    // Validasi sederhana
+    if (!formData.nama) {
+        showToast('error', 'Nama depan tidak boleh kosong!');
+        return;
+    }
+
+    setIsSaving(true);
+    try {
+        // Karena di hook Anda updateProfile sepertinya async, kita await
+        await updateProfile(formData); 
+        
+        // Panggil Toast Sukses
+        showToast('success', 'Data profil Anda berhasil diperbarui!');
+        
+        // Matikan mode edit setelah berhasil disimpan
+        setIsEditing(false);
+    } catch (error: any) {
+        // Panggil Toast Error jika gagal
+        showToast('error', error.message || 'Gagal memperbarui profil.');
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   if (!user) return null;
@@ -149,11 +177,12 @@ export default function GeneralTab() {
               
               <div className="md:col-span-2">
                 <InputField
-                  label="Nomor WhatsApp" icon="call" type="tel"
+                  label="Nomor WhatsApp" icon="call" type="tel" disabled={true}
                   placeholder="Contoh: 081234567890"
                   value={formData.phone || ""}
                   onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })}
                 />
+                 <p className="text-[11px] text-slate-400 mt-1 ml-1 font-medium">Nomor WhatsApp tidak dapat diubah karena terhubung dengan akses login.</p>
               </div>
 
             </div>
@@ -216,9 +245,15 @@ export default function GeneralTab() {
             </div>
           </section>
 
+          {/* ✨ UPDATE TOMBOL SUBMIT DENGAN LOADING STATE */}
           <div className="pt-4 flex justify-end">
-            <button type="submit" className="w-full md:w-auto px-10 py-4 bg-[#00BCD4] hover:bg-[#00acc1] text-white font-bold rounded-xl shadow-xl shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-[20px]">save</span> Simpan Perubahan
+            <button 
+                type="submit" 
+                disabled={isSaving}
+                className="w-full md:w-auto px-10 py-4 bg-[#00BCD4] hover:bg-[#00acc1] text-white font-bold rounded-xl shadow-xl shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isSaving && <span className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>}
+              {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
             </button>
           </div>
         </form>

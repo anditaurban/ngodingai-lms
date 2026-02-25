@@ -5,6 +5,7 @@ import { useCertificate } from '@/hooks/useCertificate';
 import { Inter, DM_Sans } from 'next/font/google'; 
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
+import { useToast } from '@/components/ui/ToastProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 const googleSansAlt = DM_Sans({ subsets: ['latin'], weight: ['400', '500', '700', '800'] });
@@ -13,17 +14,22 @@ export default function CertificatesTab() {
   const { data: certificateData, loading, error } = useCertificate();
   const [isProcessing, setIsProcessing] = useState(false);
   
+  const { showToast } = useToast();
+  
   const certificateRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const [scale, setScale] = useState(1);
   const [sessionName, setSessionName] = useState("Nama Peserta");
+  
+  // ✨ LOGIKA CERDAS: State dinamis berdasarkan API
+  const [statusDetermined, setStatusDetermined] = useState(false);
   const [assignmentStatus, setAssignmentStatus] = useState<{
      submitted: boolean;
      reviewed: 'yes' | 'no';
   }>({
-     submitted: true, 
-     reviewed: 'yes', 
+     submitted: false, 
+     reviewed: 'no', 
   });
 
   useEffect(() => {
@@ -39,18 +45,46 @@ export default function CertificatesTab() {
     }
   }, []);
 
-  // ✨ FIX BUG: TAMBAHKAN DEPENDENCY `loading` ✨
-  // Agar observer baru berjalan SETELAH loading selesai dan elemen benar-benar ada di layar
+  // ✨ LOGIKA CERDAS: Menganalisa balasan dari Katib
+  useEffect(() => {
+      if (loading) return;
+
+      // Ambil teks pesan dari error atau response JSON Katib (Fake 200 OK)
+      const errMsg = (error || '').toLowerCase();
+      const rawData = certificateData as any;
+      const dataMsg = (rawData?.detail?.message || rawData?.message || '').toLowerCase();
+      
+      const combinedMsg = errMsg + ' ' + dataMsg;
+
+      // 1. Deteksi apakah sedang dalam tahap review
+      if (combinedMsg.includes('tunggu') || combinedMsg.includes('ditinjau')) {
+          setAssignmentStatus({ submitted: true, reviewed: 'no' });
+      } 
+      // 2. Deteksi apakah belum ada tugas (Data not found / success: false yang bukan review)
+      else if (combinedMsg.includes('not found') || combinedMsg.includes('belum') || rawData?.detail?.success === false || error) {
+          setAssignmentStatus({ submitted: false, reviewed: 'no' });
+      } 
+      // 3. Sertifikat Siap!
+      else if (certificateData) {
+          setAssignmentStatus({ submitted: true, reviewed: 'yes' });
+      }
+
+      setStatusDetermined(true);
+  }, [certificateData, error, loading]);
+
+
+  // Effect untuk Resize Scale Canvas Sertifikat
   useEffect(() => {
       const container = containerRef.current;
-      if (!container || loading) return; // Tunggu sampai loading selesai dan container muncul!
+      // Tunggu sampai UI tidak loading dan status sudah ditentukan
+      if (!container || loading || !statusDetermined || assignmentStatus.reviewed === 'no') return; 
 
       const updateScale = () => {
           window.requestAnimationFrame(() => {
               if (containerRef.current) {
                   const containerWidth = containerRef.current.clientWidth;
                   if (containerWidth > 0) {
-                      setScale(containerWidth / 1000); // 1000 adalah lebar kanvas A4 asli
+                      setScale(containerWidth / 1000); 
                   }
               }
           });
@@ -59,10 +93,10 @@ export default function CertificatesTab() {
       const observer = new ResizeObserver(updateScale);
       observer.observe(container);
       
-      updateScale(); // Panggilan inisialisasi
+      updateScale(); 
 
       return () => observer.disconnect();
-  }, [loading, assignmentStatus]); // React akan me-re-run ini saat tab dibuka & loading beres!
+  }, [loading, statusDetermined, assignmentStatus]); 
 
   const dynamicSampleCert = {
     customer_id: "SMPL-99999",
@@ -72,8 +106,8 @@ export default function CertificatesTab() {
     course_url: "https://ngodingai.inovasia.co.id/verify/SMPL-99999"
   };
 
-  const isSample = !certificateData || error !== null;
-  const displayData = certificateData || dynamicSampleCert;
+  const isSample = !certificateData || assignmentStatus.reviewed === 'no';
+  const displayData = isSample ? dynamicSampleCert : certificateData;
   displayData.full_name = sessionName;
 
   const handleEditProfile = () => {
@@ -86,14 +120,16 @@ export default function CertificatesTab() {
     setIsProcessing(true);
 
     try {
+      // ✨ FIX FONT: Pastikan browser sudah selesai me-load font API sebelum diconvert
+      await document.fonts.ready; 
+
       const dataUrl = await toPng(certificateRef.current, {
         quality: 1,
         pixelRatio: 2, 
         cacheBust: true, 
-        skipFonts: true, 
         style: {
            backgroundColor: '#ffffff',
-           transform: 'scale(1)', // Wajib scale 1 saat dirender agar PDF HD!
+           transform: 'scale(1)', 
            transformOrigin: 'top left'
         }
       });
@@ -107,15 +143,22 @@ export default function CertificatesTab() {
       const safeName = sessionName.replace(/[^a-z0-9]/gi, '_');
       pdf.save(`Sertifikat_NgodingAI_${safeName}.pdf`);
       
+      showToast('success', 'Sertifikat berhasil diunduh dalam format PDF!');
+
     } catch (err: any) {
-      console.warn("Render PDF Error (Bisa diabaikan):", err.message);
+      console.warn("Render PDF Error:", err.message);
+      showToast('error', 'Gagal mengunduh sertifikat. Silakan coba lagi.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // 1. STATE LOADING
-  if (loading) {
+  // =========================================================
+  // RENDER UI BERDASARKAN STATUS
+  // =========================================================
+
+  // 1. STATE LOADING / ANALISA STATUS
+  if (loading || !statusDetermined) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3 animate-fade-in">
         <div className="size-8 border-4 border-slate-200 border-t-[#00BCD4] rounded-full animate-spin"></div>
@@ -124,7 +167,7 @@ export default function CertificatesTab() {
     );
   }
 
-  // 2. STATE TUGAS BELUM DIKIRIM
+  // 2. STATE TUGAS BELUM DIKIRIM (DATA NOT FOUND)
   if (!assignmentStatus.submitted) {
      return (
         <div className={`animate-fade-in flex flex-col items-center justify-center py-16 px-4 text-center bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 ${inter.className}`}>
@@ -137,15 +180,18 @@ export default function CertificatesTab() {
            <p className="text-slate-500 max-w-md mx-auto mb-8">
                Anda belum menyelesaikan dan mengirimkan Assignment. Sertifikat terkunci.
            </p>
-           <button className={`bg-[#00BCD4] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-[#00acc1] transition-all flex items-center gap-2 ${googleSansAlt.className}`}>
+           <button 
+               onClick={() => { window.location.href = "/assignments" }}
+               className={`bg-[#00BCD4] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-[#00acc1] transition-all flex items-center gap-2 ${googleSansAlt.className}`}
+           >
                <span className="material-symbols-outlined text-[20px]">drive_file_rename_outline</span>
-               Kerjakan Tugas Sekarang
+               Ke Halaman Tugas
            </button>
         </div>
      );
   }
 
-  // 3. STATE TUGAS SEDANG DI-REVIEW
+  // 3. STATE TUGAS SEDANG DI-REVIEW (TUNGGU SEBENTAR LAGI YA...)
   if (assignmentStatus.submitted && assignmentStatus.reviewed === 'no') {
      return (
         <div className={`animate-fade-in flex flex-col items-center justify-center py-16 px-4 text-center bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl border border-blue-100 dark:border-blue-900/30 ${inter.className}`}>
@@ -156,17 +202,16 @@ export default function CertificatesTab() {
                Mohon Tunggu...
            </h3>
            <p className="text-slate-500 max-w-md mx-auto">
-               Tugas sedang <strong className="text-slate-800 dark:text-slate-200">dalam tahap review</strong> oleh Mentor.
+               Tugas sedang <strong className="text-slate-800 dark:text-slate-200">dalam tahap review</strong> oleh Mentor. Sertifikat akan diterbitkan setelah lulus.
            </p>
         </div>
      );
   }
 
-  // 4. STATE SERTIFIKAT TAMPIL (READY)
+  // 4. STATE SERTIFIKAT TAMPIL (READY / REVIEWED YES)
   return (
     <div className={`animate-fade-in relative max-w-5xl mx-auto ${inter.className}`}>
       
-      {/* HEADER ACTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
            <h3 className={`text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 ${googleSansAlt.className}`}>
@@ -180,9 +225,9 @@ export default function CertificatesTab() {
         </div>
         <button 
             onClick={handleDownload}
-            disabled={isProcessing}
+            disabled={isProcessing || isSample}
             className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md w-full md:w-auto ${googleSansAlt.className} ${
-              isProcessing ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#00BCD4] text-white hover:bg-[#00a3b8]'
+              (isProcessing || isSample) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#00BCD4] text-white hover:bg-[#00a3b8]'
             }`}
         >
             {isProcessing ? (
@@ -194,7 +239,6 @@ export default function CertificatesTab() {
         </button>
       </div>
 
-      {/* NOTIFICATION BOX */}
       <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 md:p-4 flex items-center gap-3 transition-all hover:shadow-md">
           <div className="bg-white dark:bg-slate-800 p-2 rounded-full text-blue-500 shrink-0 shadow-sm">
               <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
@@ -209,13 +253,11 @@ export default function CertificatesTab() {
           </button>
       </div>
       
-      {/* ✨ WADAH RESPONSIF ✨ */}
       <div 
          ref={containerRef}
          className="relative w-full rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 select-none group overflow-hidden bg-white"
          style={{ aspectRatio: '1000 / 707' }} 
       >
-         {/* ✨ KANVAS SERTIFIKAT ✨ */}
          <div 
              ref={certificateRef} 
              className="absolute top-0 left-0 bg-white origin-top-left"
@@ -225,9 +267,19 @@ export default function CertificatesTab() {
                  transform: `scale(${scale})` 
              }}
          >
+             {/* ✨ FIX FONT UNTUK EXPORT PDF ✨ */}
+             {/* Mengimport font manual (bukan via next/font) agar html-to-image bisa melihat dan mengekstraknya */}
+             <style dangerouslySetInnerHTML={{
+                __html: `
+                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;700&display=swap');
+                .cert-font-sans { font-family: 'DM Sans', sans-serif !important; }
+                .cert-font-inter { font-family: 'Inter', sans-serif !important; }
+                `
+             }} />
+
              {isSample && (
                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40">
-                     <span className={`text-[120px] font-black text-slate-900/3 -rotate-45 select-none tracking-widest uppercase ${googleSansAlt.className}`}>
+                     <span className="text-[120px] font-black text-slate-900/3 -rotate-45 select-none tracking-widest uppercase cert-font-sans">
                          Sample
                      </span>
                  </div>
@@ -242,7 +294,6 @@ export default function CertificatesTab() {
              <div className="absolute inset-6 border-[3px] border-double border-[#d4af37]/60 pointer-events-none rounded"></div>
              <div className="absolute inset-8 border border-[#d4af37]/30 pointer-events-none rounded"></div>
 
-             {/* KONTEN */}
              <div className="absolute inset-0 flex flex-col items-center justify-center p-16 text-center">
                  <div className="absolute top-16 left-1/2 -translate-x-1/2 flex flex-col items-center z-10">
                      <div className="relative h-16 w-48 mb-2">
@@ -255,36 +306,36 @@ export default function CertificatesTab() {
                  </div>
 
                  <div className="-mt-16 z-10">
-                     <h1 className={`text-6xl text-[#ffffff] tracking-widest uppercase mb-2 ${googleSansAlt.className} font-bold`}>
+                     <h1 className="text-6xl text-[#ffffff] tracking-widest uppercase mb-2 cert-font-sans font-bold">
                        Certificate
                      </h1>
-                     <p className={`text-base text-[#d4af37] tracking-[0.3em] uppercase font-bold ${inter.className}`}>
+                     <p className="text-base text-[#d4af37] tracking-[0.3em] uppercase font-bold cert-font-inter">
                        For Participant
                      </p>
                  </div>
 
-                 <p className={`mt-8 text-lg text-slate-500 italic z-10 ${inter.className}`}>
+                 <p className="mt-8 text-lg text-slate-500 italic z-10 cert-font-inter">
                      This certificate is proudly presented to
                  </p>
 
-                 <h2 className={`mt-3 text-5xl font-bold text-[#ffffff] capitalize border-slate-300 pb-3 px-10 inline-block z-10 ${googleSansAlt.className}`}>
+                 <h2 className="mt-3 text-5xl font-bold text-[#ffffff] capitalize border-slate-300 pb-3 px-10 inline-block z-10 cert-font-sans">
                      {displayData.full_name}
                  </h2>
 
                  <p 
-                    className={`mt-6 max-w-2xl text-base text-slate-400 leading-relaxed z-10 ${inter.className}`}
+                    className="mt-6 max-w-2xl text-base text-slate-400 leading-relaxed z-10 cert-font-inter"
                     dangerouslySetInnerHTML={{ __html: displayData.achievement }}
                  />
 
                  <div className="absolute bottom-16 left-16 right-12 flex justify-between items-end z-10">
                      <div className="text-left mb-0">
-                         <p className={`text-sm text-slate-500 font-bold uppercase tracking-wider mb-2 ${googleSansAlt.className}`}>
+                         <p className="text-sm text-slate-500 font-bold uppercase tracking-wider mb-2 cert-font-sans">
                            Date Issued
                          </p>
-                         <p className={`text-xl text-slate-200 border-b border-slate-300 pb-1 mb-2 inline-block font-medium ${inter.className}`}>
+                         <p className="text-xl text-slate-200 border-b border-slate-300 pb-1 mb-2 inline-block font-medium cert-font-inter">
                            {displayData.issued}
                          </p>
-                         <p className={`text-xs text-slate-400 mt-1 font-medium ${inter.className}`}>
+                         <p className="text-xs text-slate-400 mt-1 font-medium cert-font-inter">
                            <span className="text-[#00BCD4] italic">
                              {displayData.course_url}
                            </span>
@@ -300,15 +351,14 @@ export default function CertificatesTab() {
                              />
                          </div>
                          <div className="w-56 text-center pt-2">
-                            <p className={`text-xl font-bold text-slate-200 leading-tight ${googleSansAlt.className}`}>Andita Permata</p>
-                            <p className={`text-sm text-[#00BCD4] font-medium ${inter.className}`}>Instructor</p>
+                            <p className="text-xl font-bold text-slate-200 leading-tight cert-font-sans">Andita Permata</p>
+                            <p className="text-sm text-[#00BCD4] font-medium cert-font-inter">Instructor</p>
                          </div>
                      </div>
                  </div>
              </div>
          </div>
 
-         {/* HOVER EFEK */}
          {!isSample ? (
              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm cursor-pointer z-50">
                  <button 

@@ -186,59 +186,68 @@ export const useProfileLogic = () => {
   };
 
   const updateProfile = async (formData: Partial<UserData>) => { 
-    try {
-      const updatedUser = { ...user, ...formData };
-      setUser(updatedUser as UserData);
+    // CATATAN: Hapus blok try-catch di sini agar Error bisa "dilempar" (throw) 
+    // ke GeneralTab.tsx sehingga UI bisa menampilkan Toast Merah jika gagal.
 
-      const currentSessionString = localStorage.getItem('user_profile');
-      let currentSession = currentSessionString ? JSON.parse(currentSessionString) : {};
-      const combinedName = `${formData.nama || ''} ${formData.nama_belakang || ''}`.trim();
-      
-      const cleanSidebarSession = { 
-          token: currentSession.token,
-          customer_id: formData.customer_id,
-          name: combinedName || currentSession.name,
-          photo: currentSession.photo || formData.photo
-      };
-      
-      localStorage.setItem('user_profile', JSON.stringify(cleanSidebarSession));
-      broadcastProfileUpdate(updatedUser);
+    // 1. Update State React secara instan
+    const updatedUser = { ...user, ...formData };
+    setUser(updatedUser as UserData);
 
-      // ✨ BODY REQUEST STRICT KE KATIB API ✨
-      const payloadToBackend = {
-        customer_id: formData.customer_id,
-        owner_id: formData.owner_id || 4409,
-        phone: formData.phone || '', // Nomor ini sekarang dijamin terisi
-        nama: formData.nama || '',
-        nama_belakang: formData.nama_belakang || '',
-        email: formData.email || '',
-        tanggal_lahir: formData.tanggal_lahir || '',
-        alamat: formData.alamat || '',
-        region_id: formData.region_id,
-        nik: formData.nik || null,
-        kategori_id: formData.kategori_id || null,
-      };
+    // 2. ✨ PERBAIKAN FATAL: Simpan LocalStorage secara UTUH
+    const currentSessionString = localStorage.getItem('user_profile');
+    let currentSession = currentSessionString ? JSON.parse(currentSessionString) : {};
+    const combinedName = `${formData.nama || ''} ${formData.nama_belakang || ''}`.trim();
+    
+    // Kita gabungkan (merge) semua data lama dengan data baru yang diubah.
+    // Tidak ada lagi data yang "tersunat" atau hilang.
+    const updatedSession = { 
+        ...currentSession,               // Pertahankan token & data krusial lain
+        ...updatedUser,                  // Timpa dengan hasil ketikan form baru
+        name: combinedName || currentSession.name, // Khusus sidebar (jika butuh key 'name')
+        photo: currentSession.photo || formData.photo
+    };
+    
+    localStorage.setItem('user_profile', JSON.stringify(updatedSession));
+    
+    // Broadcast perubahan ke komponen lain (seperti Header / Sidebar)
+    broadcastProfileUpdate(updatedUser);
 
-      const response = await fetch('/api/profile/update', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payloadToBackend),
-      });
+    // 3. ✨ BODY REQUEST STRICT KE KATIB API ✨
+    const payloadToBackend = {
+      customer_id: formData.customer_id,
+      owner_id: formData.owner_id || 4409,
+      phone: formData.phone || '', 
+      nama: formData.nama || '',
+      nama_belakang: formData.nama_belakang || '',
+      email: formData.email || '',
+      tanggal_lahir: formData.tanggal_lahir || '',
+      alamat: formData.alamat || '',
+      region_id: formData.region_id,
+      nik: formData.nik || null,
+      kategori_id: formData.kategori_id || null,
+    };
 
-      if (!response.ok) throw new Error("Gagal menyimpan ke Katib");
-      
-      setIsEditing(false);
-      alert("Hebat! Profile Anda berhasil diupdate.");
+    const response = await fetch('/api/profile/update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payloadToBackend),
+    });
 
-      setTimeout(() => {
-          if (formData.customer_id) syncProfileWithServer(formData.customer_id, formData);
-      }, 1500);
-
-    } catch (error: any) {
-      alert(error.message || "Terjadi kesalahan saat menyimpan data.");
-      if (user && user.customer_id) syncProfileWithServer(user.customer_id, user);
+    if (!response.ok) {
+        throw new Error("Gagal menyimpan data ke server database.");
     }
-  };
+    
+    // ALERT DIHAPUS: Kita biarkan Toast di GeneralTab.tsx yang mengambil alih notifikasi sukses.
+    // setIsEditing(false) JUGA DIHAPUS DARI SINI: Sudah di-handle oleh handleSubmit di GeneralTab.tsx
+
+    // 4. Background Sync (Penyelaras Server)
+    setTimeout(() => {
+        if (formData.customer_id) syncProfileWithServer(formData.customer_id, formData);
+    }, 1500);
+
+    // Kembalikan nilai true agar handleSubmit di GeneralTab tahu prosesnya sukses
+    return true; 
+};
 
   const uploadPhoto = async (file: File) => {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];

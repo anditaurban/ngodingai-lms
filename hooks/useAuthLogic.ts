@@ -76,7 +76,7 @@ export const useAuthLogic = () => {
     }
   };
 
-  // --- 2. API: VERIFY OTP ---
+// --- 2. API: VERIFY OTP ---
   const handleVerifyLogin = async () => {
     const otpCode = otpValues.join('');
     
@@ -89,7 +89,6 @@ export const useAuthLogic = () => {
     setErrorMessage('');
 
     try {
-      // --- PERBAIKAN: TAMBAH FALLBACK VALUE ---
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
       const cleanPhone = formatPhoneNumber(phoneNumber);
 
@@ -113,14 +112,22 @@ export const useAuthLogic = () => {
       console.log('Login Success:', data);
 
       if (typeof window !== 'undefined') {
-        localStorage.setItem('user_profile', JSON.stringify(data));
+        // ✨ PERBAIKAN 1: Pastikan kita menyimpan object utama yang berisi data user
+        // Terkadang API mengembalikan data di dalam property "data" atau "user"
+        const userProfileToSave = data.data || data.user || data; 
+        localStorage.setItem('user_profile', JSON.stringify(userProfileToSave));
       }
 
-      if (data.customer_id) {
-        Cookies.set('token', data.customer_id.toString(), { expires: 7, path: '/' });
-      } else {
-        Cookies.set('token', 'session_active', { expires: 1, path: '/' });
-      }
+      // ✨ PERBAIKAN 2: Kita cari ID/Token yang valid di dalam response
+      // Asumsi ID bisa bernama customer_id, id, atau user_id di berbagai lapis JSON
+      const activeUserId = data?.customer_id || data?.data?.customer_id || data?.user?.id || 'session_active';
+
+      // Kita buat masa kedaluwarsa yang solid: 7 hari, dan valid untuk semua halaman (path: '/')
+      Cookies.set('token', activeUserId.toString(), { 
+          expires: 7, 
+          path: '/',
+          // secure: true // (Opsional: aktifkan jika web Anda sudah HTTPS/Production)
+      });
       
       router.push('/my-class');
 

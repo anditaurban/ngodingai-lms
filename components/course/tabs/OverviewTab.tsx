@@ -34,7 +34,7 @@ export default function OverviewTab({ data }: OverviewTabProps) {
     name: "Andita Permata",
     role: "Lecturer & Web Developer",
     bio: "Dosen Ilmu Komputer. Web Developer Praktisi. Spesialis Pengembangan Aplikasi Web & Arsitektur Sistem.",
-    avatar: "https://ui-avatars.com/api/?name=Andita+Permata&background=00BCD4&color=fff"
+    avatar: "/avatar.png"
   };
 
   return (
@@ -271,9 +271,6 @@ export default function OverviewTab({ data }: OverviewTabProps) {
               {instructor.bio}
             </p>
 
-            <button className="w-full py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold hover:opacity-90 transition-opacity">
-                View Profile
-            </button>
           </div>
 
         </aside>

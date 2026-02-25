@@ -31,6 +31,7 @@ export const useAssignments = () => {
     // State untuk Proses CRUD
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // ✨ PERBAIKAN: Fungsi Fetch dengan Smart Extractor & Hapus Filter Visibilitas
     const fetchAssignments = useCallback(async (page: number, search: string) => {
         try {
             setLoading(true);
@@ -45,20 +46,26 @@ export const useAssignments = () => {
 
             const result = await res.json();
 
-            // ✨ Membaca array dari dalam tableData
-            const rawData = result.tableData || [];
+            // ✨ SMART EXTRACTOR: Deteksi dan bongkar bungkus JSON (Wrapper)
+            // Jika Katib membungkus responsenya dengan { data: { ... } }, kita ambil isinya
+            const payload = result?.data || result; 
 
-            // Filter Soft Delete (Jika API Katib mengembalikan data dengan visibilitas 'no')
-            const activeData = rawData.filter((item: any) => item.visibility !== 'no');
+            // Coba ambil array dari 'tableData' di dalam payload yang sudah diekstrak
+            const rawData = payload?.tableData || [];
+
+            // Filter Soft Delete Dihapus: Langsung ambil semua data yang diberikan Katib
+            const activeData = rawData;
 
             setAssignments(activeData);
-            setTotalPages(result.totalPages || 1);
-            setTotalRecords(result.totalRecords || 0);
-            setCurrentPage(result.currentPage || 1);
+            
+            // Mengambil angka total dari payload yang benar
+            setTotalPages(payload?.totalPages || 1);
+            setTotalRecords(payload?.totalRecords || activeData.length || 0);
+            setCurrentPage(payload?.currentPage || 1);
 
         } catch (error) {
             console.error("Fetch Assignments Error:", error);
-            setAssignments([]);
+            setAssignments([]); // Kosongkan tabel jika gagal
         } finally {
             setLoading(false);
             setIsSearching(false);
