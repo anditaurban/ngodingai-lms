@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useProfileLogic } from "@/hooks/useProfileLogic";
 import GeneralTab from "@/components/profile/GeneralTab";
-import AttendanceTab from "@/components/profile/AttendanceTab";
 import PortfolioTab from "@/components/profile/PortfolioTab";
 import CertificatesTab from "@/components/profile/CertificatesTab";
 
@@ -21,7 +20,7 @@ export default function ProfilePage() {
   const avatarMenuRef = useRef<HTMLDivElement>(null);
 
   const [activeTab, setActiveTab] = useState<
-    "general" | "attendance" | "portfolio" | "certificates"
+    "general" | "portfolio" | "certificates"
   >("general");
 
   const [imageError, setImageError] = useState(false);
@@ -306,11 +305,6 @@ export default function ProfilePage() {
           <div className="flex items-center gap-2 md:gap-8 border-b border-slate-200 dark:border-slate-700 mb-8 overflow-x-auto no-scrollbar pb-1">
             {[
               { id: "general", label: "General", icon: "person" },
-              {
-                id: "attendance",
-                label: "Attendance",
-                icon: "event_available",
-              },
               { id: "portfolio", label: "Assignments", icon: "folder_open" },
               {
                 id: "certificates",
@@ -337,7 +331,6 @@ export default function ProfilePage() {
 
           <div className="min-h-7">
             {activeTab === "general" && <GeneralTab />}
-            {activeTab === "attendance" && <AttendanceTab />}
             {activeTab === "portfolio" && <PortfolioTab />}
             {activeTab === "certificates" && <CertificatesTab />}
           </div>

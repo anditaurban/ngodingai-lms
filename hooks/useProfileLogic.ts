@@ -41,6 +41,13 @@ const broadcastProfileUpdate = (fullDataPayload?: any) => {
   }
 };
 
+// ============================================================================
+// ✨ REM CAKRAM GLOBAL (Global Cache) ✨
+// Mencegah Spam API: Jika 1 komponen sudah nembak, komponen lain tinggal numpang
+// ============================================================================
+let globalProfileSyncDone = false;
+let globalCachedUser: UserData | null = null;
+
 export const useProfileLogic = () => {
   const router = useRouter();
   
@@ -52,8 +59,16 @@ export const useProfileLogic = () => {
   const [isSearchingRegion, setIsSearchingRegion] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
-  const syncProfileWithServer = async (customerId: string | number, fallbackData?: any) => {
+  // Tambahkan parameter `forceSync` untuk memaksa update API jika user klik tombol "Simpan"
+  const syncProfileWithServer = async (customerId: string | number, fallbackData?: any, forceSync: boolean = false) => {
     try {
+      // ✨ AKTIFKAN REM CAKRAM: Jika sudah sinkron di sesi ini, pakai data cache saja!
+      if (globalProfileSyncDone && globalCachedUser && !forceSync) {
+          setUser(globalCachedUser);
+          setLoading(false);
+          return;
+      }
+
       const response = await fetch(`/api/profile/get-detail?id=${customerId}&t=${Date.now()}`);
       const result = await response.json();
       const serverData = result.detail; 
@@ -67,7 +82,6 @@ export const useProfileLogic = () => {
          const isLocalBase64 = localPhoto.startsWith('data:image');
          const finalSyncPhoto = isLocalBase64 ? localPhoto : (serverData.photo || localPhoto);
 
-         // ✨ JARING PENGAMAN: Jika Katib mengembalikan phone/email kosong, sedot dari memori OTP ✨
          const finalUserData = { 
              ...serverData, 
              photo: finalSyncPhoto,
@@ -76,6 +90,10 @@ export const useProfileLogic = () => {
          };
          
          setUser(finalUserData as UserData);
+
+         // Kunci Rem Cakram & Simpan ke Memory Global
+         globalCachedUser = finalUserData;
+         globalProfileSyncDone = true;
 
          const combinedName = `${serverData.nama || ''} ${serverData.nama_belakang || ''}`.trim();
          const cleanSidebarSession = {
@@ -91,7 +109,7 @@ export const useProfileLogic = () => {
       } 
       // Jika API 404 (Belum didaftarkan ke Database Katib)
       else {
-         console.warn("API Get Detail mengembalikan null/404:", result.message);
+         console.warn("API Get Detail mengembalikan null/404 (Ini Wajar Untuk User Baru):", result.message);
          
          if (fallbackData) {
             let namaDepan = fallbackData.nama || fallbackData.name || '';
@@ -103,12 +121,11 @@ export const useProfileLogic = () => {
                 namaBelakang = nameParts.slice(1).join(' ') || '';
             }
             
-            // ✨ PAKSA EXTRACT NOMOR HP DARI SESI OTP ✨
             const convertedFallback = {
                 ...fallbackData,
                 nama: namaDepan,
                 nama_belakang: namaBelakang,
-                phone: fallbackData.phone || currentSession.phone || '', // Nomor HP Wajib Tampil!
+                phone: fallbackData.phone || currentSession.phone || '', 
                 email: fallbackData.email || currentSession.email || '',
                 tanggal_lahir: fallbackData.tanggal_lahir || fallbackData.birth || '',
                 alamat: fallbackData.alamat || fallbackData.address || '',
@@ -116,6 +133,12 @@ export const useProfileLogic = () => {
             };
             
             setUser(convertedFallback as UserData);
+
+            // ✨ KUNCI REM CAKRAM WALAUPUN 404! 
+            // Agar komponen lain berhenti meneror Katib dengan request 404 yang sama.
+            globalCachedUser = convertedFallback;
+            globalProfileSyncDone = true; 
+
             broadcastProfileUpdate(convertedFallback);
          } else {
              handleLogout();
@@ -151,6 +174,7 @@ export const useProfileLogic = () => {
     const handleGlobalUpdate = (event: any) => {
        if (event.detail) {
            setUser(prev => prev ? { ...prev, ...event.detail } : event.detail);
+           globalCachedUser = { ...globalCachedUser, ...event.detail } as UserData; // Update global cache juga
        }
        const freshData = localStorage.getItem('user_profile');
        if (freshData) {
@@ -164,6 +188,10 @@ export const useProfileLogic = () => {
   }, [router]);
 
   const handleLogout = () => {
+    // Reset Rem Cakram saat Logout
+    globalProfileSyncDone = false;
+    globalCachedUser = null;
+    
     localStorage.removeItem('user_profile');
     Cookies.remove('auth_session');
     router.push('/login');
@@ -186,33 +214,23 @@ export const useProfileLogic = () => {
   };
 
   const updateProfile = async (formData: Partial<UserData>) => { 
-    // CATATAN: Hapus blok try-catch di sini agar Error bisa "dilempar" (throw) 
-    // ke GeneralTab.tsx sehingga UI bisa menampilkan Toast Merah jika gagal.
-
-    // 1. Update State React secara instan
     const updatedUser = { ...user, ...formData };
     setUser(updatedUser as UserData);
 
-    // 2. ✨ PERBAIKAN FATAL: Simpan LocalStorage secara UTUH
     const currentSessionString = localStorage.getItem('user_profile');
     let currentSession = currentSessionString ? JSON.parse(currentSessionString) : {};
     const combinedName = `${formData.nama || ''} ${formData.nama_belakang || ''}`.trim();
     
-    // Kita gabungkan (merge) semua data lama dengan data baru yang diubah.
-    // Tidak ada lagi data yang "tersunat" atau hilang.
     const updatedSession = { 
-        ...currentSession,               // Pertahankan token & data krusial lain
-        ...updatedUser,                  // Timpa dengan hasil ketikan form baru
-        name: combinedName || currentSession.name, // Khusus sidebar (jika butuh key 'name')
+        ...currentSession, 
+        ...updatedUser, 
+        name: combinedName || currentSession.name, 
         photo: currentSession.photo || formData.photo
     };
     
     localStorage.setItem('user_profile', JSON.stringify(updatedSession));
-    
-    // Broadcast perubahan ke komponen lain (seperti Header / Sidebar)
     broadcastProfileUpdate(updatedUser);
 
-    // 3. ✨ BODY REQUEST STRICT KE KATIB API ✨
     const payloadToBackend = {
       customer_id: formData.customer_id,
       owner_id: formData.owner_id || 4409,
@@ -237,17 +255,13 @@ export const useProfileLogic = () => {
         throw new Error("Gagal menyimpan data ke server database.");
     }
     
-    // ALERT DIHAPUS: Kita biarkan Toast di GeneralTab.tsx yang mengambil alih notifikasi sukses.
-    // setIsEditing(false) JUGA DIHAPUS DARI SINI: Sudah di-handle oleh handleSubmit di GeneralTab.tsx
-
-    // 4. Background Sync (Penyelaras Server)
+    // ✨ FORCE SYNC: Paksa tembak API ulang walau Rem Cakram aktif, karena user baru saja menyimpan data
     setTimeout(() => {
-        if (formData.customer_id) syncProfileWithServer(formData.customer_id, formData);
+        if (formData.customer_id) syncProfileWithServer(formData.customer_id, formData, true);
     }, 1500);
 
-    // Kembalikan nilai true agar handleSubmit di GeneralTab tahu prosesnya sukses
     return true; 
-};
+  };
 
   const uploadPhoto = async (file: File) => {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];

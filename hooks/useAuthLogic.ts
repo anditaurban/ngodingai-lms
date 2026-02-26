@@ -35,21 +35,19 @@ export const useAuthLogic = () => {
     setIsLoading(true);
 
     try {
-      // --- PERBAIKAN: TAMBAH FALLBACK VALUE ---
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
       const appId = process.env.NEXT_PUBLIC_APP_ID || '4409';
       
       const cleanPhone = formatPhoneNumber(phoneNumber);
       const endpoint = `${baseUrl}/customer_login/${appId}/${cleanPhone}`;
       
-      console.log("Menembak API ke:", endpoint); // Cek Console Browser!
+      console.log("Menembak API ke:", endpoint);
 
       const response = await fetch(endpoint, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
 
-      // Cek apakah response berupa JSON valid
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         throw new Error("Server Error: Endpoint tidak ditemukan (404/500)");
@@ -76,7 +74,7 @@ export const useAuthLogic = () => {
     }
   };
 
-// --- 2. API: VERIFY OTP ---
+  // --- 2. API: VERIFY OTP ---
   const handleVerifyLogin = async () => {
     const otpCode = otpValues.join('');
     
@@ -112,21 +110,28 @@ export const useAuthLogic = () => {
       console.log('Login Success:', data);
 
       if (typeof window !== 'undefined') {
-        // ✨ PERBAIKAN 1: Pastikan kita menyimpan object utama yang berisi data user
-        // Terkadang API mengembalikan data di dalam property "data" atau "user"
         const userProfileToSave = data.data || data.user || data; 
         localStorage.setItem('user_profile', JSON.stringify(userProfileToSave));
       }
 
-      // ✨ PERBAIKAN 2: Kita cari ID/Token yang valid di dalam response
-      // Asumsi ID bisa bernama customer_id, id, atau user_id di berbagai lapis JSON
       const activeUserId = data?.customer_id || data?.data?.customer_id || data?.user?.id || 'session_active';
 
-      // Kita buat masa kedaluwarsa yang solid: 7 hari, dan valid untuk semua halaman (path: '/')
+      // ✨ PERBAIKAN FATAL: Konfigurasi Cookie Standar Enterprise ✨
+      // 1. Ubah nama menjadi 'auth_session' agar sinkron dengan fungsi Logout.
+      // 2. Tambahkan secure: true dan sameSite: 'lax' agar tidak dihancurkan oleh Google Chrome.
+      Cookies.set('auth_session', activeUserId.toString(), { 
+          expires: 7,         // Usia mutlak: 7 hari
+          path: '/',          // Valid untuk semua halaman
+          secure: true,       // Wajib true di Vercel (HTTPS)
+          sameSite: 'lax'     // Keamanan standar browser modern
+      });
+      
+      // Sebagai pengaman ekstra (fallback jika Middleware masih mencari nama 'token')
       Cookies.set('token', activeUserId.toString(), { 
           expires: 7, 
           path: '/',
-          // secure: true // (Opsional: aktifkan jika web Anda sudah HTTPS/Production)
+          secure: true, 
+          sameSite: 'lax'
       });
       
       router.push('/my-class');
