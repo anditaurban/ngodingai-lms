@@ -46,7 +46,7 @@ export default function AssignmentTable({
   return (
     <>
       {/* ✨ FIX: Tambahkan overflow-y-auto dan max-h agar tabel bisa di-scroll mandiri */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[65vh] min-h-[400px] relative">
+      <div className="overflow-x-auto overflow-y-auto max-h-[65vh] min-h-100 relative">
         <table className="w-full text-left border-collapse">
           {/* ✨ FIX: Sticky Header (Menempel di atas saat di-scroll) */}
           <thead className="sticky top-0 z-20 shadow-sm">
@@ -131,7 +131,7 @@ export default function AssignmentTable({
                     </td>
 
                     {/* TD 2: Tautan & Deskripsi */}
-                    <td className="p-5 align-top max-w-[250px] border-r border-slate-200 dark:border-slate-700/50">
+                    <td className="p-5 align-top max-w-62.5 border-r border-slate-200 dark:border-slate-700/50">
                       <div className="flex flex-col gap-2">
                         <p
                           className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2"
@@ -175,7 +175,7 @@ export default function AssignmentTable({
                       <div
                         className={`inline-flex flex-col items-center justify-center size-14 rounded-2xl shadow-lg border-2 transition-all duration-300 ${
                           displayReviewed === "yes"
-                            ? "bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-500/20 text-white border-white dark:border-slate-800"
+                            ? "bg-linear-to-br from-amber-400 to-orange-500 shadow-orange-500/20 text-white border-white dark:border-slate-800"
                             : "bg-slate-100 dark:bg-slate-800 shadow-slate-200/20 dark:shadow-none text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700"
                         }`}
                       >
@@ -189,7 +189,7 @@ export default function AssignmentTable({
                     </td>
 
                     {/* TD 4: Status & Komentar (Murni Data Asli) */}
-                    <td className="p-5 align-top max-w-[200px] border-r border-slate-200 dark:border-slate-700/50">
+                    <td className="p-5 align-top max-w-50 border-r border-slate-200 dark:border-slate-700/50">
                       <div className="flex flex-col items-start gap-2">
                         {renderStatusBadge(displayReviewed)}
                         {displayComment && (
