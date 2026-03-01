@@ -11,6 +11,7 @@ interface AssignmentTableProps {
   onDelete: (id: number) => void;
   currentPage: number;
   totalPages: number;
+  totalRecords: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
 }
 
@@ -22,10 +23,10 @@ export default function AssignmentTable({
   onDelete,
   currentPage,
   totalPages,
+  totalRecords,
   setCurrentPage,
 }: AssignmentTableProps) {
   
-  // Renderer Lencana Status
   const renderStatusBadge = (reviewed: string) => {
     if (reviewed === "yes") {
       return (
@@ -45,23 +46,20 @@ export default function AssignmentTable({
 
   return (
     <>
-      {/* ✨ FIX: Tambahkan overflow-y-auto dan max-h agar tabel bisa di-scroll mandiri */}
       <div className="overflow-x-auto overflow-y-auto max-h-[65vh] min-h-100 relative">
         <table className="w-full text-left border-collapse">
-          {/* ✨ FIX: Sticky Header (Menempel di atas saat di-scroll) */}
           <thead className="sticky top-0 z-20 shadow-sm">
             <tr className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">
-              {/* Tambahkan sticky dan background color di setiap TH agar tidak transparan */}
-              <th className="sticky top-0 bg-slate-100 dark:bg-slate-900 p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700">
+              <th className="sticky top-0 bg-slate-100 dark:bg-slate-900 p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700 text-center">
                 Tugas & Proyek
               </th>
-              <th className="sticky top-0 bg-slate-100 dark:bg-slate-900 p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700">
+              <th className="sticky top-0 bg-slate-100 dark:bg-slate-900 p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700 text-center">
                 Tautan & Deskripsi
               </th>
               <th className="sticky top-0 bg-slate-100 dark:bg-slate-900 p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700 text-center">
                 Skor Evaluasi
               </th>
-              <th className="sticky top-0 bg-slate-100 dark:bg-slate-900 p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700">
+              <th className="sticky top-0 bg-slate-100 dark:bg-slate-900 p-5 font-bold border-b border-r border-slate-200 dark:border-slate-700 text-center">
                 Status & Komentar
               </th>
               <th className="sticky top-0 bg-slate-100 dark:bg-slate-900 p-5 font-bold border-b border-slate-200 dark:border-slate-700 text-center">
@@ -101,10 +99,7 @@ export default function AssignmentTable({
             ) : (
               assignments.map((item) => {
                 const displayReviewed = item.reviewed === "yes" ? "yes" : "no";
-
-                // ✨ FIX LOGIC: Jika sudah direview, mutlak nilai 10. Jika belum, strip (-).
                 const displayScore = displayReviewed === "yes" ? 10 : "-";
-
                 const displayComment = item.comment || "";
 
                 return (
@@ -125,7 +120,8 @@ export default function AssignmentTable({
                           <span className="material-symbols-outlined text-[14px]">
                             calendar_month
                           </span>
-                          {item.date}
+                          {/* Validasi aman untuk tanggal murni dari API */}
+                          {item.date && item.date !== "00/00/0000" ? item.date : "Belum ditentukan"}
                         </p>
                       </div>
                     </td>
@@ -170,7 +166,7 @@ export default function AssignmentTable({
                       </div>
                     </td>
 
-                    {/* TD 3: Skor Evaluasi (Visual Konsisten) */}
+                    {/* TD 3: Skor Evaluasi */}
                     <td className="p-5 align-top text-center border-r border-slate-200 dark:border-slate-700/50">
                       <div
                         className={`inline-flex flex-col items-center justify-center size-14 rounded-2xl shadow-lg border-2 transition-all duration-300 ${
@@ -188,7 +184,7 @@ export default function AssignmentTable({
                       </div>
                     </td>
 
-                    {/* TD 4: Status & Komentar (Murni Data Asli) */}
+                    {/* TD 4: Status & Komentar */}
                     <td className="p-5 align-top max-w-50 border-r border-slate-200 dark:border-slate-700/50">
                       <div className="flex flex-col items-start gap-2">
                         {renderStatusBadge(displayReviewed)}
@@ -239,43 +235,79 @@ export default function AssignmentTable({
         </table>
       </div>
 
-      {/* PAGINATION */}
-      {!loading && totalPages > 1 && (
-        <div className="p-5 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm font-medium text-slate-500">
-            Halaman{" "}
-            <strong className="text-slate-900 dark:text-white">
-              {currentPage}
-            </strong>{" "}
-            dari{" "}
-            <strong className="text-slate-900 dark:text-white">
-              {totalPages}
-            </strong>
-          </p>
-          <div className="flex items-center gap-2">
+      {/* ✨ PAGINASI LENGKAP DENGAN DESAIN "TOTAL TUGAS" */}
+      {!loading && (
+        <div className="p-5 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col md:flex-row items-center justify-between gap-4">
+          
+          {/* Bagian Kiri: Info Data & Halaman */}
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            {/* INI DESAIN ASLI ANDA YANG DIPINDAHKAN */}
+            <div className="text-sm font-bold text-slate-500 flex items-center">
+              Total:{" "}
+              <span className="text-slate-900 dark:text-white px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded-md mx-1.5">
+                {totalRecords}
+              </span>{" "}
+              Tugas
+            </div>
+            
+            <div className="hidden sm:block w-px h-5 bg-slate-300 dark:bg-slate-600"></div>
+            
+            <div className="text-sm font-medium text-slate-500">
+              Halaman{" "}
+              <strong className="text-slate-900 dark:text-white">{currentPage}</strong>{" "}
+              dari{" "}
+              <strong className="text-slate-900 dark:text-white">{totalPages || 1}</strong>
+            </div>
+          </div>
+
+          {/* Bagian Kanan: Tombol Kontrol Paginasi */}
+          <div className="flex items-center gap-1.5">
+            {/* Tombol First Page */}
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="px-2 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-[#00BCD4] dark:hover:bg-slate-700 transition-colors flex items-center justify-center"
+              title="Halaman Pertama"
+            >
+              <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_left</span>
+            </button>
+
+            {/* Tombol Prev */}
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors flex items-center gap-1"
+              className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-[#00BCD4] dark:hover:bg-slate-700 transition-colors flex items-center gap-1"
             >
-              <span className="material-symbols-outlined text-[18px]">
-                chevron_left
-              </span>{" "}
-              Prev
+              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+              <span className="hidden sm:inline">Prev</span>
             </button>
+
+            {/* Angka Halaman Saat Ini */}
+            <div className="px-4 py-2 bg-[#00BCD4] text-white rounded-lg text-sm font-bold shadow-md shadow-cyan-500/20">
+              {currentPage}
+            </div>
+
+            {/* Tombol Next */}
             <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors flex items-center gap-1"
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage >= totalPages}
+              className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-[#00BCD4] dark:hover:bg-slate-700 transition-colors flex items-center gap-1"
             >
-              Next{" "}
-              <span className="material-symbols-outlined text-[18px]">
-                chevron_right
-              </span>
+              <span className="hidden sm:inline">Next</span>
+              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+            </button>
+
+            {/* Tombol Last Page */}
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage >= totalPages}
+              className="px-2 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-[#00BCD4] dark:hover:bg-slate-700 transition-colors flex items-center justify-center"
+              title="Halaman Terakhir"
+            >
+              <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_right</span>
             </button>
           </div>
+
         </div>
       )}
     </>

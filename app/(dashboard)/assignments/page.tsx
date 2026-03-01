@@ -17,7 +17,7 @@ export default function AssignmentsPage() {
     currentPage,
     setCurrentPage,
     totalPages,
-    totalRecords,
+    totalRecords, // <-- Data ini sudah diambil dari hook
     searchQuery,
     setSearchQuery,
     isSearching,
@@ -124,13 +124,6 @@ export default function AssignmentsPage() {
               <span className="absolute right-4 top-1/2 -translate-y-1/2 size-5 border-2 border-slate-300 border-t-[#00BCD4] rounded-full animate-spin"></span>
             )}
           </div>
-          <div className="text-sm font-bold text-slate-500">
-            Total:{" "}
-            <span className="text-slate-900 dark:text-white px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded-md">
-              {totalRecords}
-            </span>{" "}
-            Tugas
-          </div>
         </div>
 
         {/* MEMANGGIL KOMPONEN TABEL */}
@@ -142,6 +135,7 @@ export default function AssignmentsPage() {
            onDelete={(id) => setDeleteId(id)}
            currentPage={currentPage}
            totalPages={totalPages}
+           totalRecords={totalRecords} // ✨ INI DIA BARIS YANG TADI KELUPAAN!
            setCurrentPage={setCurrentPage}
         />
       </div>

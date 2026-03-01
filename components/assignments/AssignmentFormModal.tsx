@@ -100,7 +100,7 @@ export default function AssignmentFormModal({
             </div>
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block ml-1">
-                Deskripsi / Catatan Tambahan <span className="text-red-500">*</span>
+                Deskripsi Proyek <span className="text-red-500">*</span>
               </label>
               <textarea
                 required
