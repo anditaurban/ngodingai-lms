@@ -63,7 +63,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
           <span className="material-symbols-outlined text-[14px] opacity-70">chevron_right</span>
           
           {/* Judul kelas aktif dengan aksen cyan */}
-          <span className="text-[#00BCD4] drop-shadow-[0_0_8px_rgba(0,188,212,0.3)] line-clamp-1 max-w-[250px] sm:max-w-md md:max-w-lg truncate block">
+          <span className="text-[#00BCD4] drop-shadow-[0_0_8px_rgba(0,188,212,0.3)] line-clamp-1 max-w-62.5 sm:max-w-md md:max-w-lg truncate block">
             {displayTitle}
           </span>
         </div>
