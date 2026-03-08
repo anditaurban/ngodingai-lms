@@ -1,21 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CourseData, CurriculumData } from '@/types';
+import { CourseData } from '@/types'; // 🗑️ CurriculumData sudah kita hapus dari import
 
 // Import Tabs
 import OverviewTab from './tabs/OverviewTab';
 // import PreparationTab from './tabs/PreparationTab';
 import ClassroomTab from './tabs/ClassroomTab';
-import MaterialsTab from './tabs/MaterialsTab'; // <-- Import Baru
+import MaterialsTab from './tabs/MaterialsTab';
 
+// 🗑️ Props curriculum dihapus karena sekarang ClassroomTab memanggil API sendiri
 interface CoursePlayerProps {
   course: CourseData;
-  curriculum?: CurriculumData; 
 }
 
-export default function CoursePlayer({ course, curriculum }: CoursePlayerProps) {
-  // Tambahkan 'materials' ke tipe state
+export default function CoursePlayer({ course }: CoursePlayerProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'preparation' | 'materials' | 'classroom'>('overview');
 
   return (
@@ -26,7 +25,7 @@ export default function CoursePlayer({ course, curriculum }: CoursePlayerProps) 
           {[
             { id: 'overview', icon: 'info', label: 'Overview' },
             // { id: 'preparation', icon: 'article', label: 'Preparation' },
-            { id: 'materials', icon: 'folder_open', label: 'Materi & Slides' }, // <-- Tab Baru
+            { id: 'materials', icon: 'folder_open', label: 'Materi & Slides' },
             { id: 'classroom', icon: 'play_circle', label: 'Classroom' },
           ].map((tab) => (
             <button
@@ -55,15 +54,14 @@ export default function CoursePlayer({ course, curriculum }: CoursePlayerProps) 
           <PreparationTab data={course.tabs.preparation} />
         )} */}
 
-        {/* Render Materials Tab */}
         {activeTab === 'materials' && (
           <MaterialsTab materials={course.tabs.materials} />
         )}
 
+        {/* ✨ CLASSROOM TAB: Sekarang memanggil API Katib dengan menginjeksi Course ID 1 */}
         {activeTab === 'classroom' && (
           <ClassroomTab 
-            curriculum={course.tabs.curriculum} 
-            legacyCurriculum={curriculum}
+            courseId={1} 
             slug={course.slug}
           />
         )}

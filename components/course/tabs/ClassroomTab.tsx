@@ -1,177 +1,230 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Module, Video, CurriculumData } from '@/types'; 
+import { useClassroomVideos, VideoData } from '@/hooks/useClassroomVideos'; 
 
 interface ClassroomTabProps {
-  curriculum?: Module[]; // Data dari courses.json (Default)
-  legacyCurriculum?: CurriculumData; // Data dari curriculum.json (Prioritas jika ada Batch)
+  courseId?: number; 
   slug?: string;
 }
 
-export default function ClassroomTab({ curriculum, legacyCurriculum, slug }: ClassroomTabProps) {
+export default function ClassroomTab({ courseId = 1, slug }: ClassroomTabProps) {
   
-  // 1. Tentukan Batch Aktif Default
-  // Kita cek apakah legacyCurriculum ada dan memiliki list batches
-  const [activeBatch, setActiveBatch] = useState(() => {
-    if (legacyCurriculum && legacyCurriculum.batches && legacyCurriculum.batches.length > 0) {
-      // Default pilih batch pertama (biasanya yang terbaru)
-      return legacyCurriculum.batches[0].id;
-    }
-    return '';
-  });
+  const {
+    batches,
+    selectedBatch,
+    isLoadingList,
+    isLoadingDetail,
+    error, // Ambil state error dari hook
+    fetchBatchDetail
+  } = useClassroomVideos(courseId);
 
-  // 2. LOGIKA PRIORITAS DATA (PERBAIKAN UTAMA)
-  // Cek apakah ada konten untuk batch yang sedang aktif?
-  const batchContent = activeBatch && legacyCurriculum?.content 
-    ? legacyCurriculum.content[activeBatch] 
-    : null;
+  const [activeBatchId, setActiveBatchId] = useState<number | ''>('');
+  const [currentVideo, setCurrentVideo] = useState<VideoData | null>(null);
 
-  // Jika batchContent ditemukan, GUNAKAN ITU. Jika tidak, fallback ke curriculum default.
-  const modulesToRender = batchContent || curriculum || [];
-
-  const [currentVideo, setCurrentVideo] = useState<Video | null>(null);
-
-  // 3. Effect: Reset video ke yang pertama saat Batch atau Modul berubah
   useEffect(() => {
-    if (modulesToRender.length > 0 && modulesToRender[0].videos.length > 0) {
-      setCurrentVideo(modulesToRender[0].videos[0]);
+    if (batches.length > 0 && activeBatchId === '') {
+      setActiveBatchId(batches[0].batch_id);
     }
-  }, [activeBatch, modulesToRender]); 
+  }, [batches, activeBatchId]);
 
-  // 4. Helper: Generate URL Video (Support GDrive & YouTube)
-  const isGDrive = (type?: string) => type === 'gdrive' || type === 'drive';
+  useEffect(() => {
+    if (selectedBatch && selectedBatch.videos && selectedBatch.videos.length > 0) {
+      const isVideoInCurrentBatch = selectedBatch.videos.some(v => v.video_id === currentVideo?.video_id);
+      
+      if (!currentVideo || !isVideoInCurrentBatch) {
+        setCurrentVideo(selectedBatch.videos[0]);
+      }
+    } else if (selectedBatch && selectedBatch.videos?.length === 0) {
+      setCurrentVideo(null);
+    }
+  }, [selectedBatch]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const getVideoSrc = (video: Video) => {
-    // Ambil ID dari field 'url' atau 'youtube_id'
-    const videoId = video.url || video.youtube_id;
-    
-    if (!videoId) return '';
+  const handleBatchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const batchId = Number(e.target.value);
+    setActiveBatchId(batchId);
+    fetchBatchDetail(batchId); 
+  };
 
-    if (isGDrive(video.type)) {
-      return `https://drive.google.com/file/d/${videoId}/preview`;
+  // ✨ FIX HELPER URL GDrive & YouTube
+  const isGDrive = (type?: string) => type?.toLowerCase() === 'gdrive' || type?.toLowerCase() === 'drive';
+
+  const getVideoSrc = (video: VideoData) => {
+    const rawId = video.video_url;
+    if (!rawId) return '';
+
+    // Jika tipenya GDrive, kita rakit URL preview yang legal
+    if (isGDrive(video.platform_type)) {
+      return `https://drive.google.com/file/d/${rawId}/preview`;
     }
     
-    // Default YouTube params
-    return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`;
+    // Jika YouTube, asumsikan ID tersebut ID Youtube
+    return `https://www.youtube.com/embed/${rawId}?autoplay=0&rel=0&modestbranding=1`;
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
       
-      {/* --- KIRI: VIDEO PLAYER --- */}
+      {/* =========================================
+          KIRI: VIDEO PLAYER & METADATA
+      ========================================= */}
       <div className="lg:col-span-8 space-y-4">
-        <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl relative border border-slate-800">
-          {currentVideo ? (
+        {/* Frame Video */}
+        <div className="aspect-video bg-[#0f111a] rounded-xl overflow-hidden shadow-2xl relative border border-slate-200 dark:border-slate-800">
+          
+          {/* Tampilkan Peringatan Error Jika API 401/Gagal */}
+          {error && !isLoadingList ? (
+            <div className="flex flex-col items-center justify-center h-full text-red-500 bg-red-50 dark:bg-red-900/10 p-6 text-center">
+              <span className="material-symbols-outlined text-4xl mb-2">error</span>
+              <h3 className="font-bold mb-1">Koneksi Server Gagal</h3>
+              <p className="text-sm opacity-80">{error}</p>
+            </div>
+          ) : currentVideo ? (
             <iframe 
               className="w-full h-full" 
               src={getVideoSrc(currentVideo)}
-              title={currentVideo.title}
+              title={currentVideo.video_title}
               frameBorder="0" 
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
               allowFullScreen
             ></iframe>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-slate-500">
-              <span className="material-symbols-outlined text-4xl mb-2">movie</span>
-              <p>Select a video to start learning</p>
+              {isLoadingList || isLoadingDetail ? (
+                <div className="size-10 border-4 border-slate-200 border-t-[#00BCD4] rounded-full animate-spin mb-4"></div>
+              ) : (
+                <span className="material-symbols-outlined text-4xl mb-2">movie_off</span>
+              )}
+              <p className="font-medium">
+                {isLoadingList || isLoadingDetail ? 'Memuat Video...' : 'Tidak ada video di batch ini.'}
+              </p>
             </div>
           )}
         </div>
-        {currentVideo && (
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded text-white uppercase tracking-wider ${
-                isGDrive(currentVideo.type) ? 'bg-green-600' : 'bg-red-600'
+
+        {/* Informasi Video yang Sedang Diputar */}
+        {currentVideo && !error && (
+          <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded text-white uppercase tracking-wider ${
+                isGDrive(currentVideo.platform_type) ? 'bg-emerald-500' : 'bg-red-500'
               }`}>
-                {isGDrive(currentVideo.type) ? 'Google Drive' : 'YouTube'}
+                {isGDrive(currentVideo.platform_type) ? 'Google Drive' : 'YouTube'}
+              </span>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono flex items-center gap-1">
+                <span className="material-symbols-outlined text-[12px]">schedule</span>
+                {currentVideo.video_duration}
               </span>
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{currentVideo.title}</h2>
-            <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px]">schedule</span>
-              {currentVideo.duration}
-            </p>
+            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
+              {currentVideo.video_title}
+            </h2>
           </div>
         )}
       </div>
 
-      {/* --- KANAN: PLAYLIST & BATCH SELECTOR --- */}
-      <div className="lg:col-span-4 flex flex-col h-150 lg:h-auto">
+      {/* =========================================
+          KANAN: BATCH SELECTOR & PLAYLIST
+      ========================================= */}
+      <div className="lg:col-span-4 flex flex-col h-125 lg:h-auto">
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col h-full overflow-hidden shadow-sm">
           
-          {/* Batch Dropdown (Hanya muncul jika ada data Batches) */}
-          {legacyCurriculum && legacyCurriculum.batches && legacyCurriculum.batches.length > 0 && (
-            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Select Batch</label>
-              <div className="relative">
+          {/* Header Dropdown Batch */}
+          <div className="p-5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+            <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">folder_copy</span>
+              Pilih Batch Kurikulum
+            </label>
+            
+            {isLoadingList ? (
+              <div className="h-10.5 w-full bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg"></div>
+            ) : error ? (
+               <div className="text-xs text-red-500 font-bold p-2 bg-red-50 rounded-lg">Gagal memuat batch.</div>
+            ) : (
+              <div className="relative group">
                 <select 
-                  value={activeBatch} 
-                  onChange={(e) => setActiveBatch(e.target.value)}
-                  className="w-full bg-white dark:bg-[#0f111a] border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#00BCD4] focus:border-[#00BCD4] cursor-pointer"
+                  value={activeBatchId} 
+                  onChange={handleBatchChange}
+                  disabled={isLoadingDetail || batches.length === 0}
+                  className="w-full bg-white dark:bg-[#0f111a] border-2 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white text-sm font-bold rounded-xl p-3 focus:ring-4 focus:ring-[#00BCD4]/20 focus:border-[#00BCD4] cursor-pointer appearance-none transition-all disabled:opacity-50"
                 >
-                  {legacyCurriculum.batches.map((batch) => (
-                    <option key={batch.id} value={batch.id}>{batch.name}</option>
+                  {batches.length === 0 && <option value="">Belum ada batch</option>}
+                  {batches.map((batch) => (
+                    <option key={batch.batch_id} value={batch.batch_id}>
+                      {batch.batch_name} — ({batch.batch_period})
+                    </option>
                   ))}
                 </select>
-              </div>
-            </div>
-          )}
-
-          {/* List Modules & Videos */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4">
-            {modulesToRender.length > 0 ? (
-              modulesToRender.map((module, mIdx) => (
-                <div key={mIdx} className="animate-fade-in">
-                  {/* Sticky Module Header */}
-                  <div className="px-2 mb-2 flex items-center gap-2 sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur z-10 py-2 border-b border-transparent">
-                     <span className="size-2 rounded-full bg-[#00BCD4] shrink-0"></span>
-                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider truncate" title={module.title}>
-                       {module.title}
-                     </h4>
-                  </div>
-                  
-                  {/* Video List */}
-                  <div className="space-y-1">
-                    {module.videos.map((video) => (
-                      <button
-                        key={video.id}
-                        onClick={() => setCurrentVideo(video)}
-                        className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-all group border ${
-                          currentVideo?.id === video.id 
-                          ? 'bg-[#00BCD4]/10 border-[#00BCD4] text-[#00BCD4]' 
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-700 border-transparent text-slate-700 dark:text-slate-300'
-                        }`}
-                      >
-                        <span className={`material-symbols-outlined text-[20px] shrink-0 mt-0.5 ${
-                          currentVideo?.id === video.id ? 'text-[#00BCD4]' : 'text-slate-400 group-hover:text-slate-600'
-                        }`}>
-                          {currentVideo?.id === video.id ? 'play_circle' : 'play_arrow'}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-sm font-medium leading-tight line-clamp-2 ${
-                             currentVideo?.id === video.id ? 'font-bold' : ''
-                          }`}>
-                            {video.title}
-                          </p>
-                          <span className="text-[10px] opacity-70 mt-1 inline-block font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600">
-                            {video.duration}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center h-40 text-center text-slate-500 p-4">
-                <span className="material-symbols-outlined text-3xl mb-2 opacity-50">folder_off</span>
-                <p className="text-sm">No content available for this batch.</p>
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-focus-within:text-[#00BCD4] transition-colors">
+                  expand_more
+                </span>
               </div>
             )}
           </div>
+
+          {/* Daftar Video Terkait */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {isLoadingDetail ? (
+              // Skeleton Loading saat fetch get-by-id
+              [1, 2, 3].map((i) => (
+                <div key={i} className="w-full h-18 bg-slate-100 dark:bg-slate-700/50 rounded-xl animate-pulse"></div>
+              ))
+            ) : selectedBatch?.videos && selectedBatch.videos.length > 0 ? (
+              // Render List Video Asli
+              selectedBatch.videos.map((video) => {
+                const isActive = currentVideo?.video_id === video.video_id;
+                
+                return (
+                  <button
+                    key={video.video_id}
+                    onClick={() => setCurrentVideo(video)}
+                    className={`w-full flex items-center justify-between p-3.5 rounded-xl text-left transition-all border-2 group ${
+                      isActive 
+                      ? 'bg-[#00BCD4]/10 border-[#00BCD4] shadow-sm shadow-cyan-500/10' 
+                      : 'border-transparent hover:border-slate-200 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`size-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                        isActive ? 'bg-[#00BCD4] text-white shadow-md shadow-cyan-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:text-[#00BCD4]'
+                      }`}>
+                        <span className="material-symbols-outlined text-[18px]">
+                          {isActive ? 'play_arrow' : 'smart_display'}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className={`text-sm leading-tight truncate ${
+                           isActive ? 'font-extrabold text-slate-900 dark:text-white' : 'font-semibold text-slate-600 dark:text-slate-300'
+                        }`}>
+                          {video.video_title}
+                        </p>
+                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest mt-0.5">
+                          {video.platform_type}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-mono font-bold px-2 py-1 rounded-md shrink-0 ${
+                      isActive ? 'bg-white dark:bg-slate-900 text-[#00BCD4]' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                    }`}>
+                      {video.video_duration}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              // Jika kosong
+              !isLoadingList && (
+                 <div className="flex flex-col items-center justify-center h-40 text-center text-slate-500">
+                  <span className="material-symbols-outlined text-3xl mb-2 opacity-50">videocam_off</span>
+                  <p className="text-sm font-medium">Video belum tersedia untuk batch ini.</p>
+                </div>
+              )
+            )}
+          </div>
+
         </div>
       </div>
+
     </div>
   );
 }

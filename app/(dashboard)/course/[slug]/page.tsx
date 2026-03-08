@@ -2,13 +2,12 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
+// Import data course saja (curriculum.json sudah dihapus)
 import coursesDataRaw from '../../../../data/courses.json';
-import curriculumDataRaw from '../../../../data/curriculum.json';
 import CoursePlayer from '../../../../components/course/CoursePlayer';
-import { CourseData, CurriculumData } from '../../../../types';
+import { CourseData } from '../../../../types';
 
 const courses = coursesDataRaw as unknown as CourseData[];
-const curriculumMap = curriculumDataRaw as unknown as Record<string, CurriculumData>;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -38,7 +37,6 @@ export default async function CourseDetailPage({ params }: PageProps) {
   const { slug } = await params;
   
   const course = courses.find((c) => c.slug === slug);
-  const curriculum = curriculumMap[slug];
 
   if (!course) {
     return notFound();
@@ -58,11 +56,6 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
         {/* Breadcrumb Navigation */}
         <div className="relative flex items-center gap-2 text-[11px] font-bold text-slate-100 uppercase tracking-wider z-10">
-          {/* Link Home diarahkan ke /my-class */}
-          {/* <Link href="/my-class" className="hover:text-[#00BCD4] transition-colors duration-200">
-            Home
-          </Link>
-          <span className="material-symbols-outlined text-[14px] opacity-70">chevron_right</span> */}
           
           <Link href="/my-class" className="hover:text-[#00BCD4] transition-colors duration-200">
             My Courses
@@ -70,14 +63,15 @@ export default async function CourseDetailPage({ params }: PageProps) {
           <span className="material-symbols-outlined text-[14px] opacity-70">chevron_right</span>
           
           {/* Judul kelas aktif dengan aksen cyan */}
-          <span className="text-[#00BCD4] drop-shadow-[0_0_8px_rgba(0,188,212,0.3)] line-clamp-1 max-w-62.5 sm:max-w-md md:max-w-lg truncate block">
+          <span className="text-[#00BCD4] drop-shadow-[0_0_8px_rgba(0,188,212,0.3)] line-clamp-1 max-w-[250px] sm:max-w-md md:max-w-lg truncate block">
             {displayTitle}
           </span>
         </div>
       </div>
 
       {/* Bagian bawah kembali normal, mengikuti styling dari CoursePlayer */}
-      <CoursePlayer course={course} curriculum={curriculum} />
+      {/* Mengirim props course saja, sesuai dengan perbaikan arsitektur kita */}
+      <CoursePlayer course={course} />
 
     </div>
   );
