@@ -1,17 +1,18 @@
 import type { NextConfig } from "next";
 
-// ✨ 1. UPDATE DAFTAR VIP (TAMBAH DEV.KATIB.CLOUD DI IMG-SRC)
+// ✨ 1. UPDATE DAFTAR VIP (Enterprise Standard menggunakan Wildcard)
+// Dengan menambahkan https://*.katib.cloud, otomatis dev, prod, dan region akan diizinkan.
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://dev.katib.cloud https://ui-avatars.com https://images.unsplash.com https://upload.wikimedia.org https://lh3.googleusercontent.com;
+    img-src 'self' blob: data: https://*.katib.cloud https://ui-avatars.com https://images.unsplash.com https://upload.wikimedia.org https://lh3.googleusercontent.com;
     font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    connect-src 'self' https://dev.katib.cloud https://region.katib.cloud;
+    connect-src 'self' https://*.katib.cloud;
     frame-src 'self' https://www.youtube.com https://drive.google.com https://docs.google.com https://www.google.com;
     upgrade-insecure-requests;
 `;
@@ -30,7 +31,7 @@ const nextConfig: NextConfig = {
   // Konfigurasi Image Next.js
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "dev.katib.cloud" }, // ✨ Daftarkan Katib secara eksplisit
+      { protocol: "https", hostname: "**.katib.cloud" }, // ✨ Mengizinkan gambar dari semua subdomain Katib
       { protocol: "https", hostname: "**" }, // Terima semua gambar lainnya
     ],
     dangerouslyAllowSVG: true,
