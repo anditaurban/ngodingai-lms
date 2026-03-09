@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useProfileLogic, UserData } from "../../hooks/useProfileLogic";
-// ✨ IMPORT TOAST HOOK
-import { useToast } from "@/components/ui/ToastProvider";
+// 🗑️ IMPORT TOAST LAMA DIHAPUS
 
 const InputField = ({ label, icon, type = "text", value, onChange, placeholder, disabled = false, className = "" }: any) => (
   <div className={`space-y-1.5 ${className}`}>
@@ -55,14 +54,23 @@ const parseRegionData = (regionString: string) => {
 export default function GeneralTab() {
   const { user, isEditing, setIsEditing, regionOptions, isSearchingRegion, searchRegion, updateProfile } = useProfileLogic();
   
-  // ✨ PANGGIL FUNGSI TOAST
-  const { showToast } = useToast();
-
   const [formData, setFormData] = useState<Partial<UserData>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [isSaving, setIsSaving] = useState(false); // ✨ State loading khusus untuk tombol simpan
+  const [isSaving, setIsSaving] = useState(false); 
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // ✨ STATE TOAST MODERN (Sama persis seperti di page.tsx)
+  const [toast, setToast] = useState<{ message: string; type: "error" | "success" | "loading" } | null>(null);
+  const toastTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = (message: string, type: "error" | "success" | "loading" = "error") => {
+    setToast({ message, type });
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    if (type !== "loading") {
+      toastTimer.current = setTimeout(() => setToast(null), 3500);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -94,29 +102,28 @@ export default function GeneralTab() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✨ UPDATE FUNGSI SUBMIT DENGAN TOAST
+  // ✨ LOGIKA SUBMIT MENGGUNAKAN TOAST BARU
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validasi sederhana
     if (!formData.nama) {
-        showToast('error', 'Nama depan tidak boleh kosong!');
+        showToast('Nama depan tidak boleh kosong!', 'error');
         return;
     }
 
     setIsSaving(true);
     try {
-        // Karena di hook Anda updateProfile sepertinya async, kita await
+        // Tampilkan loading abu-abu sebelum server merespon
+        showToast('Menyimpan perubahan...', 'loading');
+        
         await updateProfile(formData); 
         
-        // Panggil Toast Sukses
-        showToast('success', 'Data profil Anda berhasil diperbarui!');
-        
-        // Matikan mode edit setelah berhasil disimpan
+        // Timpa dengan notif hijau jika berhasil
+        showToast('Data profil berhasil diperbarui!', 'success');
         setIsEditing(false);
     } catch (error: any) {
-        // Panggil Toast Error jika gagal
-        showToast('error', error.message || 'Gagal memperbarui profil.');
+        // Timpa dengan notif merah jika gagal
+        showToast(error.message || 'Gagal memperbarui profil.', 'error');
     } finally {
         setIsSaving(false);
     }
@@ -129,6 +136,31 @@ export default function GeneralTab() {
   return (
     <div className="space-y-8 animate-fade-in pb-10">
       
+      {/* =========================================
+          ✨ MODERN TOAST UI (GLASSMORPHISM)
+      ========================================= */}
+      <div
+        className={`fixed top-8 left-1/2 -translate-x-1/2 z-100 transition-all duration-500 ease-out flex items-center gap-3.5 px-6 py-4 rounded-[25px] shadow-2xl border backdrop-blur-xl ${
+          toast
+            ? "opacity-100 translate-y-0 scale-100"
+            : "opacity-0 -translate-y-12 scale-95 pointer-events-none"
+        } ${
+          toast?.type === "success"
+            ? "bg-emerald-600/80 border-emerald-400/30 text-white shadow-emerald-500/20"
+            : toast?.type === "error"
+            ? "bg-red-600/80 border-red-400/30 text-white shadow-red-500/20"
+            : "bg-slate-800/80 dark:bg-slate-700/80 border-slate-500/30 text-white shadow-slate-900/30"
+        }`}
+      >
+        <span className={`material-symbols-outlined text-[24px] ${toast?.type === 'loading' ? 'animate-spin text-slate-300' : ''}`}>
+          {toast?.type === "success" ? "check_circle" : toast?.type === "error" ? "error" : "sync"}
+        </span>
+        <span className="text-[15px] font-bold tracking-wide">
+          {toast?.message}
+        </span>
+      </div>
+      {/* ========================================= */}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-slate-700 pb-6">
         <div>
           <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Informasi Pribadi</h3>
@@ -245,7 +277,6 @@ export default function GeneralTab() {
             </div>
           </section>
 
-          {/* ✨ UPDATE TOMBOL SUBMIT DENGAN LOADING STATE */}
           <div className="pt-4 flex justify-end">
             <button 
                 type="submit" 

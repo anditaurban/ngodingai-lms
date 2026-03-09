@@ -43,7 +43,6 @@ const broadcastProfileUpdate = (fullDataPayload?: any) => {
 
 // ============================================================================
 // ✨ REM CAKRAM GLOBAL (Global Cache) ✨
-// Mencegah Spam API: Jika 1 komponen sudah nembak, komponen lain tinggal numpang
 // ============================================================================
 let globalProfileSyncDone = false;
 let globalCachedUser: UserData | null = null;
@@ -59,10 +58,8 @@ export const useProfileLogic = () => {
   const [isSearchingRegion, setIsSearchingRegion] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
-  // Tambahkan parameter `forceSync` untuk memaksa update API jika user klik tombol "Simpan"
   const syncProfileWithServer = async (customerId: string | number, fallbackData?: any, forceSync: boolean = false) => {
     try {
-      // ✨ AKTIFKAN REM CAKRAM: Jika sudah sinkron di sesi ini, pakai data cache saja!
       if (globalProfileSyncDone && globalCachedUser && !forceSync) {
           setUser(globalCachedUser);
           setLoading(false);
@@ -76,7 +73,6 @@ export const useProfileLogic = () => {
       const currentSessionString = localStorage.getItem('user_profile');
       const currentSession = currentSessionString ? JSON.parse(currentSessionString) : {};
 
-      // Jika API Sukses dan menemukan user (minimal ada customer_id atau nama dari Katib)
       if (serverData && (serverData.nama || serverData.customer_id)) {
          const localPhoto = currentSession.photo || '';
          const isLocalBase64 = localPhoto.startsWith('data:image');
@@ -91,7 +87,6 @@ export const useProfileLogic = () => {
          
          setUser(finalUserData as UserData);
 
-         // Kunci Rem Cakram & Simpan ke Memory Global
          globalCachedUser = finalUserData;
          globalProfileSyncDone = true;
 
@@ -103,12 +98,16 @@ export const useProfileLogic = () => {
             photo: finalSyncPhoto,
          };
          
-         localStorage.setItem('user_profile', JSON.stringify(cleanSidebarSession));
+         // Pencegahan Error Quota Exceeded
+         try {
+             localStorage.setItem('user_profile', JSON.stringify(cleanSidebarSession));
+         } catch (e) {
+             console.warn("Storage penuh saat sinkronisasi!");
+         }
+         
          broadcastProfileUpdate(finalUserData);
          
-      } 
-      // Jika API 404 (Belum didaftarkan ke Database Katib)
-      else {
+      } else {
          console.warn("API Get Detail mengembalikan null/404 (Ini Wajar Untuk User Baru):", result.message);
          
          if (fallbackData) {
@@ -133,12 +132,8 @@ export const useProfileLogic = () => {
             };
             
             setUser(convertedFallback as UserData);
-
-            // ✨ KUNCI REM CAKRAM WALAUPUN 404! 
-            // Agar komponen lain berhenti meneror Katib dengan request 404 yang sama.
             globalCachedUser = convertedFallback;
             globalProfileSyncDone = true; 
-
             broadcastProfileUpdate(convertedFallback);
          } else {
              handleLogout();
@@ -174,7 +169,7 @@ export const useProfileLogic = () => {
     const handleGlobalUpdate = (event: any) => {
        if (event.detail) {
            setUser(prev => prev ? { ...prev, ...event.detail } : event.detail);
-           globalCachedUser = { ...globalCachedUser, ...event.detail } as UserData; // Update global cache juga
+           globalCachedUser = { ...globalCachedUser, ...event.detail } as UserData;
        }
        const freshData = localStorage.getItem('user_profile');
        if (freshData) {
@@ -188,10 +183,8 @@ export const useProfileLogic = () => {
   }, [router]);
 
   const handleLogout = () => {
-    // Reset Rem Cakram saat Logout
     globalProfileSyncDone = false;
     globalCachedUser = null;
-    
     localStorage.removeItem('user_profile');
     Cookies.remove('auth_session');
     router.push('/login');
@@ -228,7 +221,12 @@ export const useProfileLogic = () => {
         photo: currentSession.photo || formData.photo
     };
     
-    localStorage.setItem('user_profile', JSON.stringify(updatedSession));
+    try {
+      localStorage.setItem('user_profile', JSON.stringify(updatedSession));
+    } catch (e) {
+      console.warn("Storage penuh saat update profil.");
+    }
+
     broadcastProfileUpdate(updatedUser);
 
     const payloadToBackend = {
@@ -255,7 +253,6 @@ export const useProfileLogic = () => {
         throw new Error("Gagal menyimpan data ke server database.");
     }
     
-    // ✨ FORCE SYNC: Paksa tembak API ulang walau Rem Cakram aktif, karena user baru saja menyimpan data
     setTimeout(() => {
         if (formData.customer_id) syncProfileWithServer(formData.customer_id, formData, true);
     }, 1500);
@@ -263,11 +260,14 @@ export const useProfileLogic = () => {
     return true; 
   };
 
+  // ✨ PERBAIKAN FATAL: MENGHAPUS SEMUA ALERT & MENANGANI QUOTA EXCEEDED
   const uploadPhoto = async (file: File) => {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) return alert("Format tidak valid.");
-    if (file.size > 5 * 1024 * 1024) return alert("Maksimal ukuran 5MB.");
-    if (!user || !user.customer_id) return;
+    
+    // Ganti Alert dengan Lempar Error ke UI
+    if (!validTypes.includes(file.type)) throw new Error("Format tidak valid. Gunakan JPG/PNG.");
+    if (file.size > 5 * 1024 * 1024) throw new Error("Maksimal ukuran foto adalah 5MB.");
+    if (!user || !user.customer_id) throw new Error("Sesi pengguna tidak ditemukan.");
 
     setIsUploadingPhoto(true);
     try {
@@ -277,7 +277,15 @@ export const useProfileLogic = () => {
 
       const sessionStr = localStorage.getItem('user_profile');
       let currentSession = sessionStr ? JSON.parse(sessionStr) : {};
-      localStorage.setItem('user_profile', JSON.stringify({ ...currentSession, photo: base64LocalImage }));
+      
+      // ✨ SOLUSI ANTI CRASH (QUOTA EXCEEDED) ✨
+      try {
+        localStorage.setItem('user_profile', JSON.stringify({ ...currentSession, photo: base64LocalImage }));
+      } catch (storageError) {
+        console.warn("Storage melebihi kuota 5MB! Base64 diabaikan, menunggu URL asli dari Server...");
+        // Tetap simpan namanya saja, fotonya kita tunggu dari respon API nanti
+        localStorage.setItem('user_profile', JSON.stringify({ ...currentSession }));
+      }
       
       broadcastProfileUpdate(updatedUser);
 
@@ -287,10 +295,16 @@ export const useProfileLogic = () => {
         method: 'POST', body: formData,
       });
 
-      if (!response.ok) throw new Error("Gagal mengunggah ke server.");
-      alert("Foto profil berhasil diperbarui.");
+      if (!response.ok) throw new Error("Gagal mengunggah foto ke server backend.");
+      
+      // ✨ FORCE SYNC: Ambil URL foto resmi (yang kecil) dari server Katib agar storage tidak penuh
+      setTimeout(() => {
+        syncProfileWithServer(user.customer_id as string, updatedUser, true);
+      }, 1500);
+
+      return true; // Sukses!
     } catch (error: any) {
-      alert(error.message || "Terjadi kesalahan.");
+      throw error; // Lempar ke UI agar ditangkap oleh Toast
     } finally {
       setIsUploadingPhoto(false);
     }

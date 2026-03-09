@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useAssignments, AssignmentData } from "@/hooks/useAssignments";
-import { useToast } from "@/components/ui/ToastProvider";
 
 // Import komponen-komponen yang sudah kita pecah tadi
 import AssignmentTable from "@/components/assignments/AssignmentTable";
@@ -17,7 +16,7 @@ export default function AssignmentsPage() {
     currentPage,
     setCurrentPage,
     totalPages,
-    totalRecords, // <-- Data ini sudah diambil dari hook
+    totalRecords, 
     searchQuery,
     setSearchQuery,
     isSearching,
@@ -25,13 +24,24 @@ export default function AssignmentsPage() {
     deleteAssignment,
   } = useAssignments();
 
-  const { showToast } = useToast();
-
   // STATE UNTUK MODAL
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [formData, setFormData] = useState<Partial<AssignmentData>>({});
   const [deleteId, setDeleteId] = useState<number | null>(null);
+
+  // ✨ STATE TOAST MODERN
+  const [toast, setToast] = useState<{ message: string; type: "error" | "success" | "loading" } | null>(null);
+  const toastTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // ✨ FUNGSI TOAST CERDAS
+  const showToast = (message: string, type: "error" | "success" | "loading" = "error") => {
+    setToast({ message, type });
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    if (type !== "loading") {
+      toastTimer.current = setTimeout(() => setToast(null), 3500);
+    }
+  };
 
   // Fungsi Buka Modal Add
   const handleOpenAdd = () => {
@@ -51,9 +61,11 @@ export default function AssignmentsPage() {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.project_title || !formData.description) {
-      showToast("error", "Judul Proyek dan Deskripsi wajib diisi!");
+      showToast("Judul Proyek dan Deskripsi wajib diisi!", "error");
       return;
     }
+
+    showToast(modalMode === "add" ? "Menyimpan tugas..." : "Memperbarui tugas...", "loading");
 
     const rawResult = await submitAssignment(modalMode, formData);
     const isSuccess = typeof rawResult === "object" ? (rawResult as any).success : rawResult === true;
@@ -61,29 +73,59 @@ export default function AssignmentsPage() {
 
     if (isSuccess) {
       setIsModalOpen(false);
-      showToast("success", message);
+      showToast(message, "success"); 
     } else {
-      showToast("error", message);
+      showToast(message, "error"); 
     }
   };
 
   // Proses Confirm Delete
   const confirmDelete = async () => {
     if (!deleteId) return;
+    
+    showToast("Menghapus tugas...", "loading");
+
     const rawResult = await deleteAssignment(deleteId);
     const isSuccess = typeof rawResult === "object" ? (rawResult as any).success : rawResult === true;
     const message = typeof rawResult === "object" ? (rawResult as any).message : isSuccess ? "Berhasil dihapus!" : "Gagal menghapus.";
 
     if (isSuccess) {
       setDeleteId(null);
-      showToast("success", message);
+      showToast(message, "success");
     } else {
-      showToast("error", message);
+      showToast(message, "error");
     }
   };
 
   return (
     <div className="p-6 md:p-10 max-w-350 mx-auto min-h-screen animate-fade-in relative">
+      
+      {/* =========================================
+          ✨ MODERN TOAST UI DENGAN Z-INDEX DEWA
+      ========================================= */}
+      {/* 🛠️ PERUBAHAN: z-[100] menjadi z-[9999] agar selalu di depan modal mana pun! */}
+      <div
+        className={`fixed top-8 left-1/2 -translate-x-1/2 z-9999 transition-all duration-500 ease-out flex items-center gap-3.5 px-6 py-4 rounded-[25px] shadow-2xl border backdrop-blur-xl ${
+          toast
+            ? "opacity-100 translate-y-0 scale-100"
+            : "opacity-0 -translate-y-12 scale-95 pointer-events-none"
+        } ${
+          toast?.type === "success"
+            ? "bg-emerald-600/80 border-emerald-400/30 text-white shadow-emerald-500/20"
+            : toast?.type === "error"
+            ? "bg-red-600/80 border-red-400/30 text-white shadow-red-500/20"
+            : "bg-slate-800/80 dark:bg-slate-700/80 border-slate-500/30 text-white shadow-slate-900/30"
+        }`}
+      >
+        <span className={`material-symbols-outlined text-[24px] ${toast?.type === 'loading' ? 'animate-spin text-slate-300' : ''}`}>
+          {toast?.type === "success" ? "check_circle" : toast?.type === "error" ? "error" : "sync"}
+        </span>
+        <span className="text-[15px] font-bold tracking-wide">
+          {toast?.message}
+        </span>
+      </div>
+      {/* ========================================= */}
+
       {/* HEADER PAGE */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
@@ -135,28 +177,28 @@ export default function AssignmentsPage() {
            onDelete={(id) => setDeleteId(id)}
            currentPage={currentPage}
            totalPages={totalPages}
-           totalRecords={totalRecords} // ✨ INI DIA BARIS YANG TADI KELUPAAN!
+           totalRecords={totalRecords}
            setCurrentPage={setCurrentPage}
         />
       </div>
 
       {/* MEMANGGIL KOMPONEN MODAL FORM */}
       <AssignmentFormModal 
-          isOpen={isModalOpen}
-          mode={modalMode}
-          formData={formData}
-          setFormData={setFormData}
-          onClose={() => setIsModalOpen(false)}
-          onSubmit={handleFormSubmit}
-          isProcessing={isProcessing}
+         isOpen={isModalOpen}
+         mode={modalMode}
+         formData={formData}
+         setFormData={setFormData}
+         onClose={() => setIsModalOpen(false)}
+         onSubmit={handleFormSubmit}
+         isProcessing={isProcessing}
       />
 
       {/* MEMANGGIL KOMPONEN MODAL DELETE */}
       <AssignmentDeleteModal 
-          deleteId={deleteId}
-          onClose={() => setDeleteId(null)}
-          onConfirm={confirmDelete}
-          isProcessing={isProcessing}
+         deleteId={deleteId}
+         onClose={() => setDeleteId(null)}
+         onConfirm={confirmDelete}
+         isProcessing={isProcessing}
       />
       
     </div>

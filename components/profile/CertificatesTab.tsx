@@ -5,7 +5,7 @@ import { useCertificate } from '@/hooks/useCertificate';
 import { Inter, DM_Sans } from 'next/font/google'; 
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { useToast } from '@/components/ui/ToastProvider';
+// 🗑️ IMPORT LAMA DIHAPUS
 
 const inter = Inter({ subsets: ['latin'] });
 const googleSansAlt = DM_Sans({ subsets: ['latin'], weight: ['400', '500', '700', '800'] });
@@ -14,22 +14,32 @@ export default function CertificatesTab() {
   const { data: certificateData, loading, error } = useCertificate();
   const [isProcessing, setIsProcessing] = useState(false);
   
-  const { showToast } = useToast();
-  
   const certificateRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const [scale, setScale] = useState(1);
   const [sessionName, setSessionName] = useState("Nama Peserta");
   
-  // ✨ LOGIKA CERDAS: State dinamis berdasarkan API
+  // ✨ STATE TOAST MODERN
+  const [toast, setToast] = useState<{ message: string; type: "error" | "success" | "loading" } | null>(null);
+  const toastTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // ✨ FUNGSI TOAST CERDAS
+  const showToast = (message: string, type: "error" | "success" | "loading" = "error") => {
+    setToast({ message, type });
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    if (type !== "loading") {
+      toastTimer.current = setTimeout(() => setToast(null), 3500);
+    }
+  };
+
   const [statusDetermined, setStatusDetermined] = useState(false);
   const [assignmentStatus, setAssignmentStatus] = useState<{
-     submitted: boolean;
-     reviewed: 'yes' | 'no';
+      submitted: boolean;
+      reviewed: 'yes' | 'no';
   }>({
-     submitted: false, 
-     reviewed: 'no', 
+      submitted: false, 
+      reviewed: 'no', 
   });
 
   useEffect(() => {
@@ -45,26 +55,21 @@ export default function CertificatesTab() {
     }
   }, []);
 
-  // ✨ LOGIKA CERDAS: Menganalisa balasan dari Katib
   useEffect(() => {
       if (loading) return;
 
-      // Ambil teks pesan dari error atau response JSON Katib (Fake 200 OK)
       const errMsg = (error || '').toLowerCase();
       const rawData = certificateData as any;
       const dataMsg = (rawData?.detail?.message || rawData?.message || '').toLowerCase();
       
       const combinedMsg = errMsg + ' ' + dataMsg;
 
-      // 1. Deteksi apakah sedang dalam tahap review
       if (combinedMsg.includes('tunggu') || combinedMsg.includes('ditinjau')) {
           setAssignmentStatus({ submitted: true, reviewed: 'no' });
       } 
-      // 2. Deteksi apakah belum ada tugas (Data not found / success: false yang bukan review)
       else if (combinedMsg.includes('not found') || combinedMsg.includes('belum') || rawData?.detail?.success === false || error) {
           setAssignmentStatus({ submitted: false, reviewed: 'no' });
       } 
-      // 3. Sertifikat Siap!
       else if (certificateData) {
           setAssignmentStatus({ submitted: true, reviewed: 'yes' });
       }
@@ -72,11 +77,8 @@ export default function CertificatesTab() {
       setStatusDetermined(true);
   }, [certificateData, error, loading]);
 
-
-  // Effect untuk Resize Scale Canvas Sertifikat
   useEffect(() => {
       const container = containerRef.current;
-      // Tunggu sampai UI tidak loading dan status sudah ditentukan
       if (!container || loading || !statusDetermined || assignmentStatus.reviewed === 'no') return; 
 
       const updateScale = () => {
@@ -118,9 +120,11 @@ export default function CertificatesTab() {
   const handleDownload = async () => {
     if (!certificateRef.current) return;
     setIsProcessing(true);
+    
+    // ✨ TAMPILKAN TOAST LOADING
+    showToast('Sedang menyiapkan PDF resolusi tinggi...', 'loading');
 
     try {
-      // ✨ FIX FONT: Pastikan browser sudah selesai me-load font API sebelum diconvert
       await document.fonts.ready; 
 
       const dataUrl = await toPng(certificateRef.current, {
@@ -143,21 +147,18 @@ export default function CertificatesTab() {
       const safeName = sessionName.replace(/[^a-z0-9]/gi, '_');
       pdf.save(`Sertifikat_NgodingAI_${safeName}.pdf`);
       
-      showToast('success', 'Sertifikat berhasil diunduh dalam format PDF!');
+      // ✨ TIMPA DENGAN TOAST SUKSES
+      showToast('Sertifikat berhasil diunduh!', 'success');
 
     } catch (err: any) {
       console.warn("Render PDF Error:", err.message);
-      showToast('error', 'Gagal mengunduh sertifikat. Silakan coba lagi.');
+      // ✨ TIMPA DENGAN TOAST ERROR
+      showToast('Gagal mengunduh sertifikat. Silakan coba lagi.', 'error');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // =========================================================
-  // RENDER UI BERDASARKAN STATUS
-  // =========================================================
-
-  // 1. STATE LOADING / ANALISA STATUS
   if (loading || !statusDetermined) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3 animate-fade-in">
@@ -167,7 +168,6 @@ export default function CertificatesTab() {
     );
   }
 
-  // 2. STATE TUGAS BELUM DIKIRIM (DATA NOT FOUND)
   if (!assignmentStatus.submitted) {
      return (
         <div className={`animate-fade-in flex flex-col items-center justify-center py-16 px-4 text-center bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 ${inter.className}`}>
@@ -191,7 +191,6 @@ export default function CertificatesTab() {
      );
   }
 
-  // 3. STATE TUGAS SEDANG DI-REVIEW (TUNGGU SEBENTAR LAGI YA...)
   if (assignmentStatus.submitted && assignmentStatus.reviewed === 'no') {
      return (
         <div className={`animate-fade-in flex flex-col items-center justify-center py-16 px-4 text-center bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl border border-blue-100 dark:border-blue-900/30 ${inter.className}`}>
@@ -208,10 +207,34 @@ export default function CertificatesTab() {
      );
   }
 
-  // 4. STATE SERTIFIKAT TAMPIL (READY / REVIEWED YES)
   return (
     <div className={`animate-fade-in relative max-w-5xl mx-auto ${inter.className}`}>
       
+      {/* =========================================
+          ✨ MODERN TOAST UI (GLASSMORPHISM)
+      ========================================= */}
+      <div
+        className={`fixed top-8 left-1/2 -translate-x-1/2 z-100 transition-all duration-500 ease-out flex items-center gap-3.5 px-6 py-4 rounded-[25px] shadow-2xl border backdrop-blur-xl ${
+          toast
+            ? "opacity-100 translate-y-0 scale-100"
+            : "opacity-0 -translate-y-12 scale-95 pointer-events-none"
+        } ${
+          toast?.type === "success"
+            ? "bg-emerald-600/80 border-emerald-400/30 text-white shadow-emerald-500/20"
+            : toast?.type === "error"
+            ? "bg-red-600/80 border-red-400/30 text-white shadow-red-500/20"
+            : "bg-slate-800/80 dark:bg-slate-700/80 border-slate-500/30 text-white shadow-slate-900/30"
+        }`}
+      >
+        <span className={`material-symbols-outlined text-[24px] ${toast?.type === 'loading' ? 'animate-spin text-slate-300' : ''}`}>
+          {toast?.type === "success" ? "check_circle" : toast?.type === "error" ? "error" : "sync"}
+        </span>
+        <span className="text-[15px] font-bold tracking-wide">
+          {toast?.message}
+        </span>
+      </div>
+      {/* ========================================= */}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
            <h3 className={`text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 ${googleSansAlt.className}`}>
@@ -267,8 +290,6 @@ export default function CertificatesTab() {
                  transform: `scale(${scale})` 
              }}
          >
-             {/* ✨ FIX FONT UNTUK EXPORT PDF ✨ */}
-             {/* Mengimport font manual (bukan via next/font) agar html-to-image bisa melihat dan mengekstraknya */}
              <style dangerouslySetInnerHTML={{
                 __html: `
                 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;700&display=swap');

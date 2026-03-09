@@ -27,9 +27,25 @@ export default function ProfilePage() {
   const [isRotating, setIsRotating] = useState(false);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
 
+  // ✨ STATE BARU: OPTIMISTIC UI (Bypass lambatnya server Katib)
+  const [localPhoto, setLocalPhoto] = useState<string | null>(null);
+
+  // STATE TOAST DIPERBARUI: Tambah tipe 'loading'
+  const [toast, setToast] = useState<{ message: string; type: "error" | "success" | "loading" } | null>(null);
+  const toastTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // FUNGSI TOAST LEBIH PINTAR
+  const showToast = (message: string, type: "error" | "success" | "loading" = "error") => {
+    setToast({ message, type });
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    if (type !== "loading") {
+      toastTimer.current = setTimeout(() => setToast(null), 3500);
+    }
+  };
+
   useEffect(() => {
     setImageError(false);
-  }, [user?.photo]);
+  }, [user?.photo, localPhoto]);
 
   const handleLogoutClick = () => {
     window.history.back();
@@ -63,9 +79,24 @@ export default function ProfilePage() {
     if (fileInputRef.current) fileInputRef.current.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) uploadPhoto(file);
+    if (file) {
+      try {
+        // ✨ 1. UPDATE VISUAL INSTAN SEBELUM SERVER SELESAI
+        const tempUrl = URL.createObjectURL(file);
+        setLocalPhoto(tempUrl);
+
+        // 2. JALANKAN PROSES SERVER (Bisa makan 13 detik)
+        showToast("Sedang mengunggah foto...", "loading");
+        await uploadPhoto(file); 
+        showToast("Foto profil berhasil diperbarui!", "success");
+      } catch (error: any) {
+        // ✨ JIKA GAGAL (Maks 5MB / Error), KEMBALIKAN KE FOTO LAMA
+        setLocalPhoto(null);
+        showToast(error.message || "Gagal mengunggah foto.", "error");
+      }
+    }
     if (e.target) e.target.value = "";
   };
 
@@ -73,22 +104,26 @@ export default function ProfilePage() {
     if (!user || isUploadingPhoto || isRotating) return;
     setIsAvatarMenuOpen(false);
 
-    const currentPhotoUrl = user.photo || user.avatar;
-    if (!currentPhotoUrl) return alert("Tidak ada foto untuk diputar");
+    // ✨ GUNAKAN FOTO TERBARU (Local) JIKA ADA
+    const currentPhotoUrl = localPhoto || user.photo || user.avatar;
+    if (!currentPhotoUrl) {
+      return showToast("Tidak ada foto untuk diputar!", "error");
+    }
 
     setIsRotating(true);
     try {
+      showToast("Sedang memproses foto...", "loading");
+      
       const img = new Image();
-      img.crossOrigin = "anonymous";
-
-      if (currentPhotoUrl.startsWith("data:image")) {
+      
+      // ✨ MENCEGAH ERROR CORS JIKA FOTO DARI LOCAL BLOB
+      if (currentPhotoUrl.startsWith("data:image") || currentPhotoUrl.startsWith("blob:")) {
         img.src = currentPhotoUrl;
       } else {
+        img.crossOrigin = "anonymous";
         let urlToFetch = currentPhotoUrl;
-        if (
-          urlToFetch.startsWith("http") &&
-          urlToFetch.includes("dev.katib.cloud")
-        ) {
+        // Gunakan wildcard .katib.cloud agar aman di Dev/Prod
+        if (urlToFetch.startsWith("http") && urlToFetch.includes(".katib.cloud")) {
           urlToFetch = `/api/proxy-image?url=${encodeURIComponent(urlToFetch)}`;
         }
         img.src = urlToFetch;
@@ -116,16 +151,27 @@ export default function ProfilePage() {
             const rotatedFile = new File([rotatedBlob], "rotated_profile.jpg", {
               type: "image/jpeg",
             });
-            await uploadPhoto(rotatedFile);
+            try {
+              // ✨ 1. UPDATE VISUAL INSTAN SEBELUM SERVER SELESAI
+              const tempUrl = URL.createObjectURL(rotatedBlob);
+              setLocalPhoto(tempUrl);
+
+              // 2. JALANKAN PROSES SERVER
+              await uploadPhoto(rotatedFile);
+              showToast("Foto berhasil diputar!", "success");
+            } catch (err: any) {
+              setLocalPhoto(null);
+              showToast(err.message || "Gagal memutar foto", "error");
+            }
           }
           setIsRotating(false);
         },
         "image/jpeg",
-        0.95,
+        0.95
       );
     } catch (error) {
       console.error("Gagal memutar gambar:", error);
-      alert("Terjadi kesalahan saat mencoba memutar gambar.");
+      showToast("Terjadi kesalahan saat mencoba memutar gambar.", "error");
       setIsRotating(false);
     }
   };
@@ -155,27 +201,56 @@ export default function ProfilePage() {
     );
   }
 
-  // ✨ PASTIKAN MENGAMBIL USER.NAMA dan USER.NAMA_BELAKANG TERLEBIH DAHULU ✨
   const fullName =
     `${user.nama || ""} ${user.nama_belakang || ""}`.trim() ||
     user.name ||
     "Peserta NgodingAI";
 
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=00BCD4&color=fff`;
-  let finalPhotoUrl = user.photo || user.avatar || "";
+  
+  // ✨ TAMPILKAN FOTO LOCAL JIKA ADA, BYPASS SERVER CACHE
+  let finalPhotoUrl = localPhoto || user.photo || user.avatar || "";
 
   if (
+    !localPhoto &&
     finalPhotoUrl.startsWith("http") &&
-    finalPhotoUrl.includes("dev.katib.cloud")
+    finalPhotoUrl.includes(".katib.cloud")
   ) {
     finalPhotoUrl = `/api/proxy-image?url=${encodeURIComponent(finalPhotoUrl)}`;
   }
+
   const displayPhoto = imageError
     ? defaultAvatar
     : finalPhotoUrl || defaultAvatar;
 
   return (
-    <div className="p-6 md:p-10 max-w-5xl mx-auto min-h-screen animate-fade-in">
+    <div className="p-6 md:p-10 max-w-5xl mx-auto min-h-screen animate-fade-in relative">
+      
+      {/* =========================================
+          ✨ MODERN TOAST UI (GLASSMORPHISM + ROUNDED 25px)
+      ========================================= */}
+      <div
+        className={`fixed top-8 left-1/2 -translate-x-1/2 z-100 transition-all duration-500 ease-out flex items-center gap-3.5 px-6 py-4 rounded-[25px] shadow-2xl border backdrop-blur-xl ${
+          toast
+            ? "opacity-100 translate-y-0 scale-100"
+            : "opacity-0 -translate-y-12 scale-95 pointer-events-none"
+        } ${
+          toast?.type === "success"
+            ? "bg-emerald-600/80 border-emerald-400/30 text-white shadow-emerald-500/20"
+            : toast?.type === "error"
+            ? "bg-red-600/80 border-red-400/30 text-white shadow-red-500/20"
+            : "bg-slate-800/80 dark:bg-slate-700/80 border-slate-500/30 text-white shadow-slate-900/30"
+        }`}
+      >
+        <span className={`material-symbols-outlined text-[24px] ${toast?.type === 'loading' ? 'animate-spin text-slate-300' : ''}`}>
+          {toast?.type === "success" ? "check_circle" : toast?.type === "error" ? "error" : "sync"}
+        </span>
+        <span className="text-[15px] font-bold tracking-wide">
+          {toast?.message}
+        </span>
+      </div>
+      {/* ========================================= */}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">
@@ -185,7 +260,6 @@ export default function ProfilePage() {
             Kelola informasi akun dan aktivitas belajar Anda.
           </p>
         </div>
-        {/* Tombol Keluar yang sudah disesuaikan onClick-nya */}
         <button
           onClick={handleLogoutClick}
           className="px-5 py-2.5 bg-white dark:bg-slate-800 text-red-500 rounded-xl text-sm font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2 border border-slate-200 dark:border-slate-700 shadow-sm"
@@ -293,7 +367,6 @@ export default function ProfilePage() {
                   <span className="material-symbols-outlined text-[14px]">
                     mail
                   </span>
-                  {/* ✨ Tampilkan email yang baru dilempar oleh Event ✨ */}
                   <span className="text-[13px] md:text-sm font-medium leading-none">
                     {user.email || "Email tidak tersedia"}
                   </span>
