@@ -15,7 +15,7 @@ export default function ClassroomTab({ courseId = 1, slug }: ClassroomTabProps) 
     selectedBatch,
     isLoadingList,
     isLoadingDetail,
-    error, // Ambil state error dari hook
+    error,
     fetchBatchDetail
   } = useClassroomVideos(courseId);
 
@@ -46,20 +46,54 @@ export default function ClassroomTab({ courseId = 1, slug }: ClassroomTabProps) 
     fetchBatchDetail(batchId); 
   };
 
-  // ✨ FIX HELPER URL GDrive & YouTube
-  const isGDrive = (type?: string) => type?.toLowerCase() === 'gdrive' || type?.toLowerCase() === 'drive';
+  const isGDrive = (type?: string) => {
+    if (!type) return false;
+    const t = type.toLowerCase();
+    return t.includes('drive') || t === 'gdrive' || t === 'google_drive';
+  };
 
-  const getVideoSrc = (video: VideoData) => {
-    const rawId = video.video_url;
-    if (!rawId) return '';
+  // ✨ EKSTRAKTOR ID UNTUK BERBAGAI KEBUTUHAN
+  const getCleanVideoId = (video: VideoData) => {
+    const rawInput = video.video_url?.trim();
+    if (!rawInput) return '';
 
-    // Jika tipenya GDrive, kita rakit URL preview yang legal
     if (isGDrive(video.platform_type)) {
-      return `https://drive.google.com/file/d/${rawId}/preview`;
+      let driveId = rawInput;
+      if (rawInput.includes('drive.google.com') || rawInput.includes('http')) {
+        const driveRegex = /(?:id=|file\/d\/|folders\/)([\w-]+)/;
+        const match = rawInput.match(driveRegex);
+        if (match && match[1]) driveId = match[1];
+      }
+      return driveId;
     }
     
-    // Jika YouTube, asumsikan ID tersebut ID Youtube
-    return `https://www.youtube.com/embed/${rawId}?autoplay=0&rel=0&modestbranding=1`;
+    let ytId = rawInput;
+    if (rawInput.includes('youtube.com') || rawInput.includes('youtu.be') || rawInput.includes('http')) {
+      const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+      const ytMatch = rawInput.match(ytRegex);
+      if (ytMatch && ytMatch[1]) ytId = ytMatch[1];
+    }
+    return ytId;
+  };
+
+  // Generate URL Embed (Iframe)
+  const getVideoEmbedUrl = (video: VideoData) => {
+    const id = getCleanVideoId(video);
+    if (!id) return '';
+    if (isGDrive(video.platform_type)) {
+      return `https://drive.google.com/file/d/${id}/preview`;
+    }
+    return `https://www.youtube.com/embed/${id}?autoplay=0&rel=0&modestbranding=1`;
+  };
+
+  // ✨ Generate URL External (Jika Iframe Diblokir)
+  const getVideoExternalUrl = (video: VideoData) => {
+    const id = getCleanVideoId(video);
+    if (!id) return '#';
+    if (isGDrive(video.platform_type)) {
+      return `https://drive.google.com/file/d/${id}/view?usp=sharing`;
+    }
+    return `https://www.youtube.com/watch?v=${id}`;
   };
 
   return (
@@ -70,8 +104,24 @@ export default function ClassroomTab({ courseId = 1, slug }: ClassroomTabProps) 
       ========================================= */}
       <div className="lg:col-span-8 space-y-4">
         {/* Frame Video */}
-        <div className="aspect-video bg-[#0f111a] rounded-xl overflow-hidden shadow-2xl relative border border-slate-200 dark:border-slate-800">
+        <div className="aspect-video bg-[#0f111a] rounded-xl overflow-hidden shadow-2xl relative border border-slate-200 dark:border-slate-800 group">
           
+          {/* ✨ TOMBOL FALLBACK UX (MUNCUL SAAT DI-HOVER ATAU JIKA DIBUTUHKAN) */}
+          {currentVideo && !error && (
+            <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <a 
+                href={getVideoExternalUrl(currentVideo)} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-xs font-bold px-4 py-2 rounded-lg border border-white/10 transition-all shadow-lg"
+                title="Buka video di tab baru jika pemutar ini tidak berfungsi"
+              >
+                <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                Buka di Tab Baru
+              </a>
+            </div>
+          )}
+
           {/* Tampilkan Peringatan Error Jika API 401/Gagal */}
           {error && !isLoadingList ? (
             <div className="flex flex-col items-center justify-center h-full text-red-500 bg-red-50 dark:bg-red-900/10 p-6 text-center">
@@ -80,16 +130,34 @@ export default function ClassroomTab({ courseId = 1, slug }: ClassroomTabProps) 
               <p className="text-sm opacity-80">{error}</p>
             </div>
           ) : currentVideo ? (
-            <iframe 
-              className="w-full h-full" 
-              src={getVideoSrc(currentVideo)}
-              title={currentVideo.video_title}
-              frameBorder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-              allowFullScreen
-            ></iframe>
+            <>
+              {/* Pesan Latar Belakang jika iframe diblokir Google */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 z-0 p-8 text-center bg-[#0f111a]">
+                 <span className="material-symbols-outlined text-4xl mb-3 opacity-50">block</span>
+                 <p className="text-sm font-medium mb-4">Video dibatasi oleh Google Drive.</p>
+                 <a 
+                    href={getVideoExternalUrl(currentVideo)} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-[#00BCD4] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg hover:bg-[#00acc1]"
+                 >
+                    <span className="material-symbols-outlined text-[18px]">play_circle</span>
+                    Tonton di Google Drive
+                 </a>
+              </div>
+
+              {/* Iframe Utama (Berada di atas pesan latar belakang) */}
+              <iframe 
+                className="relative w-full h-full z-10 bg-transparent" 
+                src={getVideoEmbedUrl(currentVideo)}
+                title={currentVideo.video_title}
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+              ></iframe>
+            </>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500">
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 relative z-10 bg-[#0f111a]">
               {isLoadingList || isLoadingDetail ? (
                 <div className="size-10 border-4 border-slate-200 border-t-[#00BCD4] rounded-full animate-spin mb-4"></div>
               ) : (
@@ -214,7 +282,7 @@ export default function ClassroomTab({ courseId = 1, slug }: ClassroomTabProps) 
             ) : (
               // Jika kosong
               !isLoadingList && (
-                 <div className="flex flex-col items-center justify-center h-40 text-center text-slate-500">
+                 <div className="flex flex-col items-center justify-center h-40 text-center text-slate-500 relative z-10 bg-[#0f111a]">
                   <span className="material-symbols-outlined text-3xl mb-2 opacity-50">videocam_off</span>
                   <p className="text-sm font-medium">Video belum tersedia untuk batch ini.</p>
                 </div>
