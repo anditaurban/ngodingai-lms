@@ -54,7 +54,7 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <h1 className="text-3xl font-extrabold tracking-tight">
-                Digital Academy
+                Digital Class
               </h1>
               <p className="text-[#666685] dark:text-gray-400 font-medium">
                 Log in to continue your learning journey.
