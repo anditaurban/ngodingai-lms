@@ -49,7 +49,6 @@ function BuilderContent() {
   
   const sectionMenuRef = useRef<HTMLDivElement>(null); 
   const articleHTMLRef = useRef<string>("<p>Mulai ketik materi kelas Anda di sini...</p>");
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -111,7 +110,6 @@ function BuilderContent() {
     showToast('success', 'Bagian berhasil dihapus.');
   };
 
-  // ✨ FIX: Menambahkan parameter targetSectionId
   const handleAddChapter = (targetSectionId: string, type: 'article' | 'video' | 'quiz') => {
     const newChapterId = `${Date.now()}`;
     const newChapterTitle = type === 'article' ? 'Artikel Baru' : type === 'video' ? 'Video Baru' : 'Kuis Baru';
@@ -122,7 +120,7 @@ function BuilderContent() {
         : mod
     );
     updateModulesAndSave(newModules);
-    setExpandedSection(targetSectionId); // Otomatis buka bagian ini
+    setExpandedSection(targetSectionId); 
     handleChapterChange(newChapterId);
   };
 
@@ -160,20 +158,56 @@ function BuilderContent() {
   return (
     <div className={`flex flex-col h-screen bg-[#fafafa] dark:bg-[#0a0a0a] ${inter.className}`}>
       
+      {/* ✨ REFINED HEADER (CLEAR SEPARATION) ✨ */}
       <header className="h-16 shrink-0 bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 z-40 sticky top-0 shadow-sm">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Link href="/instructor" className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"><span className="material-symbols-outlined text-[24px] block">arrow_back</span></Link>
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors hidden md:block"><span className="material-symbols-outlined text-[24px] block">{isSidebarOpen ? 'menu_open' : 'menu'}</span></button>
-          <div className="h-5 w-px bg-slate-300 dark:bg-slate-700 hidden md:block"></div>
-          <div className="hidden sm:flex flex-col justify-center">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#00BCD4] uppercase tracking-widest mb-0.5"><span className="material-symbols-outlined text-[14px]">school</span><span>Course Editor</span></div>
-            <p className={`text-sm font-bold text-slate-800 dark:text-slate-200 truncate ${googleSansAlt.className}`}>{courseSlug.toUpperCase()}</p>
+        <div className="flex items-center gap-3">
+          
+          {/* 1. Navigasi Keluar (Breadcrumb Style) */}
+          <Link 
+            href="/instructor" 
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors" 
+            title="Kembali ke Dashboard Utama"
+          >
+            <span className="material-symbols-outlined text-[20px] block">arrow_back</span>
+            <span className="hidden sm:inline text-sm font-bold">Dashboard</span>
+          </Link>
+
+          <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 hidden md:block mx-1"></div>
+
+          {/* 2. Kontrol Layout (Sidebar Toggle - Active State Style) */}
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+            className={`hidden md:flex items-center justify-center p-2 rounded-xl transition-all duration-200 ${
+              isSidebarOpen 
+              ? 'bg-cyan-50 text-[#00BCD4] dark:bg-cyan-900/30' 
+              : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`} 
+            title="Buka/Tutup Panel Kurikulum"
+          >
+            <span className="material-symbols-outlined text-[22px] block">
+              {isSidebarOpen ? 'view_sidebar' : 'menu'}
+            </span>
+          </button>
+          
+          {/* Info Kelas Aktif */}
+          <div className="hidden lg:flex flex-col justify-center ml-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#00BCD4] uppercase tracking-widest mb-0.5">
+              <span className="material-symbols-outlined text-[14px]">school</span>
+              <span>Course Editor</span>
+            </div>
+            <p className={`text-sm font-bold text-slate-800 dark:text-slate-200 truncate ${googleSansAlt.className}`}>
+              {courseSlug.toUpperCase()}
+            </p>
           </div>
+
         </div>
+
         <div className="flex items-center gap-4">
           <span className="hidden lg:inline text-xs font-medium text-slate-400">Sinkron dengan Student App</span>
           <button onClick={handlePublishAll} className={`flex items-center gap-2 px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full text-sm font-bold transition-all hover:opacity-90 active:scale-95 shadow-md ${googleSansAlt.className}`}>
-            <span className="material-symbols-outlined text-[18px]">cloud_sync</span><span>Publish Semua</span>
+            <span className="material-symbols-outlined text-[18px]">cloud_sync</span>
+            <span className="hidden sm:inline">Publish Semua</span>
+            <span className="sm:hidden">Publish</span>
           </button>
         </div>
       </header>
@@ -208,12 +242,10 @@ function BuilderContent() {
                              <span className="material-symbols-outlined text-[16px] block">more_vert</span>
                           </button>
                           
-                          {/* ✨ MENU KEBAB SUPER CANGGIH ✨ */}
                           {openSectionMenuId === mod.id && (
                             <div ref={sectionMenuRef} className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 py-2 origin-top-right animate-in fade-in zoom-in-95 duration-200">
                                
-                               {/* Grup Aksi: Tambah Bab */}
-                               <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tambah Materi ke Bagian Ini</div>
+                               <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tambah Materi</div>
                                <button onClick={(e) => { e.stopPropagation(); handleAddChapter(mod.id, 'article'); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-cyan-50 hover:text-cyan-600 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors">
                                   <span className="material-symbols-outlined text-[16px] text-cyan-500">article</span> Artikel Teks
                                </button>
@@ -226,7 +258,6 @@ function BuilderContent() {
 
                                <div className="h-px w-full bg-slate-100 dark:bg-slate-700/50 my-2"></div>
 
-                               {/* Grup Aksi: Pengaturan Bagian */}
                                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pengaturan Bagian</div>
                                <button onClick={(e) => { e.stopPropagation(); setEditingSectionId(mod.id); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors">
                                   <span className="material-symbols-outlined text-[16px]">edit</span> Ubah Nama
@@ -244,20 +275,20 @@ function BuilderContent() {
                     )}
                   </div>
 
-                  <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[800px] opacity-100 pb-3 px-3' : 'max-h-0 opacity-0'}`}>
+                  <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-200 opacity-100 pb-3 px-3' : 'max-h-0 opacity-0'}`}>
                     <div className="space-y-1 mt-1 border-t border-slate-100 dark:border-slate-800 pt-2">
                       {mod.chapters.length === 0 ? (
                         <div className="py-4 px-3 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50 m-2">
                            <span className="material-symbols-outlined text-slate-300 text-2xl mb-1">post_add</span>
                            <p className="text-xs font-medium text-slate-500 leading-relaxed">
-                             Bagian ini belum memiliki materi.<br/>Gunakan menu titik tiga (⋮) di kanan atas untuk menambahkan.
+                             Bagian ini belum memiliki materi.<br/>Gunakan menu titik tiga (⋮) di atas untuk menambahkan.
                            </p>
                         </div>
                       ) : (
                         mod.chapters.map((chapter) => (
                           <button key={chapter.id} onClick={() => handleChapterChange(chapter.id)} className={`w-full text-left flex items-center justify-between gap-3 p-2.5 rounded-xl transition-all group ${activeChapter === chapter.id ? 'bg-[#00BCD4]/10 dark:bg-cyan-900/20 shadow-sm border border-[#00BCD4]/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'}`}>
                             <div className="flex items-center gap-2.5 overflow-hidden">
-                              <span className={`material-symbols-outlined text-[18px] ${activeChapter === chapter.id ? 'text-[#00BCD4]' : 'text-slate-400'}`}>{chapter.type === 'article' ? 'article' : chapter.type === 'video' ? 'play_circle' : 'quiz'}</span>
+                              <span className={`material-symbols-outlined text-[18px] ${activeChapter === chapter.id ? 'text-[#00BCD4]' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`}>{chapter.type === 'article' ? 'article' : chapter.type === 'video' ? 'play_circle' : 'quiz'}</span>
                               <p className={`text-xs font-medium truncate ${activeChapter === chapter.id ? 'text-[#00BCD4] font-bold' : 'text-slate-600 dark:text-slate-400'}`}>{chapter.title}</p>
                             </div>
                             <span className={`size-1.5 rounded-full shrink-0 ${chapter.status === 'draft' ? 'bg-amber-400' : 'bg-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity'}`}></span>
