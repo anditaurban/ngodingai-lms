@@ -256,7 +256,7 @@ function BuilderContent() {
                  <button onClick={() => handleAddChapter('quiz')} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-amber-50 dark:hover:bg-slate-700 text-sm font-bold"><div className="size-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center"><span className="material-symbols-outlined text-[16px]">quiz</span></div> Kuis Evaluasi</button>
              </div>
              <button onClick={() => setIsAddMenuOpen(!isAddMenuOpen)} className={`flex items-center justify-center gap-2 px-5 py-4 rounded-full text-sm font-bold transition-all shadow-xl active:scale-95 ${isAddMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white' : 'bg-slate-900 text-white hover:bg-slate-800 hover:shadow-2xl dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100'}`}>
-                <span className={`material-symbols-outlined transition-transform duration-300 ${isAddMenuOpen ? 'rotate-45' : ''}`}>add</span><span className="hidden sm:inline">Tambah Bab</span>
+                <span className={`material-symbols-outlined transition-transform duration-300 ${isAddMenuOpen ? 'rotate-45' : ''}`}>add</span><span className="hidden sm:inline">Tambah Sub Bab</span>
              </button>
           </div>
         </aside>
