@@ -28,7 +28,7 @@ interface MenuGroup {
   items: MenuItem[];
 }
 
-// --- MENU CONFIGURATION (Dipindah ke luar agar tidak re-render terus menerus) ---
+// --- MENU CONFIGURATION ---
 const menuGroups: MenuGroup[] = [
   {
     title: "Learning Center",
@@ -37,7 +37,6 @@ const menuGroups: MenuGroup[] = [
       { label: 'Assignments', href: '/assignments', icon: 'assignment' },
     ]
   },
-  // Tambahkan grup menu lain di sini jika diperlukan
 ];
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -51,7 +50,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   });
 
   // ✨ FUNGSI SINKRONISASI REAL-TIME ✨
-  // Menggunakan useCallback agar referensi fungsi stabil
   const loadProfile = useCallback(() => {
     try {
       const storedData = localStorage.getItem('user_profile');
@@ -65,7 +63,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         
         // 2. Ekstrak dan Amankan URL Foto (Bypass Proxy)
         let finalPhotoUrl = parsedData.photo || parsedData.avatar || "";
-        if (finalPhotoUrl.startsWith('http') && finalPhotoUrl.includes('dev.katib.cloud')) {
+        
+        // ✨ PERBAIKAN FATAL: Gunakan .katib.cloud agar mensupport Dev, Prod, maupun Region!
+        if (finalPhotoUrl.startsWith('http') && finalPhotoUrl.includes('.katib.cloud')) {
             finalPhotoUrl = `/api/proxy-image?url=${encodeURIComponent(finalPhotoUrl)}`;
         }
 
@@ -86,7 +86,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     // Panggil saat pertama kali load
     loadProfile();
 
-    // ✨ TELINGA GLOBAL ✨
     // Dengarkan sinyal dari Hook Profile setiap kali ada Save/Upload
     window.addEventListener('ngodingai_profile_updated', loadProfile);
     
@@ -98,6 +97,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const handleLogout = () => {
     Cookies.remove('token');
+    Cookies.remove('auth_session'); // Tambahan pembersihan ekstra
     localStorage.removeItem('user_profile');
     router.push('/');
   };
@@ -178,7 +178,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     src={user.avatar} 
                     className="size-10 rounded-full border border-slate-600 object-cover bg-slate-800" 
                     alt="Profile Avatar" 
-                    // ✨ Fallback jika proxy error
+                    // ✨ Fallback aman jika proxy atau server gambar bermasalah
                     onError={(e) => {
                        const target = e.target as HTMLImageElement;
                        target.onerror = null;
