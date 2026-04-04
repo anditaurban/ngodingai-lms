@@ -1,15 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CourseData } from '@/types'; // 🗑️ CurriculumData sudah kita hapus dari import
+import { CourseData } from '@/types'; 
 
 // Import Tabs
 import OverviewTab from './tabs/OverviewTab';
-// import PreparationTab from './tabs/PreparationTab';
+import PreparationTab from './tabs/PreparationTab';
 import ClassroomTab from './tabs/ClassroomTab';
 import MaterialsTab from './tabs/MaterialsTab';
 
-// 🗑️ Props curriculum dihapus karena sekarang ClassroomTab memanggil API sendiri
 interface CoursePlayerProps {
   course: CourseData;
 }
@@ -24,8 +23,8 @@ export default function CoursePlayer({ course }: CoursePlayerProps) {
         <div className="flex items-center gap-8 min-w-max">
           {[
             { id: 'overview', icon: 'info', label: 'Overview' },
-            // { id: 'preparation', icon: 'article', label: 'Preparation' },
-            { id: 'materials', icon: 'folder_open', label: 'Materi & Slides' },
+            { id: 'preparation', icon: 'menu_book', label: 'Preparations' },
+            { id: 'materials', icon: 'folder_open', label: 'Materials' },
             { id: 'classroom', icon: 'play_circle', label: 'Classroom' },
           ].map((tab) => (
             <button
@@ -50,15 +49,18 @@ export default function CoursePlayer({ course }: CoursePlayerProps) {
           <OverviewTab data={course.tabs.overview} />
         )}
 
-        {/* {activeTab === 'preparation' && (
-          <PreparationTab data={course.tabs.preparation} />
-        )} */}
+        {/* ✨ FIX: Menambahkan props courseSlug agar sinkron dengan Admin Instruktur ✨ */}
+        {activeTab === 'preparation' && (
+          <PreparationTab 
+            data={course.tabs.preparation} 
+            courseSlug={course.slug} 
+          />
+        )}
 
         {activeTab === 'materials' && (
           <MaterialsTab materials={course.tabs.materials} />
         )}
 
-        {/* ✨ CLASSROOM TAB: Sekarang memanggil API Katib dengan menginjeksi Course ID 1 */}
         {activeTab === 'classroom' && (
           <ClassroomTab 
             courseId={1} 
