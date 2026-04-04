@@ -23,8 +23,8 @@ export default function CoursePlayer({ course }: CoursePlayerProps) {
         <div className="flex items-center gap-8 min-w-max">
           {[
             { id: 'overview', icon: 'info', label: 'Overview' },
-            { id: 'preparation', icon: 'menu_book', label: 'Panduan Materi' },
-            { id: 'materials', icon: 'folder_open', label: 'Materi & Slides' },
+            { id: 'preparation', icon: 'menu_book', label: 'Preparations' },
+            { id: 'materials', icon: 'folder_open', label: 'Materials' },
             { id: 'classroom', icon: 'play_circle', label: 'Classroom' },
           ].map((tab) => (
             <button
