@@ -182,7 +182,7 @@ export default function InstructorDashboard() {
                        
                        {/* INI LINK PENGHUBUNG KE HALAMAN TIPTAP / BUILDER */}
                        <Link 
-                         href={`/article-builder?course=${course.slug}&chapter=1`} 
+                         href={`/course-editor?course=${course.slug}`} 
                          className={`flex-1 flex justify-center items-center gap-2 px-4 py-2.5 bg-[#00BCD4]/10 hover:bg-[#00BCD4] text-[#00BCD4] hover:text-white rounded-xl text-sm font-bold transition-all border border-[#00BCD4]/20 hover:border-[#00BCD4] active:scale-95 ${googleSansAlt.className}`}
                        >
                          <span className="material-symbols-outlined text-[18px]">edit_square</span>
