@@ -48,22 +48,22 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     avatar: 'https://ui-avatars.com/api/?name=User&background=random'
   });
 
-  // ✨ FUNGSI SINKRONISASI REAL-TIME ✨
+  // ✨ STATE UNTUK MODAL LOGOUT ✨
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  // --- FUNGSI SINKRONISASI REAL-TIME ---
   const loadProfile = useCallback(() => {
     try {
       const storedData = localStorage.getItem('user_profile');
       if (storedData) {
         const parsedData = JSON.parse(storedData);
         
-        // 1. Ekstrak Nama Lengkap
         const firstName = parsedData.nama || parsedData.name || '';
         const lastName = parsedData.nama_belakang || parsedData.last_name || '';
         const fullName = `${firstName} ${lastName}`.trim() || 'Student';
         
-        // 2. Ekstrak dan Amankan URL Foto (Bypass Proxy)
         let finalPhotoUrl = parsedData.photo || parsedData.avatar || "";
         
-        // ✨ PERBAIKAN FATAL: Gunakan .katib.cloud agar mensupport Dev, Prod, maupun Region!
         if (finalPhotoUrl.startsWith('http') && finalPhotoUrl.includes('.katib.cloud')) {
             finalPhotoUrl = `/api/proxy-image?url=${encodeURIComponent(finalPhotoUrl)}`;
         }
@@ -82,22 +82,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   }, []);
 
   useEffect(() => {
-    // Panggil saat pertama kali load
     loadProfile();
-
-    // Dengarkan sinyal dari Hook Profile setiap kali ada Save/Upload
     window.addEventListener('ngodingai_profile_updated', loadProfile);
-    
-    // Bersihkan pendengar saat komponen unmount
-    return () => {
-      window.removeEventListener('ngodingai_profile_updated', loadProfile);
-    };
+    return () => window.removeEventListener('ngodingai_profile_updated', loadProfile);
   }, [loadProfile]);
 
-  const handleLogout = () => {
+  // --- FUNGSI EKSEKUSI LOGOUT ---
+  const executeLogout = () => {
     Cookies.remove('token');
-    Cookies.remove('auth_session'); // Tambahan pembersihan ekstra
+    Cookies.remove('auth_session'); 
     localStorage.removeItem('user_profile');
+    
+    // Tutup modal dan arahkan ke homepage
+    setIsLogoutModalOpen(false);
     router.push('/');
   };
 
@@ -118,7 +115,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Overlay */}
+      {/* Mobile Overlay untuk Sidebar */}
       <div 
         onClick={onClose}
         aria-hidden="true"
@@ -129,7 +126,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar Container */}
       <aside className={`
-        fixed top-16 bottom-0 left-0 z-50 w-72 bg-[#1b2636] text-white border-r border-slate-800/50 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl
+        fixed top-16 bottom-0 left-0 z-40 w-72 bg-[#1b2636] text-white border-r border-slate-800/50 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl
         lg:translate-x-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
@@ -177,7 +174,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     src={user.avatar} 
                     className="size-10 rounded-full border border-slate-600 object-cover bg-slate-800" 
                     alt="Profile Avatar" 
-                    // ✨ Fallback aman jika proxy atau server gambar bermasalah
                     onError={(e) => {
                        const target = e.target as HTMLImageElement;
                        target.onerror = null;
@@ -197,9 +193,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
              </Link>
 
-             {/* Tombol Logout Kecil */}
+             {/* Tombol Logout (Kini memicu Modal, bukan langsung keluar) */}
              <button 
-                onClick={handleLogout}
+                onClick={() => setIsLogoutModalOpen(true)}
                 className="p-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-all duration-200 shrink-0"
                 title="Keluar"
                 aria-label="Logout"
@@ -209,6 +205,57 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         </div>
       </aside>
+
+      {/* =========================================
+          ✨ MODAL KONFIRMASI LOGOUT ✨
+      ========================================= */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
+          {/* Backdrop Blur */}
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsLogoutModalOpen(false)}
+          ></div>
+
+          {/* Modal Box */}
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full relative z-10 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in zoom-in-95 duration-200">
+            {/* Tombol Close (X) */}
+            <button 
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="absolute top-4 right-4 size-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-white transition-colors"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+
+            {/* Icon Peringatan */}
+            <div className="size-16 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center mb-5 border border-red-100 dark:border-red-900/30">
+              <span className="material-symbols-outlined text-3xl">logout</span>
+            </div>
+
+            <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-2">
+              Konfirmasi Keluar
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 leading-relaxed">
+              Apakah Anda yakin ingin keluar dari akun ini? Anda harus memasukkan Nomor Telepon dan Kode OTP kembali untuk masuk.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                onClick={() => setIsLogoutModalOpen(false)}
+                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={executeLogout}
+                className="flex-1 py-3 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95"
+              >
+                Ya, Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
