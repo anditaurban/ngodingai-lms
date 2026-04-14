@@ -34,7 +34,6 @@ const menuGroups: MenuGroup[] = [
     title: "Learning Center",
     items: [
       { label: 'My Courses', href: '/my-class', icon: 'school' },
-      { label: 'Assignments', href: '/assignments', icon: 'assignment' },
     ]
   },
 ];

@@ -17,7 +17,8 @@ export interface BatchData {
   videos: VideoData[];
 }
 
-export const useClassroomVideos = (courseId: number = 1) => {
+// ✨ FIX: Menambahkan parameter kedua `customerId`
+export const useClassroomVideos = (courseId: number = 1, customerId: number | null = null) => {
   const [batches, setBatches] = useState<BatchData[]>([]);
   const [selectedBatch, setSelectedBatch] = useState<BatchData | null>(null);
   
@@ -27,11 +28,14 @@ export const useClassroomVideos = (courseId: number = 1) => {
 
   // 1. API: MENGAMBIL LIST BATCH (LEWAT PROXY LOKAL)
   const fetchBatchList = useCallback(async () => {
+    // ✨ FIX: Cegah fetch jika customerId belum didapatkan dari session
+    if (!customerId) return;
+
     setIsLoadingList(true);
     setError(null);
     try {
-      // ✨ FIX: Sekarang tembak ke Proxy API route kita sendiri
-      const response = await fetch(`/api/course-video/list?courseId=${courseId}`);
+      // ✨ FIX: Kirimkan customerId sebagai query parameter ke Proxy API kita
+      const response = await fetch(`/api/course-video/list?courseId=${courseId}&customerId=${customerId}`);
       
       const result = await response.json();
 
@@ -53,14 +57,14 @@ export const useClassroomVideos = (courseId: number = 1) => {
     } finally {
       setIsLoadingList(false);
     }
-  }, [courseId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, customerId]); // ✨ FIX: Tambahkan customerId sebagai dependency
 
   // 2. API: MENGAMBIL DETAIL VIDEO PER BATCH (LEWAT PROXY LOKAL)
   const fetchBatchDetail = async (batchId: number) => {
     setIsLoadingDetail(true);
     setError(null);
     try {
-      // ✨ FIX: Tembak ke Proxy API route kita sendiri
       const response = await fetch(`/api/course-video/detail?batchId=${batchId}`);
       
       const result = await response.json();

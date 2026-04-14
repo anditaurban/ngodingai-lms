@@ -46,7 +46,7 @@ export default function AssignmentTable({
 
   return (
     <>
-      <div className="overflow-x-auto overflow-y-auto max-h-[65vh] min-h-100 relative">
+      <div className="overflow-x-auto overflow-y-auto max-h-[65vh] min-h-100 relative custom-scrollbar">
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 z-20 shadow-sm">
             <tr className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">
@@ -99,7 +99,7 @@ export default function AssignmentTable({
             ) : (
               assignments.map((item) => {
                 const displayReviewed = item.reviewed === "yes" ? "yes" : "no";
-                const displayScore = displayReviewed === "yes" ? 10 : "-";
+                const rawScore = item.evaluation_score || item.score || 5; 
                 const displayComment = item.comment || "";
 
                 return (
@@ -107,26 +107,24 @@ export default function AssignmentTable({
                     key={item.assignment_id}
                     className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group"
                   >
-                    {/* TD 1: Tugas & Proyek */}
                     <td className="p-5 align-top border-r border-slate-200 dark:border-slate-700/50">
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded w-fit uppercase">
                           {item.course || "Project"}
                         </span>
-                        <p className="font-extrabold text-slate-900 dark:text-white text-base">
+                        {/* ✨ FIX: Menggunakan max-w-50 ketimbang max-w-[200px] ✨ */}
+                        <p className="font-extrabold text-slate-900 dark:text-white text-base max-w-50 truncate">
                           {item.project_title}
                         </p>
                         <p className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-1">
                           <span className="material-symbols-outlined text-[14px]">
                             calendar_month
                           </span>
-                          {/* Validasi aman untuk tanggal murni dari API */}
                           {item.date && item.date !== "00/00/0000" ? item.date : "Belum ditentukan"}
                         </p>
                       </div>
                     </td>
 
-                    {/* TD 2: Tautan & Deskripsi */}
                     <td className="p-5 align-top max-w-62.5 border-r border-slate-200 dark:border-slate-700/50">
                       <div className="flex flex-col gap-2">
                         <p
@@ -166,25 +164,31 @@ export default function AssignmentTable({
                       </div>
                     </td>
 
-                    {/* TD 3: Skor Evaluasi */}
                     <td className="p-5 align-top text-center border-r border-slate-200 dark:border-slate-700/50">
                       <div
-                        className={`inline-flex flex-col items-center justify-center size-14 rounded-2xl shadow-lg border-2 transition-all duration-300 ${
+                        className={`inline-flex flex-col items-center justify-center size-14 rounded-2xl shadow-lg border-2 transition-all duration-300 mx-auto ${
                           displayReviewed === "yes"
                             ? "bg-linear-to-br from-amber-400 to-orange-500 shadow-orange-500/20 text-white border-white dark:border-slate-800"
                             : "bg-slate-100 dark:bg-slate-800 shadow-slate-200/20 dark:shadow-none text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700"
                         }`}
                       >
-                        <span className="text-xl font-black leading-none">
-                          {displayScore}
-                        </span>
-                        <span className="text-[9px] font-bold opacity-80 leading-none mt-0.5">
-                          / 10
-                        </span>
+                        {displayReviewed === "yes" ? (
+                          <>
+                            <span className="text-xl font-black leading-none">
+                              {rawScore}
+                            </span>
+                            <span className="material-symbols-outlined text-[16px] mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>
+                              star
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-2xl font-black leading-none text-slate-300 dark:text-slate-600">
+                            -
+                          </span>
+                        )}
                       </div>
                     </td>
 
-                    {/* TD 4: Status & Komentar */}
                     <td className="p-5 align-top max-w-50 border-r border-slate-200 dark:border-slate-700/50">
                       <div className="flex flex-col items-start gap-2">
                         {renderStatusBadge(displayReviewed)}
@@ -194,7 +198,7 @@ export default function AssignmentTable({
                               Mentor
                             </span>
                             <p
-                              className="text-xs text-slate-600 dark:text-slate-300 font-medium italic line-clamp-2"
+                              className="text-xs text-slate-600 dark:text-slate-300 font-medium italic line-clamp-2 mt-1"
                               title={displayComment}
                             >
                               "{displayComment}"
@@ -204,9 +208,8 @@ export default function AssignmentTable({
                       </div>
                     </td>
 
-                    {/* TD 5: Aksi (Edit & Delete) */}
                     <td className="p-5 align-top text-center">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => onEdit(item)}
                           className="size-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-[#00BCD4] hover:bg-cyan-50 dark:hover:bg-cyan-900/30 flex items-center justify-center transition-colors"
@@ -235,13 +238,10 @@ export default function AssignmentTable({
         </table>
       </div>
 
-      {/* ✨ PAGINASI LENGKAP DENGAN DESAIN "TOTAL TUGAS" */}
-      {!loading && (
-        <div className="p-5 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col md:flex-row items-center justify-between gap-4">
+      {!loading && totalPages > 1 && (
+        <div className="p-5 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col md:flex-row items-center justify-between gap-4 rounded-b-3xl">
           
-          {/* Bagian Kiri: Info Data & Halaman */}
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            {/* INI DESAIN ASLI ANDA YANG DIPINDAHKAN */}
             <div className="text-sm font-bold text-slate-500 flex items-center">
               Total:{" "}
               <span className="text-slate-900 dark:text-white px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded-md mx-1.5">
@@ -260,9 +260,7 @@ export default function AssignmentTable({
             </div>
           </div>
 
-          {/* Bagian Kanan: Tombol Kontrol Paginasi */}
           <div className="flex items-center gap-1.5">
-            {/* Tombol First Page */}
             <button
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
@@ -272,7 +270,6 @@ export default function AssignmentTable({
               <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_left</span>
             </button>
 
-            {/* Tombol Prev */}
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -282,12 +279,10 @@ export default function AssignmentTable({
               <span className="hidden sm:inline">Prev</span>
             </button>
 
-            {/* Angka Halaman Saat Ini */}
             <div className="px-4 py-2 bg-[#00BCD4] text-white rounded-lg text-sm font-bold shadow-md shadow-cyan-500/20">
               {currentPage}
             </div>
 
-            {/* Tombol Next */}
             <button
               onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
               disabled={currentPage >= totalPages}
@@ -297,7 +292,6 @@ export default function AssignmentTable({
               <span className="material-symbols-outlined text-[18px]">chevron_right</span>
             </button>
 
-            {/* Tombol Last Page */}
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage >= totalPages}
