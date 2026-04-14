@@ -7,12 +7,14 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const courseId = searchParams.get("courseId") || "1";
+    // ✨ FIX: Ambil parameter customerId yang dikirim dari useClassroomVideos
+    const customerId = searchParams.get("customerId"); 
 
     // ✨ STRICT MODE: Hanya mengambil dari Environment Variables (.env)
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN;
 
-    // 🛡️ Fail-Safe: Jika env lupa disetting di Vercel/Server, langsung tolak!
+    // 🛡️ Fail-Safe 1: Validasi Environment
     if (!baseUrl || !serviceToken) {
       console.error("[API Proxy Error] Missing Environment Variables (Base URL atau Token).");
       return NextResponse.json(
@@ -21,7 +23,17 @@ export async function GET(request: Request) {
       );
     }
 
-    const targetUrl = `${baseUrl}/list/course_video/${courseId}`;
+    // 🛡️ Fail-Safe 2: Validasi Parameter dari Head Team
+    if (!customerId) {
+       console.error("[API Proxy Error] Missing customerId in request.");
+       return NextResponse.json(
+         { message: "Bad Request: Parameter customerId wajib disertakan." },
+         { status: 400 }
+       );
+    }
+
+    // ✨ UPDATE HEAD TEAM: Endpoint Baru dengan format /course_id/customer_id
+    const targetUrl = `${baseUrl}/list/course_video/${courseId}/${customerId}`;
     console.log(`[API Proxy] Menembak List Video ke: ${targetUrl}`);
 
     const backendResponse = await fetch(targetUrl, {

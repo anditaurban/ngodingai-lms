@@ -10,6 +10,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@tiptap/extension-placeholder": "^3.22.1",
+    "@tiptap/pm": "^3.22.0",
+    "@tiptap/react": "^3.22.0",
+    "@tiptap/starter-kit": "^3.22.0",
     "html-to-image": "^1.11.13",
     "js-cookie": "^3.0.5",
     "jspdf": "^4.2.0",
