@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { DM_Sans } from 'next/font/google';
 import { 
   SiHtml5, 
-  SiCss, 
   SiJavascript, 
   SiTailwindcss, 
   SiNodedotjs, 
@@ -13,6 +12,8 @@ import {
   SiVercel,
   SiPython
 } from "react-icons/si";
+// Menggunakan FontAwesome untuk CSS demi menghindari bug versi SiCss/SiCss3
+import { FaCss3Alt } from "react-icons/fa";
 
 const googleSansAlt = DM_Sans({ subsets: ['latin'], weight: ['400', '500', '700', '800'] });
 
@@ -73,7 +74,7 @@ export default function OverviewTab({ data, courseSlug = 'ngodingai' }: Overview
 
   const stacks = [
     { name: "HTML5", icon: SiHtml5, color: "text-orange-600" },
-    { name: "CSS", icon: SiCss, color: "text-blue-600" },
+    { name: "CSS", icon: FaCss3Alt, color: "text-blue-600" }, // Icon CSS yang lebih aman
     { name: "JavaScript", icon: SiJavascript, color: "text-yellow-500" },
     { name: "TailwindCSS", icon: SiTailwindcss, color: "text-cyan-500" },
     { name: "Node.js", icon: SiNodedotjs, color: "text-green-600" },
