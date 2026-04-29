@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-// Opsional: Abaikan SSL strict (Berguna jika endpoint Dev Katib menggunakan SSL mandiri)
+// Abaikan SSL strict (Berguna jika endpoint Dev Katib menggunakan SSL mandiri)
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 export async function GET(request: Request) {
@@ -24,21 +24,42 @@ export async function GET(request: Request) {
 
     const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN;
 
-    const backendResponse = await fetch(targetUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${serviceToken}`
-      },
-      cache: 'no-store' // Wajib agar tabel selalu real-time
-    });
+    // ✨ LOGIC RETRY & ANTI-ECONNRESET ✨
+    let backendResponse;
+    let retries = 3; // Coba maksimal 3 kali jika server putus tiba-tiba
 
-    if (!backendResponse.ok) {
-        console.error(`[API Assignments] Error Katib: Status ${backendResponse.status}`);
-       return NextResponse.json(
-           { error: `Gagal mengambil data. Status: ${backendResponse.status}` }, 
-           { status: backendResponse.status }
-       );
+    for (let i = 0; i < retries; i++) {
+        try {
+            backendResponse = await fetch(targetUrl, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${serviceToken}`,
+                // ✨ MANTRA RAHASIA: Memaksa Node.js membuat koneksi TCP baru, mencegah ECONNRESET
+                'Connection': 'close' 
+              },
+              cache: 'no-store' 
+            });
+            
+            // Jika berhasil fetch (tidak putus jaringan), hentikan perulangan (loop)
+            break; 
+        } catch (err: any) {
+            console.warn(`[API Assignments] Percobaan ${i + 1} gagal (Kemungkinan ECONNRESET). Mencoba lagi...`);
+            if (i === retries - 1) throw err; // Lempar error jika sudah 3 kali gagal
+            
+            // Tunggu 1 detik sebelum mencoba lagi
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+
+    // Pengecekan standar
+    if (!backendResponse || !backendResponse.ok) {
+        const status = backendResponse?.status || 500;
+        console.error(`[API Assignments] Error Katib: Status ${status}`);
+        return NextResponse.json(
+            { error: `Gagal mengambil data. Status: ${status}` }, 
+            { status: status }
+        );
     }
 
     // Tangkap response sebagai teks terlebih dahulu untuk menghindari crash JSON.parse
@@ -53,7 +74,6 @@ export async function GET(request: Request) {
         }
     } catch (e) {
         console.error(`[API Assignments] Katib tidak membalas JSON yang valid. Teks:`, textData.substring(0, 100));
-        // Jika gagal parse, sistem akan otomatis mereturn fallback data kosong di atas
     }
 
     return NextResponse.json(data, { status: 200 });
