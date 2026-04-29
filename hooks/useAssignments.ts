@@ -8,7 +8,7 @@ export interface AssignmentData {
     course: string;
     project_title: string;
     git_repo_url?: string;
-    git_repo?: string;
+    git_repo?: string; // Dipertahankan untuk kompatibilitas form lama
     deployment_url?: string;
     description: string;
     evaluation_score: number | string;
@@ -37,8 +37,8 @@ export const useAssignments = () => {
             setLoading(true);
             const sessionStr = localStorage.getItem('user_profile');
             if (!sessionStr) return;
+            
             const user = JSON.parse(sessionStr);
-
             if (!user.customer_id) return;
 
             const res = await fetch(`/api/assignments/get-table?customerId=${user.customer_id}&page=${page}&search=${encodeURIComponent(search)}&t=${Date.now()}`);
@@ -46,8 +46,7 @@ export const useAssignments = () => {
 
             const result = await res.json();
 
-            // ✨ SMART EXTRACTOR: Deteksi dan bongkar bungkus JSON (Wrapper)
-            // Jika Katib membungkus responsenya dengan { data: { ... } }, kita ambil isinya
+            // ✨ SMART EXTRACTOR: Deteksi dan bongkar bungkus JSON (Wrapper Katib)
             const payload = result?.data || result; 
 
             // Coba ambil array dari 'tableData' di dalam payload yang sudah diekstrak
@@ -58,7 +57,7 @@ export const useAssignments = () => {
 
             setAssignments(activeData);
             
-            // Mengambil angka total dari payload yang benar
+            // Mengambil angka total dari payload
             setTotalPages(payload?.totalPages || 1);
             setTotalRecords(payload?.totalRecords || activeData.length || 0);
             setCurrentPage(payload?.currentPage || 1);
@@ -107,21 +106,29 @@ export const useAssignments = () => {
         return { owner_id: user.owner_id || 4409, customer_id: user.customer_id };
     };
 
-    // Fungsi Add / Edit
+    // ✨ Fungsi Add / Edit
     const submitAssignment = async (mode: 'add' | 'edit', data: Partial<AssignmentData>) => {
         setIsProcessing(true);
         try {
             const { owner_id, customer_id } = getAuthData();
-            const today = new Date().toISOString().split('T')[0];
+            // Ambil tanggal hari ini dalam format DD/MM/YYYY (sesuai contoh JSON Head Team)
+            const dateObj = new Date();
+            const todayFormatted = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
 
+            // ✨ PERBAIKAN KRUSIAL: Mapping Payload agar 100% sesuai dengan Tabel Katib
             const payload = {
-                owner_id,
-                customer_id,
-                date: data.date || today,
-                project_title: data.project_title,
-                git_repo: data.git_repo || data.git_repo_url || '',
+                owner_id: owner_id,
+                customer_id: customer_id,
+                date: data.date || todayFormatted,
+                course: data.course || "Ngoding AI", // Katib butuh field ini
+                project_title: data.project_title || '',
+                git_repo_url: data.git_repo_url || data.git_repo || '', // Diubah menjadi git_repo_url
                 deployment_url: data.deployment_url || '',
                 description: data.description || '',
+                // Nilai default untuk data baru (mencegah error NOT NULL di DB Katib)
+                evaluation_score: data.evaluation_score || 0,
+                comment: data.comment || "",
+                reviewed: data.reviewed || "no"
             };
 
             const url = mode === 'add' ? `/api/assignments/crud` : `/api/assignments/crud?id=${data.assignment_id}`;
@@ -135,8 +142,10 @@ export const useAssignments = () => {
 
             if (!res.ok) throw new Error("Gagal menyimpan data ke server");
 
-            // Jeda 1.5 detik untuk sinkronisasi Katib
+            // ✨ JEDA ANTI-ECONNRESET: Beri waktu backend Katib memproses DB
             await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Refetch data terbaru
             await fetchAssignments(currentPage, searchQuery);
 
             return {
@@ -150,7 +159,7 @@ export const useAssignments = () => {
         }
     };
 
-    // ✨ FUNGSI DELETE (Dengan Optimistic Update)
+    // ✨ FUNGSI DELETE (Dengan Optimistic Update UI)
     const deleteAssignment = async (id: number) => {
         setIsProcessing(true);
         try {
@@ -165,7 +174,7 @@ export const useAssignments = () => {
             const isSuccess = result?.data?.success || result?.success;
 
             if (res.ok && isSuccess) {
-                // ✨ OPTIMISTIC UI: Hapus data instan dari state React tanpa menunggu fetch ulang
+                // ✨ OPTIMISTIC UI: Hapus data instan dari state React tanpa menunggu fetch ulang server
                 setAssignments((prevData) => prevData.filter((item) => item.assignment_id !== id));
                 setTotalRecords((prev) => Math.max(0, prev - 1));
 
@@ -174,7 +183,7 @@ export const useAssignments = () => {
                 return { success: false, message: result?.error || 'Gagal menghapus tugas.' };
             }
         } catch (error: any) {
-            console.error(error);
+            console.error("Delete Error:", error);
             return { success: false, message: 'Terjadi kesalahan jaringan.' };
         } finally {
             setIsProcessing(false);
