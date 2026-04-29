@@ -6,12 +6,51 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link'; 
 
-import ArticleWorkspace from '@/components/instructor/builder/ArticleWorkspace';
-import VideoWorkspace from '@/components/instructor/builder/VideoWorkspace';
-import QuizWorkspace from '@/components/instructor/builder/QuizWorkspace';
+import ArticleWorkspace from '@/components/builder/ArticleWorkspace';
+import DocumentWorkspace from '@/components/builder/DocumentWorkspace';
 
 const inter = Inter({ subsets: ['latin'] });
 const googleSansAlt = DM_Sans({ subsets: ['latin'], weight: ['400', '500', '700', '800'] });
+
+interface Chapter {
+  id: string;
+  title: string;
+  type: 'article' | 'document';
+  status: string;
+}
+
+interface Module {
+  id: string;
+  section: string;
+  chapters: Chapter[];
+}
+
+// ✨ SINKRONISASI DATA DUMMY DENGAN SISI SISWA ✨
+const defaultModules: Module[] = [
+  {
+    id: 'sec-1',
+    section: 'Bagian 1: Pengenalan',
+    chapters: [
+      { id: 'c-1', title: 'Apa itu AI & LLM?', type: 'article', status: 'published' },
+      { id: 'c-2', title: 'Slide Presentasi Dasar AI', type: 'document', status: 'published' }
+    ]
+  },
+  {
+    id: 'sec-2',
+    section: 'Bagian 2: Persiapan Tools',
+    chapters: [
+      { id: 'c-3', title: 'Instalasi Python & VS Code', type: 'article', status: 'published' },
+      { id: 'c-4', title: 'Cheatsheet Git & Terminal (PDF)', type: 'document', status: 'published' }
+    ]
+  }
+];
+
+const defaultContentMap: Record<string, { content?: string; url?: string; description?: string }> = {
+  'c-1': { content: '<h2>Selamat Datang!</h2><p>Di era modern ini, AI bukan lagi sekadar fiksi ilmiah. Mari kita pelajari dasar-dasar Large Language Models (LLM) dan bagaimana mereka merevolusi cara kita membuat aplikasi.</p>' },
+  'c-2': { url: 'https://drive.google.com/file/d/1FjvYPdbGL77LunYwFDJk2GktKccDwmRp/preview', description: 'Pelajari slide presentasi berikut dengan saksama sebelum melanjutkan ke bagian praktik.' },
+  'c-3': { content: '<h2>Setup Environment</h2><p>Pastikan Anda menginstal Python versi 3.10 ke atas. Ikuti panduan langkah demi langkah berikut ini untuk mengatur environment lokal Anda.</p>' },
+  'c-4': { url: 'https://drive.google.com/file/d/1avYJwZrnaiRrgEiomyN9biMLhEevG6sc/preview', description: 'Simpan panduan cepat terminal dan Git ini sebagai referensi Anda saat mengerjakan proyek akhir.' }
+};
 
 function BuilderContent() {
   const { showToast } = useToast();
@@ -19,28 +58,24 @@ function BuilderContent() {
   const router = useRouter();
   
   const courseSlug = searchParams.get('course') || 'ngodingai';
-  const chapterId = searchParams.get('chapter') || '1';
+  // Default ke c-1 sesuai data dummy baru
+  const chapterId = searchParams.get('chapter') || 'c-1';
 
-  const [modules, setModules] = useState([
-    {
-      id: 'sec-1',
-      section: 'Bagian 1: Persiapan',
-      chapters: [
-        { id: '1', title: 'Bab 1: Pengenalan Web & AI', type: 'article', status: 'published' },
-        { id: '2', title: 'Video: Cara Kerja Server', type: 'video', status: 'published' },
-      ]
+  const [modules, setModules] = useState<Module[]>(() => {
+    if (typeof window !== 'undefined') {
+       const savedCurriculum = localStorage.getItem(`db_curriculum_${courseSlug}`);
+       // Validasi: Cegah me-load data dummy versi lama, paksa pakai versi sinkronisasi
+       if (savedCurriculum && savedCurriculum.includes('c-1')) {
+           return JSON.parse(savedCurriculum);
+       }
     }
-  ]);
+    return defaultModules;
+  });
 
-  const updateModulesAndSave = (newModules: any[]) => {
+  const updateModulesAndSave = (newModules: Module[]) => {
     setModules(newModules);
     localStorage.setItem(`db_curriculum_${courseSlug}`, JSON.stringify(newModules));
   };
-
-  useEffect(() => {
-      const savedCurriculum = localStorage.getItem(`db_curriculum_${courseSlug}`);
-      if (savedCurriculum) setModules(JSON.parse(savedCurriculum));
-  }, [courseSlug]);
 
   const [expandedSection, setExpandedSection] = useState<string>('sec-1');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -58,27 +93,48 @@ function BuilderContent() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  let activeModuleInfo = modules[0]?.chapters[0] || null;
-  modules.forEach(mod => { const found = mod.chapters.find(c => c.id === chapterId); if (found) activeModuleInfo = found; });
+  let activeModuleInfo: Chapter | undefined = undefined;
+  for (const mod of modules) {
+    const found = mod.chapters.find((c) => c.id === chapterId);
+    if (found) {
+      activeModuleInfo = found;
+      break;
+    }
+  }
 
   const [activeChapter, setActiveChapter] = useState(chapterId);
-  const [activeType, setActiveType] = useState<'article'|'video'|'quiz'>(activeModuleInfo?.type as any || 'article');
+  const [activeType, setActiveType] = useState<'article'|'document'>(activeModuleInfo?.type || 'article');
   const [chapterTitle, setChapterTitle] = useState(activeModuleInfo?.title || '');
-  const [workspaceData, setWorkspaceData] = useState<any>(null);
+  const [workspaceData, setWorkspaceData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
-     let currentInfo: any = null;
+     let currentInfo: Chapter | undefined = undefined;
      let currentSectionId = '';
-     modules.forEach(mod => { const found = mod.chapters.find(c => c.id === activeChapter); if (found) { currentInfo = found; currentSectionId = mod.id; } });
+     for (const mod of modules) {
+       const found = mod.chapters.find((c) => c.id === activeChapter);
+       if (found) {
+         currentInfo = found;
+         currentSectionId = mod.id;
+         break;
+       }
+     }
 
      if (currentInfo) {
-        setActiveType(currentInfo.type as any);
+        setActiveType(currentInfo.type);
         setChapterTitle(currentInfo.title);
         if(!editingSectionId) setExpandedSection(currentSectionId);
         
         const savedData = localStorage.getItem(`db_content_${courseSlug}_${activeChapter}`);
-        if (savedData) setWorkspaceData(JSON.parse(savedData));
-        else setWorkspaceData(null); 
+        if (savedData) {
+            setWorkspaceData(JSON.parse(savedData));
+        } else {
+            // Muat dari dummy map jika belum ada di localStorage (untuk presentasi mulus)
+            if (defaultContentMap[activeChapter]) {
+               setWorkspaceData(defaultContentMap[activeChapter]);
+            } else {
+               setWorkspaceData(null); 
+            }
+        }
      }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChapter, modules]);
@@ -90,7 +146,7 @@ function BuilderContent() {
 
   const handleAddSection = () => {
     const newSectionId = `sec-${Date.now()}`;
-    const newModules = [...modules, { id: newSectionId, section: `Bagian Baru ${modules.length + 1}`, chapters: [] }];
+    const newModules: Module[] = [...modules, { id: newSectionId, section: `Bagian Baru ${modules.length + 1}`, chapters: [] }];
     updateModulesAndSave(newModules);
     setEditingSectionId(newSectionId);
     setExpandedSection(newSectionId);
@@ -110,9 +166,9 @@ function BuilderContent() {
     showToast('success', 'Bagian berhasil dihapus.');
   };
 
-  const handleAddChapter = (targetSectionId: string, type: 'article' | 'video' | 'quiz') => {
-    const newChapterId = `${Date.now()}`;
-    const newChapterTitle = type === 'article' ? 'Artikel Baru' : type === 'video' ? 'Video Baru' : 'Kuis Baru';
+  const handleAddChapter = (targetSectionId: string, type: 'article' | 'document') => {
+    const newChapterId = `chap-${Date.now()}`;
+    const newChapterTitle = type === 'article' ? 'Artikel Baru' : 'Materi File Baru';
     
     const newModules = modules.map(mod => 
       mod.id === targetSectionId 
@@ -124,7 +180,7 @@ function BuilderContent() {
     handleChapterChange(newChapterId);
   };
 
-  const handleSaveActiveChapter = (payload: any) => {
+  const handleSaveActiveChapter = (payload: Record<string, unknown>) => {
       if (!chapterTitle.trim()) return showToast('error', 'Judul materi tidak boleh kosong!');
       
       const newModules = modules.map(mod => ({
@@ -152,62 +208,35 @@ function BuilderContent() {
   };
 
   const handlePublishAll = () => {
-     showToast('success', `Seluruh Kurikulum berhasil disinkronisasi!`);
+    const publishedModules = modules.map(mod => ({
+      ...mod,
+      chapters: mod.chapters.map(c => ({ ...c, status: 'published' })) 
+    }));
+    updateModulesAndSave(publishedModules);
+    showToast('success', 'Seluruh materi berhasil disinkronisasi dan dipublish ke Aplikasi Siswa!');
   };
 
   return (
     <div className={`flex flex-col h-screen bg-[#fafafa] dark:bg-[#0a0a0a] ${inter.className}`}>
-      
-      {/* ✨ REFINED HEADER (CLEAR SEPARATION) ✨ */}
       <header className="h-16 shrink-0 bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 z-40 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3">
-          
-          {/* 1. Navigasi Keluar (Breadcrumb Style) */}
-          <Link 
-            href="/instructor" 
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors" 
-            title="Kembali ke Dashboard Utama"
-          >
+          <Link href={`/course-editor?course=${courseSlug}`} className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors" title="Kembali ke Pengaturan Kelas">
             <span className="material-symbols-outlined text-[20px] block">arrow_back</span>
-            <span className="hidden sm:inline text-sm font-bold">Dashboard</span>
+            <span className="hidden sm:inline text-sm font-bold">Course Hub</span>
           </Link>
-
           <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 hidden md:block mx-1"></div>
-
-          {/* 2. Kontrol Layout (Sidebar Toggle - Active State Style) */}
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-            className={`hidden md:flex items-center justify-center p-2 rounded-xl transition-all duration-200 ${
-              isSidebarOpen 
-              ? 'bg-cyan-50 text-[#00BCD4] dark:bg-cyan-900/30' 
-              : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`} 
-            title="Buka/Tutup Panel Kurikulum"
-          >
-            <span className="material-symbols-outlined text-[22px] block">
-              {isSidebarOpen ? 'view_sidebar' : 'menu'}
-            </span>
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`hidden md:flex items-center justify-center p-2 rounded-xl transition-all duration-200 ${isSidebarOpen ? 'bg-cyan-50 text-[#00BCD4] dark:bg-cyan-900/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+            <span className="material-symbols-outlined text-[22px] block">{isSidebarOpen ? 'view_sidebar' : 'menu'}</span>
           </button>
-          
-          {/* Info Kelas Aktif */}
           <div className="hidden lg:flex flex-col justify-center ml-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#00BCD4] uppercase tracking-widest mb-0.5">
-              <span className="material-symbols-outlined text-[14px]">school</span>
-              <span>Course Editor</span>
-            </div>
-            <p className={`text-sm font-bold text-slate-800 dark:text-slate-200 truncate ${googleSansAlt.className}`}>
-              {courseSlug.toUpperCase()}
-            </p>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#00BCD4] uppercase tracking-widest mb-0.5"><span className="material-symbols-outlined text-[14px]">school</span><span>Canvas Builder</span></div>
+            <p className={`text-sm font-bold text-slate-800 dark:text-slate-200 truncate ${googleSansAlt.className}`}>{courseSlug.toUpperCase()}</p>
           </div>
-
         </div>
-
         <div className="flex items-center gap-4">
           <span className="hidden lg:inline text-xs font-medium text-slate-400">Sinkron dengan Student App</span>
           <button onClick={handlePublishAll} className={`flex items-center gap-2 px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full text-sm font-bold transition-all hover:opacity-90 active:scale-95 shadow-md ${googleSansAlt.className}`}>
-            <span className="material-symbols-outlined text-[18px]">cloud_sync</span>
-            <span className="hidden sm:inline">Publish Semua</span>
-            <span className="sm:hidden">Publish</span>
+            <span className="material-symbols-outlined text-[18px]">cloud_sync</span><span className="hidden sm:inline">Publish Semua</span><span className="sm:hidden">Publish</span>
           </button>
         </div>
       </header>
@@ -217,7 +246,6 @@ function BuilderContent() {
           <div className="p-5 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-[#0a0a0a]">
             <h2 className={`text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider ${googleSansAlt.className}`}>Kurikulum</h2>
           </div>
-          
           <div className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar relative">
             <div className="space-y-3">
             {modules.map((mod) => {
@@ -226,45 +254,27 @@ function BuilderContent() {
                 <div key={mod.id} className="bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 transition-all group/section relative">
                   <div className="w-full flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors pr-2 h-11 rounded-t-2xl">
                     {editingSectionId === mod.id ? (
-                      <div className="flex-1 px-4 min-w-0">
-                        <input autoFocus defaultValue={mod.section} onBlur={(e) => handleSaveSectionTitle(mod.id, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSectionTitle(mod.id, e.currentTarget.value); if (e.key === 'Escape') setEditingSectionId(null); }} className="w-full bg-transparent border-b border-[#00BCD4] outline-none text-xs font-bold uppercase tracking-wider text-[#00BCD4] dark:text-cyan-400 py-1" />
-                      </div>
+                      <div className="flex-1 px-4 min-w-0"><input autoFocus defaultValue={mod.section} onBlur={(e) => handleSaveSectionTitle(mod.id, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSectionTitle(mod.id, e.currentTarget.value); if (e.key === 'Escape') setEditingSectionId(null); }} className="w-full bg-transparent border-b border-[#00BCD4] outline-none text-xs font-bold uppercase tracking-wider text-[#00BCD4] dark:text-cyan-400 py-1" /></div>
                     ) : (
                       <button onDoubleClick={() => setEditingSectionId(mod.id)} onClick={() => setExpandedSection(isExpanded ? '' : mod.id)} className="flex-1 min-w-0 h-full flex items-center px-4 outline-none text-left">
                         <p className={`text-xs font-bold uppercase tracking-wider truncate mr-2 transition-colors ${isExpanded ? 'text-[#00BCD4]' : 'text-slate-600 dark:text-slate-400'}`}>{mod.section}</p>
                       </button>
                     )}
-
                     {!editingSectionId && (
                       <div className="shrink-0 flex items-center gap-1">
                         <div className="relative">
                           <button onClick={(e) => { e.stopPropagation(); setOpenSectionMenuId(openSectionMenuId === mod.id ? null : mod.id); }} className={`p-1 rounded-md flex items-center justify-center transition-colors ${openSectionMenuId === mod.id ? 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-white' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-800 dark:hover:bg-slate-700 dark:hover:text-white opacity-0 group-hover/section:opacity-100'}`}>
                              <span className="material-symbols-outlined text-[16px] block">more_vert</span>
                           </button>
-                          
                           {openSectionMenuId === mod.id && (
                             <div ref={sectionMenuRef} className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 py-2 origin-top-right animate-in fade-in zoom-in-95 duration-200">
-                               
                                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tambah Materi</div>
-                               <button onClick={(e) => { e.stopPropagation(); handleAddChapter(mod.id, 'article'); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-cyan-50 hover:text-cyan-600 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors">
-                                  <span className="material-symbols-outlined text-[16px] text-cyan-500">article</span> Artikel Teks
-                               </button>
-                               <button onClick={(e) => { e.stopPropagation(); handleAddChapter(mod.id, 'video'); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors">
-                                  <span className="material-symbols-outlined text-[16px] text-blue-500">play_circle</span> Video Materi
-                               </button>
-                               <button onClick={(e) => { e.stopPropagation(); handleAddChapter(mod.id, 'quiz'); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors">
-                                  <span className="material-symbols-outlined text-[16px] text-amber-500">quiz</span> Kuis Evaluasi
-                               </button>
-
+                               <button onClick={(e) => { e.stopPropagation(); handleAddChapter(mod.id, 'article'); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-cyan-50 hover:text-cyan-600 dark:hover:bg-slate-700 flex items-center gap-3"><span className="material-symbols-outlined text-[16px] text-cyan-500">article</span> Artikel Teks</button>
+                               <button onClick={(e) => { e.stopPropagation(); handleAddChapter(mod.id, 'document'); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-slate-700 flex items-center gap-3"><span className="material-symbols-outlined text-[16px] text-emerald-500">picture_as_pdf</span> File Dokumen</button>
                                <div className="h-px w-full bg-slate-100 dark:bg-slate-700/50 my-2"></div>
-
                                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pengaturan Bagian</div>
-                               <button onClick={(e) => { e.stopPropagation(); setEditingSectionId(mod.id); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors">
-                                  <span className="material-symbols-outlined text-[16px]">edit</span> Ubah Nama
-                               </button>
-                               <button onClick={(e) => { e.stopPropagation(); handleDeleteSection(mod.id); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 transition-colors">
-                                  <span className="material-symbols-outlined text-[16px]">delete</span> Hapus Bagian
-                               </button>
+                               <button onClick={(e) => { e.stopPropagation(); setEditingSectionId(mod.id); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3"><span className="material-symbols-outlined text-[16px]">edit</span> Ubah Nama</button>
+                               <button onClick={(e) => { e.stopPropagation(); handleDeleteSection(mod.id); setOpenSectionMenuId(null); }} className="w-full text-left px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3"><span className="material-symbols-outlined text-[16px]">delete</span> Hapus Bagian</button>
                             </div>
                           )}
                         </div>
@@ -274,21 +284,18 @@ function BuilderContent() {
                       </div>
                     )}
                   </div>
-
                   <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-200 opacity-100 pb-3 px-3' : 'max-h-0 opacity-0'}`}>
                     <div className="space-y-1 mt-1 border-t border-slate-100 dark:border-slate-800 pt-2">
                       {mod.chapters.length === 0 ? (
                         <div className="py-4 px-3 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50 m-2">
                            <span className="material-symbols-outlined text-slate-300 text-2xl mb-1">post_add</span>
-                           <p className="text-xs font-medium text-slate-500 leading-relaxed">
-                             Bagian ini belum memiliki materi.<br/>Gunakan menu titik tiga (⋮) di atas untuk menambahkan.
-                           </p>
+                           <p className="text-xs font-medium text-slate-500 leading-relaxed">Bagian ini belum memiliki materi.<br/>Gunakan menu titik tiga (⋮) di atas untuk menambahkan.</p>
                         </div>
                       ) : (
                         mod.chapters.map((chapter) => (
                           <button key={chapter.id} onClick={() => handleChapterChange(chapter.id)} className={`w-full text-left flex items-center justify-between gap-3 p-2.5 rounded-xl transition-all group ${activeChapter === chapter.id ? 'bg-[#00BCD4]/10 dark:bg-cyan-900/20 shadow-sm border border-[#00BCD4]/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'}`}>
                             <div className="flex items-center gap-2.5 overflow-hidden">
-                              <span className={`material-symbols-outlined text-[18px] ${activeChapter === chapter.id ? 'text-[#00BCD4]' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`}>{chapter.type === 'article' ? 'article' : chapter.type === 'video' ? 'play_circle' : 'quiz'}</span>
+                              <span className={`material-symbols-outlined text-[18px] ${activeChapter === chapter.id ? 'text-[#00BCD4]' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`}>{chapter.type === 'article' ? 'article' : 'picture_as_pdf'}</span>
                               <p className={`text-xs font-medium truncate ${activeChapter === chapter.id ? 'text-[#00BCD4] font-bold' : 'text-slate-600 dark:text-slate-400'}`}>{chapter.title}</p>
                             </div>
                             <span className={`size-1.5 rounded-full shrink-0 ${chapter.status === 'draft' ? 'bg-amber-400' : 'bg-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity'}`}></span>
@@ -301,7 +308,6 @@ function BuilderContent() {
               );
             })}
             </div>
-            
             <button onClick={handleAddSection} className="w-full py-3 mt-4 mb-24 rounded-xl text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-[#00BCD4] hover:bg-[#00BCD4]/5 border-2 border-transparent hover:border-dashed hover:border-[#00BCD4]/30 transition-all flex items-center justify-center gap-2 group">
                <span className="material-symbols-outlined text-[18px] group-hover:rotate-90 transition-transform duration-300">add</span> Tambah Bagian Baru
             </button>
@@ -311,19 +317,17 @@ function BuilderContent() {
         <main className="flex-1 relative flex flex-col bg-white dark:bg-[#0a0a0a] overflow-y-auto custom-scrollbar scroll-smooth">
           {activeModuleInfo ? (
             <>
-              {activeType === 'article' && <ArticleWorkspace key={activeChapter} title={chapterTitle} setTitle={setChapterTitle} initialContent={workspaceData?.content || ''} onContentUpdate={(html) => articleHTMLRef.current = html} onSave={handleSaveActiveChapter} onDelete={handleDeleteActiveChapter} />}
-              {activeType === 'video' && <VideoWorkspace key={activeChapter} title={chapterTitle} setTitle={setChapterTitle} initialUrl={workspaceData?.url || ''} onSave={handleSaveActiveChapter} onDelete={handleDeleteActiveChapter} />}
-              {activeType === 'quiz' && <QuizWorkspace key={activeChapter} title={chapterTitle} setTitle={setChapterTitle} initialQuestions={workspaceData?.questions || []} onSave={handleSaveActiveChapter} onDelete={handleDeleteActiveChapter} />}
+              {activeType === 'article' && <ArticleWorkspace key={activeChapter} title={chapterTitle} setTitle={setChapterTitle} initialContent={workspaceData?.content as string || ''} onContentUpdate={(html: string) => articleHTMLRef.current = html} onSave={handleSaveActiveChapter} onDelete={handleDeleteActiveChapter} />}
+              {activeType === 'document' && <DocumentWorkspace key={activeChapter} title={chapterTitle} setTitle={setChapterTitle} initialUrl={workspaceData?.url as string || ''} initialDescription={workspaceData?.description as string || ''} onSave={handleSaveActiveChapter} onDelete={handleDeleteActiveChapter} />}
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
                <span className="material-symbols-outlined text-6xl mb-4 opacity-20">inventory_2</span>
-               <p className="font-bold">Belum ada bab yang dibuat.</p>
-               <p className="text-sm mt-1">Gunakan ikon titik tiga (⋮) pada daftar bagian di kiri.</p>
+               <p className="font-bold">Belum ada bab yang dipilih.</p>
+               <p className="text-sm mt-1">Pilih bab dari daftar materi di menu sebelah kiri.</p>
             </div>
           )}
         </main>
-
         {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="absolute inset-0 bg-black/40 backdrop-blur-sm z-20 md:hidden"></div>}
       </div>
     </div>
@@ -332,7 +336,7 @@ function BuilderContent() {
 
 export default function Page() {
     return (
-        <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#0a0a0a] text-white">Menyiapkan Ruang Kerja...</div>}>
+        <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[#0a0a0a] text-white">Loading Editor Hub...</div>}>
             <BuilderContent />
         </Suspense>
     )
