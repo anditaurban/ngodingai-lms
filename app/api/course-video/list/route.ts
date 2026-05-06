@@ -1,62 +1,80 @@
 import { NextResponse } from "next/server";
 
-// Mengabaikan error SSL lokal jika sertifikat dev.katib.cloud bermasalah
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const courseId = searchParams.get("courseId") || "1";
-    // ✨ FIX: Ambil parameter customerId yang dikirim dari useClassroomVideos
     const customerId = searchParams.get("customerId"); 
 
-    // ✨ STRICT MODE: Hanya mengambil dari Environment Variables (.env)
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN;
 
-    // 🛡️ Fail-Safe 1: Validasi Environment
     if (!baseUrl || !serviceToken) {
-      console.error("[API Proxy Error] Missing Environment Variables (Base URL atau Token).");
+      console.error("[API Proxy Error] Missing Environment Variables.");
       return NextResponse.json(
         { message: "Internal Server Error: Konfigurasi Keamanan Tidak Lengkap." }, 
         { status: 500 }
       );
     }
 
-    // 🛡️ Fail-Safe 2: Validasi Parameter dari Head Team
     if (!customerId) {
-       console.error("[API Proxy Error] Missing customerId in request.");
        return NextResponse.json(
          { message: "Bad Request: Parameter customerId wajib disertakan." },
          { status: 400 }
        );
     }
 
-    // ✨ UPDATE HEAD TEAM: Endpoint Baru dengan format /course_id/customer_id
     const targetUrl = `${baseUrl}/list/course_video/${courseId}/${customerId}`;
     console.log(`[API Proxy] Menembak List Video ke: ${targetUrl}`);
 
-    const backendResponse = await fetch(targetUrl, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${serviceToken}`,
-      },
-      cache: "no-store", // Selalu ambil data terbaru (dinamis)
-    });
+    // ✨ LOGIC RETRY & ANTI-ECONNRESET DENGAN ABORT CONTROLLER ✨
+    let backendResponse;
+    let retries = 3; 
 
-    const responseText = await backendResponse.text();
+    for (let i = 0; i < retries; i++) {
+        // ✨ PELINDUNG TIMEOUT: Batas 8 Detik
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); 
 
-    if (!backendResponse.ok) {
-      console.error(`[Katib Error ${backendResponse.status}]:`, responseText);
+        try {
+            backendResponse = await fetch(targetUrl, {
+              method: "GET",
+              headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${serviceToken}`,
+              },
+              cache: "no-store",
+              signal: controller.signal // Pasang pelindung
+            });
+            
+            clearTimeout(timeoutId);
+            break; 
+        } catch (err: any) {
+            clearTimeout(timeoutId);
+            console.warn(`[API Proxy Video] Percobaan ${i + 1} gagal (Timeout/ECONNRESET).`);
+            
+            if (i === retries - 1) {
+                return NextResponse.json(
+                    { message: "Server Katib sedang tidak merespon (Timeout). Silakan muat ulang halaman." }, 
+                    { status: 504 }
+                );
+            }
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+    }
+
+    if (!backendResponse || !backendResponse.ok) {
+      const status = backendResponse?.status || 500;
       return NextResponse.json(
-        { message: `Katib Error: ${backendResponse.status}` },
-        { status: backendResponse.status }
+        { message: `Katib Error: Data tidak ditemukan atau ditolak (Status ${status})` },
+        { status: status }
       );
     }
 
     try {
-      const data = JSON.parse(responseText);
+      const data = await backendResponse.json();
       return NextResponse.json(data, { status: 200 });
     } catch (e) {
       return NextResponse.json({ message: "Invalid JSON format from backend" }, { status: 500 });
@@ -64,6 +82,6 @@ export async function GET(request: Request) {
 
   } catch (error: any) {
     console.error("[API Proxy Error] Get List Video:", error.message);
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }

@@ -14,10 +14,9 @@ export interface BatchData {
   course_id: number;
   batch_period: string;
   batch_name: string;
-  videos: VideoData[];
+  videos: VideoData[]; // Sekarang videos langsung kita ambil dari sini!
 }
 
-// ✨ FIX: Menambahkan parameter kedua `customerId`
 export const useClassroomVideos = (courseId: number = 1, customerId: number | null = null) => {
   const [batches, setBatches] = useState<BatchData[]>([]);
   const [selectedBatch, setSelectedBatch] = useState<BatchData | null>(null);
@@ -26,63 +25,66 @@ export const useClassroomVideos = (courseId: number = 1, customerId: number | nu
   const [isLoadingDetail, setIsLoadingDetail] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. API: MENGAMBIL LIST BATCH (LEWAT PROXY LOKAL)
+  // 1. API: MENGAMBIL LIST BATCH (YANG SEKALIGUS BERISI VIDEOS)
   const fetchBatchList = useCallback(async () => {
-    // ✨ FIX: Cegah fetch jika customerId belum didapatkan dari session
-    if (!customerId) return;
+    if (!customerId) {
+      setIsLoadingList(false);
+      return;
+    }
 
     setIsLoadingList(true);
     setError(null);
     try {
-      // ✨ FIX: Kirimkan customerId sebagai query parameter ke Proxy API kita
-      const response = await fetch(`/api/course-video/list?courseId=${courseId}&customerId=${customerId}`);
-      
+      // Pelindung Timeout Frontend (15 detik)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(`/api/course-video/list?courseId=${courseId}&customerId=${customerId}`, { 
+        signal: controller.signal 
+      });
+      clearTimeout(timeoutId);
+
       const result = await response.json();
 
       if (!response.ok) {
         throw new Error(result.message || `Gagal mengambil list (Status ${response.status})`);
       }
       
-      const listData = result.listData || [];
+      // ✨ SMART EXTRACTOR: Ambil listData yang sudah mengandung array 'videos'
+      const listData = result.listData || result.data || [];
       setBatches(listData);
 
-      // Auto-load detail batch pertama jika ada
+      // Auto-load batch pertama ke dalam player jika datanya ada
       if (listData.length > 0) {
-        fetchBatchDetail(listData[0].batch_id);
+        setSelectedBatch(listData[0]);
+      } else {
+        setSelectedBatch(null);
       }
       
     } catch (err: any) {
       console.error('Error fetching batch list:', err);
-      setError(err.message);
+      if (err.name === 'AbortError') {
+         setError("Koneksi internet lambat atau server sibuk. Silakan muat ulang.");
+      } else {
+         setError(err.message || "Gagal memuat daftar video.");
+      }
     } finally {
       setIsLoadingList(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseId, customerId]); // ✨ FIX: Tambahkan customerId sebagai dependency
+  }, [courseId, customerId]);
 
-  // 2. API: MENGAMBIL DETAIL VIDEO PER BATCH (LEWAT PROXY LOKAL)
-  const fetchBatchDetail = async (batchId: number) => {
+  // 2. FUNGSI GANTI BATCH (✨ SUPER INSTAN, TIDAK NEMBAK API LAGI! ✨)
+  const fetchBatchDetail = (batchId: number) => {
     setIsLoadingDetail(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/course-video/detail?batchId=${batchId}`);
-      
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || `Gagal mengambil detail batch (Status ${response.status})`);
-      }
-      
-      if (result.detail) {
-        setSelectedBatch(result.detail);
-      }
-      
-    } catch (err: any) {
-      console.error(`Error fetching detail for batch ${batchId}:`, err);
-      setError(err.message);
-    } finally {
-      setIsLoadingDetail(false);
+    
+    // Cari data batch dari memori yang sudah di-download saat awal
+    const batch = batches.find(b => b.batch_id === batchId);
+    if (batch) {
+      setSelectedBatch(batch);
     }
+    
+    // Setel timeout artifisial super singkat (100ms) sekadar agar UI berkedip cantik
+    setTimeout(() => setIsLoadingDetail(false), 100);
   };
 
   useEffect(() => {
@@ -95,6 +97,6 @@ export const useClassroomVideos = (courseId: number = 1, customerId: number | nu
     isLoadingList,
     isLoadingDetail,
     error,
-    fetchBatchDetail
+    fetchBatchDetail // Tetap di-export agar komponen UI (ClassroomTab) tidak error
   };
 };
