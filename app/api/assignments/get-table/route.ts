@@ -24,31 +24,42 @@ export async function GET(request: Request) {
 
     const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN;
 
-    // ✨ LOGIC RETRY & ANTI-ECONNRESET ✨
+    // ✨ LOGIC RETRY & ANTI-ECONNRESET DENGAN TIMEOUT ✨
     let backendResponse;
-    let retries = 3; // Coba maksimal 3 kali jika server putus tiba-tiba
+    let retries = 3; 
 
     for (let i = 0; i < retries; i++) {
+        // ✨ PELINDUNG TIMEOUT: Batas 8 Detik per percobaan
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); 
+
         try {
             backendResponse = await fetch(targetUrl, {
               method: 'GET',
               headers: {
                 'Accept': 'application/json',
-                'Authorization': `Bearer ${serviceToken}`,
-                // ✨ MANTRA RAHASIA: Memaksa Node.js membuat koneksi TCP baru, mencegah ECONNRESET
-                'Connection': 'close' 
+                'Authorization': `Bearer ${serviceToken}`
               },
-              cache: 'no-store' 
+              cache: 'no-store',
+              signal: controller.signal // Pasang pelindung
             });
             
-            // Jika berhasil fetch (tidak putus jaringan), hentikan perulangan (loop)
-            break; 
+            clearTimeout(timeoutId);
+            break; // Berhasil! Keluar dari loop
         } catch (err: any) {
-            console.warn(`[API Assignments] Percobaan ${i + 1} gagal (Kemungkinan ECONNRESET). Mencoba lagi...`);
-            if (i === retries - 1) throw err; // Lempar error jika sudah 3 kali gagal
+            clearTimeout(timeoutId);
+            console.warn(`[API Assignments] Percobaan ${i + 1} gagal (Timeout/ECONNRESET). Mencoba lagi...`);
             
-            // Tunggu 1 detik sebelum mencoba lagi
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            if (i === retries - 1) {
+                // Jangan buat server Next.js crash! Kembalikan status 504 dengan anggun
+                return NextResponse.json(
+                    { error: "Server Katib sedang tidak merespon (Timeout). Silakan muat ulang halaman." }, 
+                    { status: 504 }
+                );
+            }
+            
+            // Tunggu 1.5 detik sebelum mencoba lagi
+            await new Promise(resolve => setTimeout(resolve, 1500));
         }
     }
 

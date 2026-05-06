@@ -16,30 +16,47 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Missing Env Token" }, { status: 500 });
     }
 
-    // ✨ INI SOLUSINYA: Kita format ulang datanya sebelum dikirim ke Katib
+    // ✨ SANITASI PAYLOAD: Pastikan tidak ada "undefined" yang bikin server Katib meledak
     const payloadKeKatib = {
         owner_id: body.owner_id,
         customer_id: body.customer_id,
         date: body.date,
+        course: body.course || "Ngoding AI", // Wajib ada untuk Katib
         project_title: body.project_title,
-        git_repo_url: body.git_repo, // <-- Ubah git_repo dari frontend menjadi git_repo_url untuk Katib
-        deployment_url: body.deployment_url,
-        description: body.description
+        git_repo_url: body.git_repo_url || body.git_repo || "", // Fallback yang aman
+        deployment_url: body.deployment_url || "",
+        description: body.description || "",
+        evaluation_score: body.evaluation_score || 0,
+        comment: body.comment || "",
+        reviewed: body.reviewed || "no"
     };
 
     const targetUrl = `${baseUrl}/add/course_assignment`;
-    console.log(`[API POST] Payload dikirim ke Katib:`, payloadKeKatib); // CCTV Payload
+    console.log(`[API POST] Payload dikirim ke Katib:`, payloadKeKatib);
 
-    const backendResponse = await fetch(targetUrl, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${serviceToken}`
-      },
-      body: JSON.stringify(payloadKeKatib), // <-- Kirim payload yang sudah diformat
-      cache: 'no-store'
-    });
+    // ✨ PELINDUNG TIMEOUT: Batas 12 detik, mencegah "fetch failed" (ECONNRESET)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000); 
+
+    let backendResponse;
+    try {
+        backendResponse = await fetch(targetUrl, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${serviceToken}`
+          },
+          body: JSON.stringify(payloadKeKatib), 
+          cache: 'no-store',
+          signal: controller.signal // Pasang pelindung
+        });
+        clearTimeout(timeoutId);
+    } catch (fetchErr: any) {
+        clearTimeout(timeoutId);
+        console.error(`[API POST] Fetch gagal (Timeout/ECONNRESET):`, fetchErr.message);
+        return NextResponse.json({ error: "Koneksi ke server pusat terputus (Timeout). Silakan coba lagi." }, { status: 504 });
+    }
 
     const textResponse = await backendResponse.text();
     let data: any = {}; 
@@ -81,13 +98,11 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: "Missing Token or ID" }, { status: 400 });
     }
 
-    // ✨ TAMBAHKAN INI: Bikin payloadKeKatib khusus untuk fungsi PUT
-    // Kita pakai spread operator (...body) agar property lain seperti 'visibility' tidak hilang
+    // SANITASI PAYLOAD PUT
     const payloadKeKatib = {
         ...body,
-        git_repo_url: body.git_repo, // Translasi nama variabel untuk Katib
+        git_repo_url: body.git_repo_url || body.git_repo || "", 
     };
-    // Hapus git_repo versi lama agar data yang dikirim rapi
     delete payloadKeKatib.git_repo;
 
     const isDeleteAction = body.visibility === 'no';
@@ -97,17 +112,29 @@ export async function PUT(request: Request) {
 
     console.log(`[API PUT] Aksi: ${isDeleteAction ? 'DELETE' : 'UPDATE'} | Menembak: ${targetUrl}`);
 
-    const backendResponse = await fetch(targetUrl, {
-      method: 'PUT',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${serviceToken}`
-      },
-      // ✨ Sekarang payloadKeKatib sudah dikenali di sini
-      body: JSON.stringify(payloadKeKatib), 
-      cache: 'no-store'
-    });
+    // ✨ PELINDUNG TIMEOUT 12 DETIK
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    let backendResponse;
+    try {
+        backendResponse = await fetch(targetUrl, {
+          method: 'PUT',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${serviceToken}`
+          },
+          body: JSON.stringify(payloadKeKatib), 
+          cache: 'no-store',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+    } catch (fetchErr: any) {
+        clearTimeout(timeoutId);
+        console.error(`[API PUT] Fetch gagal (Timeout/ECONNRESET):`, fetchErr.message);
+        return NextResponse.json({ error: "Koneksi ke server pusat terputus (Timeout). Silakan coba lagi." }, { status: 504 });
+    }
 
     const textResponse = await backendResponse.text();
     let data: any = {};

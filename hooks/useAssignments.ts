@@ -14,7 +14,7 @@ export interface AssignmentData {
     evaluation_score: number | string;
     comment: string;
     reviewed: 'yes' | 'no';
-    [key: string]: any; // Allow additional dynamic fields
+    [key: string]: any; 
 }
 
 export const useAssignments = () => {
@@ -27,58 +27,58 @@ export const useAssignments = () => {
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearching, setIsSearching] = useState(false);
-
-    // State untuk Proses CRUD
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // ✨ PERBAIKAN: Fungsi Fetch dengan Smart Extractor & Hapus Filter Visibilitas
+    // Ambil Data Sesi yang Aman dari Next.js SSR
+    const getAuthData = () => {
+        if (typeof window === 'undefined') return null; 
+        const sessionStr = localStorage.getItem('user_profile');
+        if (!sessionStr) return null;
+        const user = JSON.parse(sessionStr);
+        return { owner_id: user.owner_id || 4409, customer_id: user.customer_id };
+    };
+
     const fetchAssignments = useCallback(async (page: number, search: string) => {
+        setLoading(true);
         try {
-            setLoading(true);
-            const sessionStr = localStorage.getItem('user_profile');
-            if (!sessionStr) return;
+            const auth = getAuthData();
+            if (!auth || !auth.customer_id) {
+                setLoading(false);
+                return;
+            }
+
+            const targetUrl = `/api/assignments/get-table?customerId=${auth.customer_id}&page=${page}&search=${encodeURIComponent(search)}&t=${Date.now()}`;
             
-            const user = JSON.parse(sessionStr);
-            if (!user.customer_id) return;
-
-            const res = await fetch(`/api/assignments/get-table?customerId=${user.customer_id}&page=${page}&search=${encodeURIComponent(search)}&t=${Date.now()}`);
-            if (!res.ok) throw new Error("Gagal mengambil data");
-
+            const res = await fetch(targetUrl);
             const result = await res.json();
 
-            // ✨ SMART EXTRACTOR: Deteksi dan bongkar bungkus JSON (Wrapper Katib)
+            // Jika API Proxy kita mengembalikan error (misal 504 Timeout)
+            if (!res.ok) throw new Error(result.error || result.message || "Gagal mengambil data");
+
+            // SMART EXTRACTOR
             const payload = result?.data || result; 
-
-            // Coba ambil array dari 'tableData' di dalam payload yang sudah diekstrak
-            const rawData = payload?.tableData || [];
-
-            // Filter Soft Delete Dihapus: Langsung ambil semua data yang diberikan Katib
-            const activeData = rawData;
+            const activeData = payload?.tableData || [];
 
             setAssignments(activeData);
-            
-            // Mengambil angka total dari payload
             setTotalPages(payload?.totalPages || 1);
             setTotalRecords(payload?.totalRecords || activeData.length || 0);
             setCurrentPage(payload?.currentPage || 1);
 
-        } catch (error) {
-            console.error("Fetch Assignments Error:", error);
-            setAssignments([]); // Kosongkan tabel jika gagal
+        } catch (error: any) {
+            console.error("Fetch Assignments Error:", error.message);
+            setAssignments([]); // Kosongkan tabel agar user sadar sedang terjadi error
         } finally {
             setLoading(false);
             setIsSearching(false);
         }
     }, []);
 
-    // Initial Load & Pagination
     useEffect(() => {
         if (searchQuery === "") {
             fetchAssignments(currentPage, "");
         }
     }, [currentPage, fetchAssignments, searchQuery]);
 
-    // Search Debounce
     useEffect(() => {
         if (searchQuery === "") {
             setIsSearching(false);
@@ -95,37 +95,28 @@ export const useAssignments = () => {
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery, fetchAssignments]);
 
-    // ==========================================
-    // FUNGSI CRUD (CREATE, UPDATE, DELETE)
-    // ==========================================
 
-    const getAuthData = () => {
-        const sessionStr = localStorage.getItem('user_profile');
-        if (!sessionStr) throw new Error("Sesi tidak ditemukan");
-        const user = JSON.parse(sessionStr);
-        return { owner_id: user.owner_id || 4409, customer_id: user.customer_id };
-    };
-
-    // ✨ Fungsi Add / Edit
+    // ✨ FUNGSI SUBMIT (POST / PUT)
     const submitAssignment = async (mode: 'add' | 'edit', data: Partial<AssignmentData>) => {
         setIsProcessing(true);
         try {
-            const { owner_id, customer_id } = getAuthData();
-            // Ambil tanggal hari ini dalam format DD/MM/YYYY (sesuai contoh JSON Head Team)
+            const auth = getAuthData();
+            if (!auth) throw new Error("Sesi tidak valid, silakan login ulang.");
+            const { owner_id, customer_id } = auth;
+
             const dateObj = new Date();
             const todayFormatted = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
 
-            // ✨ PERBAIKAN KRUSIAL: Mapping Payload agar 100% sesuai dengan Tabel Katib
-            const payload = {
+            // ✨ SANITASI FRONTEND: Ubah Undefined jadi Empty String
+            const payload: Record<string, any> = {
                 owner_id: owner_id,
                 customer_id: customer_id,
                 date: data.date || todayFormatted,
-                course: data.course || "Ngoding AI", // Katib butuh field ini
+                course: data.course || "Ngoding AI",
                 project_title: data.project_title || '',
-                git_repo_url: data.git_repo_url || data.git_repo || '', // Diubah menjadi git_repo_url
+                git_repo_url: data.git_repo_url || data.git_repo || '', 
                 deployment_url: data.deployment_url || '',
                 description: data.description || '',
-                // Nilai default untuk data baru (mencegah error NOT NULL di DB Katib)
                 evaluation_score: data.evaluation_score || 0,
                 comment: data.comment || "",
                 reviewed: data.reviewed || "no"
@@ -140,11 +131,10 @@ export const useAssignments = () => {
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error("Gagal menyimpan data ke server");
+            const result = await res.json();
 
-            // ✨ JEDA ANTI-ECONNRESET: Beri waktu backend Katib memproses DB
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
+            if (!res.ok) throw new Error(result.error || "Gagal menyimpan data ke server");
+
             // Refetch data terbaru
             await fetchAssignments(currentPage, searchQuery);
 
@@ -159,7 +149,7 @@ export const useAssignments = () => {
         }
     };
 
-    // ✨ FUNGSI DELETE (Dengan Optimistic Update UI)
+    // ✨ FUNGSI DELETE (PUT VISIBILITY)
     const deleteAssignment = async (id: number) => {
         setIsProcessing(true);
         try {
@@ -171,20 +161,18 @@ export const useAssignments = () => {
             });
 
             const result = await res.json();
-            const isSuccess = result?.data?.success || result?.success;
 
-            if (res.ok && isSuccess) {
-                // ✨ OPTIMISTIC UI: Hapus data instan dari state React tanpa menunggu fetch ulang server
+            if (res.ok) {
+                // OPTIMISTIC UI: Hapus instan dari layar tanpa menunggu
                 setAssignments((prevData) => prevData.filter((item) => item.assignment_id !== id));
                 setTotalRecords((prev) => Math.max(0, prev - 1));
-
                 return { success: true, message: 'Tugas berhasil dihapus!' };
             } else {
-                return { success: false, message: result?.error || 'Gagal menghapus tugas.' };
+                return { success: false, message: result.error || 'Gagal menghapus tugas.' };
             }
         } catch (error: any) {
             console.error("Delete Error:", error);
-            return { success: false, message: 'Terjadi kesalahan jaringan.' };
+            return { success: false, message: 'Terjadi kesalahan jaringan (Timeout).' };
         } finally {
             setIsProcessing(false);
         }
