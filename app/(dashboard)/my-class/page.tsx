@@ -30,8 +30,6 @@ export default function MyClassPage() {
     let category = "All";
     if (course.slug.includes("ngoding") || course.slug.includes("ai"))
       category = "AI";
-    // if(course.slug.includes('esp32') || course.slug.includes('iot')) category = 'IoT';
-    // if(course.slug.includes('n8n') || course.slug.includes('auto')) category = 'Automation';
 
     const matchesFilter = filter === "All" || category === filter;
 
@@ -70,7 +68,8 @@ export default function MyClassPage() {
 
           return (
             <Link
-              href={`/course/${course.slug}`}
+              // ✨ FIX: Link diubah dari /course/[slug] menjadi /[slug] langsung
+              href={`/${course.slug}`}
               key={course.slug}
               className="group bg-white dark:bg-[#151e2c] rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-2xl hover:shadow-[#00BCD4]/5 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden h-full"
             >
@@ -84,7 +83,6 @@ export default function MyClassPage() {
                   unoptimized={true}
                 />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-colors duration-300 z-10 flex items-center justify-center">
-                  {/* Efek tombol play yang muncul saat di-hover (Meningkatkan UX affordance) */}
                   <div className="size-12 rounded-full bg-[#00BCD4] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg">
                     <span className="material-symbols-outlined text-[24px] ml-1">play_arrow</span>
                   </div>
@@ -96,7 +94,6 @@ export default function MyClassPage() {
                   {displayTitle}
                 </h3>
 
-                {/* Bagian Instruktur - Dikunci di bawah menggunakan mt-auto */}
                 <div className="mt-auto flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
                   <div className="size-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center shrink-0 border border-slate-200 dark:border-white/5">
                     <span className="material-symbols-outlined text-[16px] text-slate-500 dark:text-slate-400">

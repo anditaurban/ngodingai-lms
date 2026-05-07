@@ -2,10 +2,10 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
-// Import data course saja (curriculum.json sudah dihapus)
-import coursesDataRaw from '../../../../data/courses.json';
-import CoursePlayer from '../../../../components/course/CoursePlayer';
-import { CourseData } from '../../../../types';
+// ✨ FIX: Menggunakan alias @/ agar import tidak rusak meskipun file dipindah-pindah folder
+import coursesDataRaw from '@/data/courses.json';
+import CoursePlayer from '@/components/course/CoursePlayer';
+import { CourseData } from '@/types';
 
 const courses = coursesDataRaw as unknown as CourseData[];
 

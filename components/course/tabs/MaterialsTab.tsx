@@ -1,131 +1,45 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { DM_Sans } from 'next/font/google';
+import React, { useState, useEffect } from 'react';
+import { MaterialItem } from '@/types';
 
-const googleSansAlt = DM_Sans({ subsets: ['latin'], weight: ['400', '500', '700', '800'] });
-
-interface Chapter {
-  id: string;
-  title: string;
-  type: 'article' | 'document';
-  status: string;
-  content?: string;
-  url?: string;
+interface MaterialsTabProps {
+  materials?: MaterialItem[];
+  courseId?: string; // Digunakan untuk ID unik penyimpanan progres
 }
 
-interface Module {
-  id: string;
-  section: string;
-  chapters: Chapter[];
-}
-
-// Data Default: Sudah mencakup "Persiapan Tools" (Menggantikan PreparationTab lama)
-const defaultModules: Module[] = [
-  {
-    id: 'sec-1',
-    section: 'Bagian 1: Pengenalan',
-    chapters: [
-      { id: 'c-1', title: 'Apa itu AI & LLM?', type: 'article', status: 'published', content: '<h2>Selamat Datang!</h2><p>Di era modern ini, AI bukan lagi sekadar fiksi ilmiah. Mari kita pelajari dasar-dasar Large Language Models (LLM) dan bagaimana mereka merevolusi cara kita membuat aplikasi.</p>' },
-      { id: 'c-2', title: 'Slide Presentasi Dasar AI', type: 'document', status: 'published', url: 'https://drive.google.com/file/d/1FjvYPdbGL77LunYwFDJk2GktKccDwmRp/preview' }
-    ]
-  },
-  {
-    id: 'sec-2',
-    section: 'Bagian 2: Persiapan Tools',
-    chapters: [
-      { id: 'c-3', title: 'Instalasi Python & VS Code', type: 'article', status: 'published', content: '<h2>Setup Environment</h2><p>Pastikan Anda menginstal Python versi 3.10 ke atas. Ikuti panduan langkah demi langkah berikut ini untuk mengatur environment lokal Anda.</p>' },
-      { id: 'c-4', title: 'Cheatsheet Git & Terminal (PDF)', type: 'document', status: 'published', url: 'https://drive.google.com/file/d/1avYJwZrnaiRrgEiomyN9biMLhEevG6sc/preview' }
-    ]
-  }
-];
-
-export default function MaterialsTab({ courseSlug = 'ngodingai' }: { courseSlug?: string, materials?: any }) {
-  const [modules, setModules] = useState<Module[]>([]);
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const [activeChapterId, setActiveChapterId] = useState<string>('');
+export default function MaterialsTab({ materials = [], courseId = 'default-course' }: MaterialsTabProps) {
+  const [selectedFile, setSelectedFile] = useState<MaterialItem | null>(null);
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // 1. Inisialisasi Progres dari Local Storage
   useEffect(() => {
-    const loadCurriculum = () => {
-      const savedCurriculum = localStorage.getItem(`db_curriculum_${courseSlug}`);
-      let loadedModules: Module[] = [];
-
-      if (savedCurriculum && savedCurriculum.includes('c-1')) {
-        const parsed = JSON.parse(savedCurriculum) as Module[];
-        
-        loadedModules = parsed.map(mod => ({
-          ...mod,
-          chapters: mod.chapters
-            .filter(c => c.status === 'published')
-            .map(c => {
-              const contentData = localStorage.getItem(`db_content_${courseSlug}_${c.id}`);
-              let extraContent = {};
-              if (contentData) extraContent = JSON.parse(contentData);
-              return { ...c, ...extraContent };
-            })
-        })).filter(mod => mod.chapters.length > 0); 
-      }
-
-      if (loadedModules.length === 0) {
-        loadedModules = defaultModules;
-      }
-
-      setModules(loadedModules);
-      
-      if (loadedModules.length > 0 && loadedModules[0].chapters.length > 0) {
-         setExpandedSections(prev => prev.length === 0 ? [loadedModules[0].id] : prev);
-         setActiveChapterId(prev => prev === '' ? loadedModules[0].chapters[0].id : prev);
-      }
-      setIsLoaded(true);
-    };
-
-    loadCurriculum();
+    const savedProgress = localStorage.getItem(`course_progress_${courseId}`);
+    let parsedProgress: string[] = [];
     
-    // Menangkap sinyal Auto-Sync dari Tiptap Workspace
-    window.addEventListener('storage', loadCurriculum);
-    return () => window.removeEventListener('storage', loadCurriculum);
-  }, [courseSlug]);
-
-  const flatChapters = useMemo(() => {
-    return modules.flatMap(sec => sec.chapters);
-  }, [modules]);
-
-  useEffect(() => {
-    if (flatChapters.length > 0 && !flatChapters.some(c => c.id === activeChapterId)) {
-       setActiveChapterId(flatChapters[0].id);
-       const parentSec = modules.find(m => m.chapters.some(c => c.id === flatChapters[0].id));
-       if (parentSec && !expandedSections.includes(parentSec.id)) {
-          setExpandedSections(prev => [...prev, parentSec.id]);
-       }
+    if (savedProgress) {
+      parsedProgress = JSON.parse(savedProgress);
+      setCompletedIds(parsedProgress);
     }
-  }, [flatChapters, activeChapterId, modules, expandedSections]);
 
-  const currentIndex = flatChapters.findIndex(c => c.id === activeChapterId);
-  const activeChapter = currentIndex !== -1 ? flatChapters[currentIndex] : null;
-  
-  const prevChapter = currentIndex > 0 ? flatChapters[currentIndex - 1] : null;
-  const nextChapter = currentIndex !== -1 && currentIndex < flatChapters.length - 1 ? flatChapters[currentIndex + 1] : null;
-
-  const toggleSection = (secId: string) => {
-    setExpandedSections(prev => 
-      prev.includes(secId) ? prev.filter(id => id !== secId) : [...prev, secId]
-    );
-  };
-
-  const handleNavigate = (chapterId: string, sectionId: string) => {
-    setActiveChapterId(chapterId);
-    if (!expandedSections.includes(sectionId)) {
-       setExpandedSections(prev => [...prev, sectionId]);
+    // Auto-pilih materi yang masuk akal saat pertama render
+    if (materials.length > 0) {
+      // Cari materi pertama yang belum selesai (tapi sudah terbuka/unlocked)
+      const firstUnfinishedIndex = materials.findIndex(m => !parsedProgress.includes(m.id.toString()));
+      
+      if (firstUnfinishedIndex !== -1) {
+        setSelectedFile(materials[firstUnfinishedIndex]);
+      } else {
+        // Jika semua sudah selesai, pilih yang pertama saja
+        setSelectedFile(materials[0]);
+      }
     }
-    window.scrollTo({ top: 100, behavior: 'smooth' }); 
-  };
+    
+    setIsLoaded(true);
+  }, [courseId, materials]);
 
-  const findSectionByChapter = (chapId: string) => {
-     return modules.find(sec => sec.chapters.some(c => c.id === chapId))?.id || '';
-  };
-
-  // ✨ Helper untuk memastikan URL Google Drive aman & menjadi mode /preview
+  // 2. Helper Penyelamat URL GDrive
   const getSafeDriveUrl = (url?: string) => {
     if (!url) return '';
     const match = url.match(/(?:file\/d\/|id=)([\w-]+)/);
@@ -135,166 +49,239 @@ export default function MaterialsTab({ courseSlug = 'ngodingai' }: { courseSlug?
     return url;
   };
 
+  // 3. Helper Cek Status Terkunci
+  // Materi terbuka JIKA dia adalah urutan pertama (index 0) ATAU materi sebelumnya sudah selesai
+  const isUnlocked = (index: number) => {
+    if (index === 0) return true;
+    const prevItemId = materials[index - 1].id.toString();
+    return completedIds.includes(prevItemId);
+  };
+
+  // 4. Fungsi Tandai Selesai & Lanjut
+  const handleMarkAsDone = () => {
+    if (!selectedFile) return;
+
+    const currentIdStr = selectedFile.id.toString();
+    let newCompleted = [...completedIds];
+
+    // Tambahkan ke array progres jika belum ada
+    if (!newCompleted.includes(currentIdStr)) {
+      newCompleted.push(currentIdStr);
+      setCompletedIds(newCompleted);
+      localStorage.setItem(`course_progress_${courseId}`, JSON.stringify(newCompleted));
+    }
+
+    // Pindah ke file selanjutnya secara otomatis
+    const currentIndex = materials.findIndex(m => m.id === selectedFile.id);
+    if (currentIndex < materials.length - 1) {
+      setSelectedFile(materials[currentIndex + 1]);
+      
+      // Auto scroll ke atas (opsional)
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   if (!isLoaded) {
-      return (
-          <div className="flex flex-col items-center justify-center h-125 text-slate-400 gap-4">
-              <span className="size-8 border-4 border-slate-200 border-t-[#00BCD4] rounded-full animate-spin"></span>
-              <p className="font-bold animate-pulse">Menyinkronkan Materi...</p>
-          </div>
-      );
+     return <div className="p-10 text-center animate-pulse text-slate-400">Memuat progres belajar...</div>;
   }
 
-  const safeUrl = activeChapter?.type === 'document' ? getSafeDriveUrl(activeChapter.url) : '';
+  if (!materials || materials.length === 0) {
+    return (
+      <div className="p-10 text-center bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+        <span className="material-symbols-outlined text-4xl text-slate-400 mb-2">folder_open</span>
+        <p className="text-slate-500">Belum ada materi yang dilampirkan untuk kelas ini.</p>
+      </div>
+    );
+  }
+
+  const safeIframeUrl = selectedFile ? getSafeDriveUrl(selectedFile.url) : '';
+  const currentSelectedIndex = materials.findIndex(m => m.id === selectedFile?.id);
+  const isCurrentCompleted = selectedFile ? completedIds.includes(selectedFile.id.toString()) : false;
+  const isLastMaterial = currentSelectedIndex === materials.length - 1;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 animate-fade-in pb-16 items-start">
-      
-      <aside className="w-full lg:w-80 shrink-0 bg-white dark:bg-[#111111] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden lg:sticky lg:top-24">
-         <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-            <h3 className={`text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 ${googleSansAlt.className}`}>
-               <span className="material-symbols-outlined text-[#00BCD4]">menu_book</span> Daftar Materi
-            </h3>
-         </div>
-         <div className="p-3 max-h-[60vh] overflow-y-auto custom-scrollbar space-y-2">
-            {modules.map((mod) => {
-               const isExpanded = expandedSections.includes(mod.id);
-               return (
-                 <div key={mod.id} className="bg-white dark:bg-slate-900/30 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                    <button onClick={() => toggleSection(mod.id)} className="w-full flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left outline-none">
-                       <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">{mod.section}</span>
-                       <span className={`material-symbols-outlined text-[18px] text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>expand_more</span>
-                    </button>
-                    <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100 p-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                       <div className="space-y-1">
-                          {mod.chapters.map(chapter => {
-                             const isActive = activeChapterId === chapter.id;
-                             return (
-                               <button 
-                                 key={chapter.id} 
-                                 onClick={() => handleNavigate(chapter.id, mod.id)}
-                                 className={`w-full text-left flex items-center justify-between gap-3 p-2.5 rounded-xl transition-all text-sm font-medium outline-none ${isActive ? 'bg-cyan-50 text-[#00BCD4] dark:bg-cyan-900/20 dark:text-cyan-400 font-bold border border-cyan-100 dark:border-cyan-800' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'}`}
-                               >
-                                  <div className="flex items-center gap-2 overflow-hidden">
-                                      <span className={`material-symbols-outlined text-[18px] shrink-0 ${isActive ? 'text-[#00BCD4]' : 'text-slate-400'}`}>
-                                         {chapter.type === 'article' ? 'article' : 'picture_as_pdf'}
-                                      </span>
-                                      <span className="truncate">{chapter.title}</span>
-                                  </div>
-                                  {isActive && <span className="size-1.5 rounded-full bg-[#00BCD4] shrink-0 animate-pulse"></span>}
-                               </button>
-                             );
-                          })}
-                       </div>
-                    </div>
-                 </div>
-               );
-            })}
-         </div>
-      </aside>
-
-      <div className="flex-1 w-full flex flex-col gap-6">
-         {activeChapter ? (
-           <>
-             <div className="bg-white dark:bg-[#111111] p-6 md:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden min-h-125 flex flex-col">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#00BCD4]"></div>
+    <div className="animate-fade-in">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* --- LEFT SIDEBAR: FILE LIST --- */}
+        <div className="lg:col-span-4 flex flex-col gap-4 order-2 lg:order-1">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm sticky top-24">
+            
+            {/* Header Sidebar & Progress Bar */}
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase tracking-wider">
+                  Daftar Materi
+                </h3>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 rounded-full">
+                  {completedIds.length} / {materials.length} Selesai
+                </span>
+              </div>
+              {/* Progress Bar UI */}
+              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mb-1 overflow-hidden">
+                 <div 
+                   className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" 
+                   style={{ width: `${(completedIds.length / materials.length) * 100}%` }}
+                 ></div>
+              </div>
+            </div>
+            
+            {/* List Materi */}
+            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar p-2 space-y-1">
+              {materials.map((item, index) => {
+                const isSelected = selectedFile?.id === item.id;
+                const isItemCompleted = completedIds.includes(item.id.toString());
+                const unlocked = isUnlocked(index);
                 
-                {/* Header Konten Materi */}
-                <div className="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-slate-800 pb-5">
-                   <div>
-                       <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
-                          <span className="material-symbols-outlined text-[16px] text-[#00BCD4]">{activeChapter.type === 'article' ? 'menu_book' : 'picture_as_pdf'}</span>
-                          {activeChapter.type === 'article' ? 'Modul Bacaan' : 'Dokumen Lampiran'}
-                       </div>
-                       <h2 className={`text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white leading-snug ${googleSansAlt.className}`}>
-                          {activeChapter.title}
-                       </h2>
-                   </div>
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                        if (unlocked) setSelectedFile(item);
+                    }}
+                    disabled={!unlocked}
+                    className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all border outline-none relative overflow-hidden ${
+                      !unlocked 
+                        ? 'bg-slate-50/50 dark:bg-[#0a0a0a] border-transparent opacity-60 cursor-not-allowed' // Style Terkunci
+                        : isSelected
+                          ? 'bg-[#00BCD4]/10 border-[#00BCD4] shadow-sm' // Style Aktif
+                          : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-slate-700/50' // Style Normal
+                    }`}
+                  >
+                    {/* Icon Status Indicator */}
+                    <div className="relative shrink-0">
+                        <div className={`size-10 rounded-lg flex items-center justify-center transition-colors ${
+                        !unlocked ? 'bg-slate-200 dark:bg-slate-800 text-slate-400' :
+                        isSelected ? 'bg-[#00BCD4] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                        }`}>
+                        <span className="material-symbols-outlined text-[20px]">
+                            {item.type === 'slide' ? 'slideshow' : item.type === 'doc' ? 'article' : 'description'}
+                        </span>
+                        </div>
+                        
+                        {/* Overlay Icon (Centang / Gembok) */}
+                        {isItemCompleted && (
+                            <span className="material-symbols-outlined absolute -bottom-1 -right-1 text-[16px] text-white bg-emerald-500 rounded-full border-2 border-white dark:border-slate-800">
+                                check_circle
+                            </span>
+                        )}
+                        {!unlocked && !isItemCompleted && (
+                            <span className="material-symbols-outlined absolute -bottom-1 -right-1 text-[16px] text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full border-2 border-white dark:border-slate-800">
+                                lock
+                            </span>
+                        )}
+                    </div>
+                    
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm font-bold truncate leading-tight ${
+                         !unlocked ? 'text-slate-500 dark:text-slate-600' :
+                         isSelected ? 'text-[#00BCD4]' : 'text-slate-700 dark:text-slate-200'
+                      }`}>
+                        {item.title}
+                      </p>
+                      <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-wider flex items-center gap-1">
+                        {!unlocked && <span className="material-symbols-outlined text-[12px]">lock</span>}
+                        {unlocked ? `${item.type} Document` : 'Terkunci'}
+                      </p>
+                    </div>
 
-                   {/* Tombol Fallback untuk Dokumen */}
-                   {activeChapter.type === 'document' && safeUrl && (
-                      <a href={safeUrl.replace('/preview', '/view')} target="_blank" rel="noreferrer" className="hidden sm:flex items-center gap-1.5 bg-cyan-50 dark:bg-cyan-900/20 text-[#00BCD4] px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#00BCD4] hover:text-white transition-all shadow-sm shrink-0">
-                         <span className="material-symbols-outlined text-[18px]">open_in_new</span> Buka Penuh
-                      </a>
-                   )}
+                    {isSelected && (
+                      <span className="material-symbols-outlined text-[18px] self-center animate-pulse text-[#00BCD4]">chevron_right</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* --- RIGHT CONTENT: PREVIEWER --- */}
+        <div className="lg:col-span-8 order-1 lg:order-2">
+          {selectedFile ? (
+            <div className="flex flex-col gap-4">
+              
+              {/* Header Viewer */}
+              <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1">{selectedFile.title}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                      {isCurrentCompleted ? (
+                          <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                             <span className="material-symbols-outlined text-[14px]">check_circle</span> Selesai dibaca
+                          </p>
+                      ) : (
+                          <p className="text-xs font-medium text-amber-500 flex items-center gap-1">
+                             <span className="material-symbols-outlined text-[14px]">pending</span> Belum selesai
+                          </p>
+                      )}
+                  </div>
                 </div>
                 
-                {/* Render Artikel Tiptap */}
-                {activeChapter.type === 'article' && (
-                   <div 
-                     className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-[#00BCD4] prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-800 flex-1"
-                     dangerouslySetInnerHTML={{ __html: activeChapter.content || '<p class="italic text-slate-400">Konten materi sedang dipersiapkan...</p>' }}
-                   />
+                {/* Tombol Open Full */}
+                {safeIframeUrl && (
+                    <a 
+                    href={safeIframeUrl.replace('/preview', '/view')} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="px-4 py-2.5 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-950 transition-colors shrink-0"
+                    >
+                    <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                    Buka Penuh
+                    </a>
                 )}
+              </div>
 
-                {/* Render Iframe Dokumen */}
-                {activeChapter.type === 'document' && (
-                   <div className="flex flex-col gap-4 flex-1">
-                      <div className="relative w-full flex-1 aspect-4/3 md:aspect-16/10 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-[#0f111a] shadow-inner group">
-                         {safeUrl ? (
-                            <>
-                                {/* Overlay GDrive (Jika diblokir) */}
-                                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 z-0 p-8 text-center bg-[#0f111a]">
-                                   <span className="material-symbols-outlined text-4xl mb-3 opacity-50">block</span>
-                                   <p className="text-sm font-medium mb-4">Jika dokumen dibatasi oleh Google, klik tombol di bawah.</p>
-                                   <a href={safeUrl.replace('/preview', '/view')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#00BCD4] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg hover:bg-[#00acc1] relative z-20">
-                                      <span className="material-symbols-outlined text-[18px]">open_in_new</span> Buka di Google Drive
-                                   </a>
-                                </div>
-                                <iframe src={safeUrl} className="absolute inset-0 w-full h-full z-10 bg-transparent" allowFullScreen></iframe>
-                            </>
-                         ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-slate-400 p-8 text-center relative z-10">
-                               <span className="material-symbols-outlined text-5xl mb-2">broken_image</span>
-                               <p className="font-bold">Dokumen belum dilampirkan.</p>
-                            </div>
-                         )}
-                      </div>
-
-                      {/* Tombol Fallback Mobile */}
-                      {safeUrl && (
-                        <a href={safeUrl.replace('/preview', '/view')} target="_blank" rel="noreferrer" className="sm:hidden flex items-center justify-center gap-1.5 bg-cyan-50 dark:bg-cyan-900/20 text-[#00BCD4] px-4 py-3 rounded-xl text-xs font-bold hover:bg-[#00BCD4] hover:text-white transition-all shadow-sm w-full">
-                           <span className="material-symbols-outlined text-[16px]">open_in_new</span> Buka di Tab Baru
-                        </a>
-                      )}
-                   </div>
-                )}
-             </div>
-
-             {/* Navigasi Prev / Next */}
-             <div className="flex items-center justify-between mt-2">
-                {prevChapter ? (
-                   <button 
-                     onClick={() => handleNavigate(prevChapter.id, findSectionByChapter(prevChapter.id))} 
-                     className={`flex items-center gap-2 px-5 py-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 hover:border-[#00BCD4] hover:text-[#00BCD4] text-slate-600 dark:text-slate-300 rounded-2xl text-sm font-bold transition-all shadow-sm active:scale-95 ${googleSansAlt.className}`}
-                   >
-                     <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                     <span className="hidden sm:inline truncate max-w-37.5">{prevChapter.title}</span>
-                     <span className="sm:hidden">Kembali</span>
-                   </button>
-                ) : <div></div>}
-
-                {nextChapter ? (
-                   <button 
-                     onClick={() => handleNavigate(nextChapter.id, findSectionByChapter(nextChapter.id))} 
-                     className={`flex items-center gap-2 px-6 py-3 bg-[#00BCD4] hover:bg-[#00acc1] text-white rounded-2xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95 ${googleSansAlt.className}`}
-                   >
-                     <span className="hidden sm:inline truncate max-w-37.5">{nextChapter.title}</span>
-                     <span className="sm:hidden">Lanjut</span>
-                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                   </button>
+              {/* Iframe Viewer */}
+              <div className="bg-[#0f111a] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner relative aspect-4/3 lg:aspect-16/10 group">
+                {safeIframeUrl ? (
+                    <iframe
+                    src={safeIframeUrl}
+                    title={selectedFile.title}
+                    className="absolute inset-0 w-full h-full z-10 bg-transparent"
+                    allowFullScreen
+                    ></iframe>
                 ) : (
-                   <button className={`flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-2xl text-sm font-bold shadow-lg shadow-emerald-500/20 cursor-default ${googleSansAlt.className}`}>
-                     <span className="material-symbols-outlined text-[18px]">check_circle</span> Modul Selesai
-                   </button>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-100 dark:bg-slate-800 text-slate-400">
+                        <span className="material-symbols-outlined text-4xl mb-2">broken_image</span>
+                        <p className="text-sm font-medium">URL dokumen tidak valid</p>
+                    </div>
                 )}
-             </div>
-           </>
-         ) : (
-            <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 dark:bg-[#111111] rounded-3xl border border-slate-200 dark:border-slate-800 h-125">
-               <span className="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-700 mb-4">menu_book</span>
-               <p className="text-slate-500 font-medium">Pilih materi di menu samping untuk mulai belajar.</p>
+              </div>
+
+              {/* ✨ TOMBOL KONTROL PROGRES ✨ */}
+              <div className="flex justify-end mt-2">
+                 {!isCurrentCompleted ? (
+                    <button 
+                       onClick={handleMarkAsDone}
+                       className="px-6 py-3.5 bg-[#00BCD4] text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#00acc1] transition-colors shadow-lg shadow-cyan-500/20 active:scale-95"
+                    >
+                       <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                       Tandai Selesai & Lanjut
+                    </button>
+                 ) : (
+                    <div className="flex items-center gap-3">
+                       <span className="text-sm font-bold text-slate-400">Materi ini sudah selesai.</span>
+                       {!isLastMaterial && (
+                           <button 
+                           onClick={() => setSelectedFile(materials[currentSelectedIndex + 1])}
+                           className="px-6 py-3.5 bg-slate-800 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold flex items-center gap-2 transition-transform active:scale-95"
+                           >
+                           Materi Selanjutnya <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                           </button>
+                       )}
+                    </div>
+                 )}
+              </div>
+
             </div>
-         )}
+          ) : (
+            <div className="flex flex-col items-center justify-center h-125 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400">
+              <span className="material-symbols-outlined text-5xl mb-4 opacity-50">description</span>
+              <p className="font-medium">Pilih materi di daftar samping untuk melihat preview</p>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

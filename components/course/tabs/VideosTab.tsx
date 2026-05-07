@@ -36,18 +36,9 @@ export default function VideosTab({ courseId = 1, slug }: VideosTabProps) {
     isLoadingList,
     isLoadingDetail,
     error,
-    fetchBatchDetail
   } = useClassroomVideos(courseId, customerId);
 
-  const [activeBatchId, setActiveBatchId] = useState<number | ''>('');
   const [currentVideo, setCurrentVideo] = useState<VideoData | null>(null);
-
-  // Auto-select batch pertama saat data batch berhasil di-load
-  useEffect(() => {
-    if (batches.length > 0 && activeBatchId === '') {
-      setActiveBatchId(batches[0].batch_id);
-    }
-  }, [batches, activeBatchId]);
 
   // Auto-select video pertama saat detail batch berhasil di-load
   useEffect(() => {
@@ -62,13 +53,7 @@ export default function VideosTab({ courseId = 1, slug }: VideosTabProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBatch]); 
 
-  const handleBatchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const batchId = Number(e.target.value);
-    setActiveBatchId(batchId);
-    fetchBatchDetail(batchId); 
-  };
-
-  // Helper Functions dari kode asli Anda
+  // Helper Functions yang tangguh (dari kode asli Anda)
   const isGDrive = (type?: string) => {
     if (!type) return false;
     const t = type.toLowerCase();
@@ -119,7 +104,7 @@ export default function VideosTab({ courseId = 1, slug }: VideosTabProps) {
   return (
     <div className="space-y-6 animate-fade-in pb-16">
       
-      {/* HEADER & BATCH SELECTOR (UI Baru) */}
+      {/* HEADER & INFO BATCH STATIS (Dropdown Dihapus) */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white dark:bg-[#111111] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm gap-4">
          <div className="flex items-center gap-3">
             <div className="size-10 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl flex items-center justify-center">
@@ -128,25 +113,27 @@ export default function VideosTab({ courseId = 1, slug }: VideosTabProps) {
             <div>
                <h3 className={`text-base font-bold text-slate-900 dark:text-white ${googleSansAlt.className}`}>Rekaman Live Class</h3>
                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-                  {isLoadingList ? 'Memuat Angkatan...' : `Tersedia ${batches.length} Angkatan`}
+                  {isLoadingList ? 'Memuat Info Angkatan...' : 'Angkatan Terdaftar'}
                </p>
             </div>
          </div>
-         <div className="relative w-full sm:w-72">
-             <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none">expand_more</span>
-             <select 
-                value={activeBatchId} 
-                onChange={handleBatchChange}
-                disabled={isLoadingList || batches.length === 0}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-4 pr-10 py-3 text-sm font-bold text-slate-900 dark:text-white outline-none cursor-pointer focus:ring-2 focus:ring-red-500/50 appearance-none shadow-sm disabled:opacity-50"
-             >
-                {batches.length === 0 && <option value="">Belum ada batch</option>}
-                {batches.map((batch) => (
-                  <option key={batch.batch_id} value={batch.batch_id} className="font-medium text-slate-700">
-                    {batch.batch_name} — ({batch.batch_period})
-                  </option>
-                ))}
-             </select>
+         
+         {/* ✨ UI BARU: Badge Statis Pengganti Select Dropdown ✨ */}
+         <div className="relative w-full sm:w-auto min-w-50">
+            {isLoadingList ? (
+              <div className="h-11 w-full bg-slate-200 dark:bg-slate-700 animate-pulse rounded-xl"></div>
+            ) : error ? (
+               <div className="text-xs text-red-500 font-bold p-3 bg-red-50 rounded-xl border border-red-100">Gagal memuat angkatan.</div>
+            ) : batches.length > 0 ? (
+              <div className="w-full bg-cyan-50 dark:bg-cyan-900/10 border border-cyan-200 dark:border-cyan-800 text-cyan-800 dark:text-cyan-300 text-sm font-bold rounded-xl p-3 flex items-center justify-between shadow-sm">
+                <span className="truncate pr-4">{batches[0].batch_name} — ({batches[0].batch_period})</span>
+                <span className="material-symbols-outlined text-[#00BCD4] text-[20px] shrink-0">verified</span>
+              </div>
+            ) : (
+              <div className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 text-sm font-medium rounded-xl p-3 flex items-center justify-between shadow-sm">
+                <span className="truncate">Belum terdaftar di batch manapun</span>
+              </div>
+            )}
          </div>
       </div>
 
@@ -162,7 +149,7 @@ export default function VideosTab({ courseId = 1, slug }: VideosTabProps) {
             </div>
             
             <div className="p-2 max-h-125 overflow-y-auto custom-scrollbar flex flex-col gap-1.5">
-               {isLoadingDetail ? (
+               {isLoadingDetail || isLoadingList ? (
                   // Skeleton Loading
                   [1, 2, 3].map((i) => (
                     <div key={i} className="w-full h-20 bg-slate-100 dark:bg-slate-800/50 rounded-xl animate-pulse"></div>
@@ -215,7 +202,7 @@ export default function VideosTab({ courseId = 1, slug }: VideosTabProps) {
                <div className="bg-white dark:bg-[#111111] p-5 md:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm animate-in slide-in-from-bottom-4 duration-500 flex flex-col gap-4 relative overflow-hidden">
                   <div className="flex items-center justify-between">
                      <h2 className={`text-xl font-bold text-slate-900 dark:text-white ${googleSansAlt.className}`}>{currentVideo.video_title}</h2>
-                     <a href={getVideoExternalUrl(currentVideo)} target="_blank" rel="noreferrer" className="hidden sm:flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                     <a href={getVideoExternalUrl(currentVideo)} target="_blank" rel="noreferrer" className="hidden sm:flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0">
                         <span className="material-symbols-outlined text-[16px]">open_in_new</span> Buka Penuh
                      </a>
                   </div>
