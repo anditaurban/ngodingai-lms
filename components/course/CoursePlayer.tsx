@@ -56,7 +56,7 @@ export default function CoursePlayer({ course }: CoursePlayerProps) {
 
         {activeTab === 'materials' && (
           // ✨ FIX: Tambahkan courseSlug={course.slug} agar Live Auto-Sync Materi berjalan
-          <MaterialsTab materials={course.tabs?.materials} courseSlug={course.slug} />
+          <MaterialsTab materials={course.tabs?.materials} courseId={course.slug} />
         )}
 
         {activeTab === 'recordings' && (
