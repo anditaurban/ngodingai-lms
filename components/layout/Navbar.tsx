@@ -21,17 +21,6 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           </button>
           
           <div className="flex items-center gap-3 cursor-pointer">
-            {/* --- UPDATE 3: LOGO BARU --- */}
-            <div className="relative w-8 h-8 rounded-lg overflow-hidden">
-               <Image 
-                  src="/logongodingai.png" 
-                  alt="NgodingAI Logo" 
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-contain"
-                  unoptimized={true}
-               />
-            </div>
             <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white hidden sm:block">
               Inovasia <span className="text-primary font-normal">Digital Academy</span>
             </span>
