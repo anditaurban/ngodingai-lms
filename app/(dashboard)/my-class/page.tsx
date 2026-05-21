@@ -84,7 +84,7 @@ export default function MyClassPage() {
                 />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-colors duration-300 z-10 flex items-center justify-center">
                   <div className="size-12 rounded-full bg-[#00BCD4] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg">
-                    <span className="material-symbols-outlined text-[24px] ml-1">play_arrow</span>
+                    <span className="material-symbols-outlined text-[24px] ml-1"></span>
                   </div>
                 </div>
               </div>
@@ -120,7 +120,6 @@ export default function MyClassPage() {
         <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
           <div className="bg-slate-50 dark:bg-white/5 p-6 rounded-full mb-6 border border-slate-100 dark:border-white/5">
             <span className="material-symbols-outlined text-5xl text-slate-400 dark:text-slate-500">
-              search_off
             </span>
           </div>
           <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">

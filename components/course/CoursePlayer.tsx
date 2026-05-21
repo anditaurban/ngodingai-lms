@@ -26,8 +26,7 @@ export default function CoursePlayer({ course }: CoursePlayerProps) {
           {[
             { id: 'overview', icon: 'info', label: 'Overview' },
             { id: 'materials', icon: 'folder_zip', label: 'Materials' },
-            { id: 'recordings', icon: 'videocam', label: 'Videos' },
-            // ✨ FIX: Mengganti label, id, dan icon menjadi Assignments
+            { id: 'recordings', icon: 'videocam', label: 'Live Session' },
             { id: 'assignments', icon: 'assignment', label: 'Assignments' },
           ].map((tab) => (
             <button

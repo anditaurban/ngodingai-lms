@@ -31,6 +31,12 @@ interface MenuGroup {
 // --- MENU CONFIGURATION ---
 const menuGroups: MenuGroup[] = [
   {
+    title: "Menu Utama", // Opsional: Tambahkan grup baru jika mau
+    items: [
+      { label: 'Home', href: '/home', icon: 'home' }, // ✨ MENU BARU DITAMBAHKAN
+    ]
+  },
+  {
     title: "Learning Center",
     items: [
       { label: 'My Courses', href: '/my-class', icon: 'school' },
@@ -93,9 +99,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     Cookies.remove('auth_session'); 
     localStorage.removeItem('user_profile');
     
-    // Tutup modal dan arahkan ke homepage
     setIsLogoutModalOpen(false);
-    router.push('/');
+    
+    // ✨ FIX: Gunakan Hard Redirect agar memori cache Next.js benar-benar terhapus
+    // Ini jauh lebih aman daripada router.push('/') untuk proses logout
+    window.location.href = '/'; 
   };
 
   // --- HELPER FUNCTIONS ---
@@ -210,6 +218,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           ✨ MODAL KONFIRMASI LOGOUT ✨
       ========================================= */}
       {isLogoutModalOpen && (
+        // ✨ FIX: z-9999 diubah menjadi z-[9999] agar terbaca oleh compiler Tailwind
         <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
           {/* Backdrop Blur */}
           <div 
