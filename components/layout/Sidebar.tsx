@@ -218,8 +218,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           ✨ MODAL KONFIRMASI LOGOUT ✨
       ========================================= */}
       {isLogoutModalOpen && (
-        // ✨ FIX: z-9999 diubah menjadi z-[9999] agar terbaca oleh compiler Tailwind
-        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop Blur */}
           <div 
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
