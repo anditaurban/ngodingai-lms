@@ -5,7 +5,6 @@ import Cookies from 'js-cookie';
 export const useAuthLogic = () => {
   const router = useRouter();
 
-  // --- STATE ---
   const [loginState, setLoginState] = useState<'phone' | 'otp'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
@@ -23,6 +22,22 @@ export const useAuthLogic = () => {
     return clean;
   };
 
+  // --- HELPER: AMAN URL & VALIDASI ENV (PROFESSIONAL STANDARD) ---
+  const getApiConfig = () => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const ownerId = process.env.NEXT_PUBLIC_OWNER_ID;
+
+    // Berlakukan Fail-Fast: Tolak eksekusi jika ENV tidak disetel
+    if (!baseUrl || !ownerId) {
+      throw new Error('Konfigurasi sistem tidak lengkap (Missing ENV). Hubungi Administrator.');
+    }
+
+    return {
+      baseUrl: baseUrl.replace(/\/+$/, ''), // Bersihkan trailing slash
+      ownerId: ownerId
+    };
+  };
+
   // --- 1. API: REQUEST OTP ---
   const handleCheckPhone = async () => {
     setErrorMessage('');
@@ -35,40 +50,46 @@ export const useAuthLogic = () => {
     setIsLoading(true);
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
-      const appId = process.env.NEXT_PUBLIC_APP_ID || '4409';
-      
+      // Ambil konfigurasi murni dari .env (akan throw Error jika kosong)
+      const { baseUrl, ownerId } = getApiConfig();
       const cleanPhone = formatPhoneNumber(phoneNumber);
-      const endpoint = `${baseUrl}/customer_login/${appId}/${cleanPhone}`;
       
-      console.log("Menembak API ke:", endpoint);
+      const endpoint = `${baseUrl}/customer_login/${ownerId}/${cleanPhone}`;
+      console.log("🚀 Request OTP:", endpoint);
 
       const response = await fetch(endpoint, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Accept': 'application/json',
+          'Content-Type': 'application/json' 
+        },
       });
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server Error: Endpoint tidak ditemukan (404/500)");
+      
+      let responseJson;
+      try {
+        responseJson = await response.json();
+      } catch (parseError) {
+        throw new Error(`Server tidak merespons JSON valid (Status: ${response.status})`);
       }
-
-      const responseJson = await response.json();
 
       if (!response.ok) {
-        throw new Error(responseJson.message || 'Gagal mengirim OTP');
+        throw new Error(responseJson?.message || 'Gagal mengirim OTP. Nomor tidak ditemukan.');
       }
 
-      if (responseJson.data?.status === 'success' || response.status === 201) {
-        console.log('OTP Sent:', responseJson);
+      if (responseJson?.data?.status === 'success' || response.status === 201 || response.status === 200) {
+        console.log('✅ OTP Sent');
         setLoginState('otp');
       } else {
         throw new Error('Gagal mengirim OTP. Pastikan nomor terdaftar.');
       }
 
     } catch (error: any) {
-      console.error('Error Request OTP:', error);
-      setErrorMessage(error.message || 'Terjadi kesalahan koneksi server.');
+      console.error('❌ Error Request OTP:', error);
+      if (error.message === 'Failed to fetch') {
+        setErrorMessage('Terjadi masalah koneksi atau blokade CORS dari server.');
+      } else {
+        setErrorMessage(error.message || 'Terjadi kesalahan koneksi server.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +108,8 @@ export const useAuthLogic = () => {
     setErrorMessage('');
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
+      // Ambil konfigurasi murni dari .env
+      const { baseUrl } = getApiConfig();
       const cleanPhone = formatPhoneNumber(phoneNumber);
 
       const payload = {
@@ -95,19 +117,30 @@ export const useAuthLogic = () => {
         otp: otpCode 
       };
 
-      const response = await fetch(`${baseUrl}/otp/customer_login`, {
+      const endpoint = `${baseUrl}/otp/customer_login`;
+      console.log("🚀 Verify OTP:", endpoint);
+
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Accept': 'application/json',
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Kode OTP salah.');
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error(`Gagal membaca respons server (Status: ${response.status})`);
       }
 
-      console.log('Login Success:', data);
+      if (!response.ok) {
+        throw new Error(data?.message || 'Kode OTP salah atau kedaluwarsa.');
+      }
+
+      console.log('✅ Login Success');
 
       if (typeof window !== 'undefined') {
         const userProfileToSave = data.data || data.user || data; 
@@ -116,30 +149,22 @@ export const useAuthLogic = () => {
 
       const activeUserId = data?.customer_id || data?.data?.customer_id || data?.user?.id || 'session_active';
 
-      // ✨ PERBAIKAN FATAL: Konfigurasi Cookie Standar Enterprise ✨
-      // 1. Ubah nama menjadi 'auth_session' agar sinkron dengan fungsi Logout.
-      // 2. Tambahkan secure: true dan sameSite: 'lax' agar tidak dihancurkan oleh Google Chrome.
+      // Set cookie session standar
       Cookies.set('auth_session', activeUserId.toString(), { 
-          expires: 7,         // Usia mutlak: 7 hari
-          path: '/',          // Valid untuk semua halaman
-          secure: true,       // Wajib true di Vercel (HTTPS)
-          sameSite: 'lax'     // Keamanan standar browser modern
+          expires: 7, path: '/', secure: true, sameSite: 'lax' 
       });
-      
-      // Sebagai pengaman ekstra (fallback jika Middleware masih mencari nama 'token')
       Cookies.set('token', activeUserId.toString(), { 
-          expires: 7, 
-          path: '/',
-          secure: true, 
-          sameSite: 'lax'
+          expires: 7, path: '/', secure: true, sameSite: 'lax'
       });
       
-      router.push('/my-class');
+      // Hard redirect agar membersihkan memori React
+      window.location.href = '/home'; 
 
     } catch (error: any) {
-      console.error('Error Verify OTP:', error);
+      console.error('❌ Error Verify OTP:', error);
       setErrorMessage(error.message || 'Verifikasi gagal. Silakan coba lagi.');
       setOtpValues(['', '', '', '', '', '']); 
+      document.getElementById('otp-0')?.focus();
     } finally {
       setIsLoading(false);
     }
@@ -178,17 +203,8 @@ export const useAuthLogic = () => {
   };
 
   return {
-    loginState,
-    phoneNumber,
-    otpValues,
-    isLoading,
-    errorMessage,
-    setPhoneNumber,
-    handleCheckPhone,
-    handleVerifyLogin,
-    handleOtpChange,
-    handleOtpKeyDown,
-    handleOtpPaste,
-    resetLogin
+    loginState, phoneNumber, otpValues, isLoading, errorMessage,
+    setPhoneNumber, handleCheckPhone, handleVerifyLogin,
+    handleOtpChange, handleOtpKeyDown, handleOtpPaste, resetLogin
   };
 };

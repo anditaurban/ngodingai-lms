@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-// ✨ 1. UPDATE DAFTAR VIP (Enterprise Standard menggunakan Wildcard)
-// Dengan menambahkan https://*.katib.cloud, otomatis dev, prod, dan region akan diizinkan.
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline';
@@ -17,6 +15,15 @@ const cspHeader = `
     upgrade-insecure-requests;
 `;
 
+module.exports = {
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'dev.katib.cloud' },
+      { protocol: 'https', hostname: 'ui-avatars.com' },
+    ],
+  },
+}
+
 const nextConfig: NextConfig = {
   // Matikan strict mode agar tidak render 2x saat dev
   reactStrictMode: false,
@@ -24,7 +31,7 @@ const nextConfig: NextConfig = {
   // Izinkan akses dari IP lokal (agar bisa dibuka di HP saat dev)
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', '192.168.1.10:3000', '192.168.0.100:3000'], 
+      allowedOrigins: ['localhost:3000', '192.168.1.10:3000', '192.168.0.100:3000'],
     },
   },
 
@@ -38,7 +45,6 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Menyuntikkan Header Keamanan ke Browser
   async headers() {
     return [
       {

@@ -80,15 +80,14 @@ export default function LoginPage() {
           <h1
             className={`text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-6 ${googleSansAlt.className}`}
           >
-            Bangun Pengalaman <br />
+            Bangun Pengalaman <br/>
             <span className="text-transparent bg-clip-text bg-linear-to-r from-[#00BCD4] to-indigo-400">
               Belajar Kelas Dunia
             </span>
           </h1>
 
           <p className="text-slate-400 text-lg max-w-md leading-relaxed font-medium">
-            Platform manajemen pembelajaran cerdas yang dirancang khusus untuk
-            para kreator, mentor, dan edukator profesional.
+            Platform pembelajaran cerdas yang dirancang khusus untuk talenta masa depan.
           </p>
         </div>
 
@@ -151,7 +150,8 @@ export default function LoginPage() {
             </div>
 
             <p className="text-xs font-bold text-white">
-              Dipercaya 2,000+ Edukator
+              Telah dipercaya oleh 350+ peserta <br/>
+              dari berbagai kota di Indonesia
             </p>
           </div>
         </div>
@@ -331,7 +331,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <br />
+        <br/>
 
         <footer className="flex justify-center gap-6 pt-2">
           <p className="text-xs text-[#666685] font-medium">
