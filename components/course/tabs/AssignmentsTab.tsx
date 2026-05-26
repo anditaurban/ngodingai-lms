@@ -3,12 +3,16 @@
 import React, { useState, useRef } from "react";
 import { useAssignments, AssignmentData } from "@/hooks/useAssignments";
 
-// Import komponen-komponen yang sudah terpecah
 import AssignmentTable from "@/components/assignments/AssignmentTable";
 import AssignmentFormModal from "@/components/assignments/AssignmentFormModal";
 import AssignmentDeleteModal from "@/components/assignments/AssignmentDeleteModal";
 
-export default function AssignmentsTab() {
+// ✨ DEFINISI PROPS YANG DICARI OLEH TYPESCRIPT
+interface AssignmentsTabProps {
+  courseId?: number | string;
+}
+
+export default function AssignmentsTab({ courseId }: AssignmentsTabProps) {
   const {
     assignments,
     loading,
@@ -22,7 +26,7 @@ export default function AssignmentsTab() {
     isSearching,
     submitAssignment,
     deleteAssignment,
-  } = useAssignments();
+  } = useAssignments(courseId);
 
   // STATE UNTUK MODAL
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,7 +54,6 @@ export default function AssignmentsTab() {
 
   const handleOpenEdit = (item: AssignmentData) => {
     setModalMode("edit");
-    // Penyesuaian mapping URL repo (tergantung key yang dikembalikan API Anda)
     setFormData({ ...item, git_repo: item.git_repo_url || item.git_repo });
     setIsModalOpen(true);
   };
@@ -64,6 +67,7 @@ export default function AssignmentsTab() {
 
     showToast(modalMode === "add" ? "Menyimpan tugas..." : "Memperbarui tugas...", "loading");
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rawResult: any = await submitAssignment(modalMode, formData);
     const isSuccess = typeof rawResult === "object" ? rawResult.success : rawResult === true;
     const message = typeof rawResult === "object" ? rawResult.message : isSuccess ? "Berhasil disimpan!" : "Gagal menyimpan.";
@@ -81,6 +85,7 @@ export default function AssignmentsTab() {
     
     showToast("Menghapus tugas...", "loading");
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rawResult: any = await deleteAssignment(deleteId);
     const isSuccess = typeof rawResult === "object" ? rawResult.success : rawResult === true;
     const message = typeof rawResult === "object" ? rawResult.message : isSuccess ? "Berhasil dihapus!" : "Gagal menghapus.";
@@ -96,9 +101,9 @@ export default function AssignmentsTab() {
   return (
     <div className="animate-fade-in relative pb-10">
       
-      {/* MODERN TOAST UI DENGAN Z-INDEX DEWA */}
+      {/* MODERN TOAST UI */}
       <div
-        className={`fixed top-8 left-1/2 -translate-x-1/2 z-9999 transition-all duration-500 ease-out flex items-center gap-3.5 px-6 py-4 rounded-[25px] shadow-2xl border backdrop-blur-xl ${
+        className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-out flex items-center gap-3.5 px-6 py-4 rounded-[25px] shadow-2xl border backdrop-blur-xl ${
           toast
             ? "opacity-100 translate-y-0 scale-100"
             : "opacity-0 -translate-y-12 scale-95 pointer-events-none"

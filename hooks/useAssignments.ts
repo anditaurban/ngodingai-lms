@@ -4,11 +4,12 @@ export interface AssignmentData {
     assignment_id: number;
     owner_id: number;
     customer_id: number;
+    course_id?: number | string; // ✨ TAMBAHAN: Untuk relasi database
     date: string;
     course: string;
     project_title: string;
     git_repo_url?: string;
-    git_repo?: string; // Dipertahankan untuk kompatibilitas form lama
+    git_repo?: string; 
     deployment_url?: string;
     description: string;
     evaluation_score: number | string;
@@ -17,7 +18,8 @@ export interface AssignmentData {
     [key: string]: any; 
 }
 
-export const useAssignments = () => {
+// ✨ FIX: Menerima courseId sebagai argumen opsional
+export const useAssignments = (courseId?: number | string) => {
     const [assignments, setAssignments] = useState<AssignmentData[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -29,7 +31,6 @@ export const useAssignments = () => {
     const [isSearching, setIsSearching] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Ambil Data Sesi yang Aman dari Next.js SSR
     const getAuthData = () => {
         if (typeof window === 'undefined') return null; 
         const sessionStr = localStorage.getItem('user_profile');
@@ -47,15 +48,17 @@ export const useAssignments = () => {
                 return;
             }
 
-            const targetUrl = `/api/assignments/get-table?customerId=${auth.customer_id}&page=${page}&search=${encodeURIComponent(search)}&t=${Date.now()}`;
+            // ✨ FIX: Tambahkan parameter courseId ke URL jika ada
+            let targetUrl = `/api/assignments/get-table?customerId=${auth.customer_id}&page=${page}&search=${encodeURIComponent(search)}&t=${Date.now()}`;
+            if (courseId) {
+                targetUrl += `&courseId=${courseId}`;
+            }
             
             const res = await fetch(targetUrl);
             const result = await res.json();
 
-            // Jika API Proxy kita mengembalikan error (misal 504 Timeout)
             if (!res.ok) throw new Error(result.error || result.message || "Gagal mengambil data");
 
-            // SMART EXTRACTOR
             const payload = result?.data || result; 
             const activeData = payload?.tableData || [];
 
@@ -66,12 +69,13 @@ export const useAssignments = () => {
 
         } catch (error: any) {
             console.error("Fetch Assignments Error:", error.message);
-            setAssignments([]); // Kosongkan tabel agar user sadar sedang terjadi error
+            setAssignments([]); 
         } finally {
             setLoading(false);
             setIsSearching(false);
         }
-    }, []);
+    // ✨ FIX: Tambahkan courseId ke dalam dependency array
+    }, [courseId]); 
 
     useEffect(() => {
         if (searchQuery === "") {
@@ -96,7 +100,6 @@ export const useAssignments = () => {
     }, [searchQuery, fetchAssignments]);
 
 
-    // ✨ FUNGSI SUBMIT (POST / PUT)
     const submitAssignment = async (mode: 'add' | 'edit', data: Partial<AssignmentData>) => {
         setIsProcessing(true);
         try {
@@ -107,12 +110,12 @@ export const useAssignments = () => {
             const dateObj = new Date();
             const todayFormatted = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
 
-            // ✨ SANITASI FRONTEND: Ubah Undefined jadi Empty String
             const payload: Record<string, any> = {
                 owner_id: owner_id,
                 customer_id: customer_id,
+                course_id: courseId || data.course_id, // ✨ FIX: Suntikkan ID Kelas saat ini
                 date: data.date || todayFormatted,
-                course: data.course || "Ngoding AI",
+                course: data.course || "Class Assignment", // Fallback string jika backend masih mewajibkan nama
                 project_title: data.project_title || '',
                 git_repo_url: data.git_repo_url || data.git_repo || '', 
                 deployment_url: data.deployment_url || '',
@@ -135,7 +138,6 @@ export const useAssignments = () => {
 
             if (!res.ok) throw new Error(result.error || "Gagal menyimpan data ke server");
 
-            // Refetch data terbaru
             await fetchAssignments(currentPage, searchQuery);
 
             return {
@@ -149,7 +151,6 @@ export const useAssignments = () => {
         }
     };
 
-    // ✨ FUNGSI DELETE (PUT VISIBILITY)
     const deleteAssignment = async (id: number) => {
         setIsProcessing(true);
         try {
@@ -163,7 +164,6 @@ export const useAssignments = () => {
             const result = await res.json();
 
             if (res.ok) {
-                // OPTIMISTIC UI: Hapus instan dari layar tanpa menunggu
                 setAssignments((prevData) => prevData.filter((item) => item.assignment_id !== id));
                 setTotalRecords((prev) => Math.max(0, prev - 1));
                 return { success: true, message: 'Tugas berhasil dihapus!' };

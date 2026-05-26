@@ -9,6 +9,7 @@ import Cookies from 'js-cookie';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  isCollapsed?: boolean;
 }
 
 interface UserProfile {
@@ -28,7 +29,6 @@ interface MenuGroup {
   items: MenuItem[];
 }
 
-// --- MENU CONFIGURATION ---
 const menuGroups: MenuGroup[] = [
   {
     title: "Menu Utama", // Opsional: Tambahkan grup baru jika mau
@@ -44,7 +44,7 @@ const menuGroups: MenuGroup[] = [
   },
 ];
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -135,8 +135,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar Container */}
       <aside className={`
         fixed top-16 bottom-0 left-0 z-40 w-72 bg-[#1b2636] text-white border-r border-slate-800/50 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl
-        lg:translate-x-0
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
+        ${isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'} 
       `}>
         
         {/* Menu Area */}

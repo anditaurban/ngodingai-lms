@@ -1,51 +1,44 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import React, { useState } from 'react';
+import Navbar from '@/components/layout/Navbar'; 
+import Sidebar from '@/components/layout/Sidebar'; 
 
-// ✨ 1. Import Toast Provider
-import { ToastProvider } from '@/components/ui/ToastProvider';
-
-import Navbar from './Navbar';
-import Sidebar from './Sidebar';
-import Footer from './Footer';
-import SessionGuard from './SessionGuard';
-
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname(); 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+export default function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  // State untuk Drawer Mobile (HP)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  useEffect(() => {
-    setIsSidebarOpen(false);
-  }, [pathname]);
+  // ✨ FIX: State untuk Focus Mode Desktop (Pastikan namanya isSidebarCollapsed)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
-    // ✨ 2. Bungkus SELURUH layout dengan ToastProvider di layer paling luar
-    <ToastProvider>
-      <div className="flex flex-col min-h-screen font-sans bg-[#f8fafc] dark:bg-[#0f111a]">
-        
-        {/* --- PASANG SESSION GUARD DISINI --- */}
-        {/* Ini akan aktif menjaga tombol Back browser */}
-        <SessionGuard />
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0a]">
+      
+      {/* 1. NAVBAR - Melempar fungsi ubah state */}
+      <Navbar 
+        onMenuClick={() => setIsMobileMenuOpen(true)} 
+        onCollapseToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        isCollapsed={isSidebarCollapsed}
+      />
+      
+      {/* 2. SIDEBAR - Menerima perintah sembunyi/muncul */}
+      <Sidebar 
+        isOpen={isMobileMenuOpen} 
+        onClose={() => setIsMobileMenuOpen(false)} 
+        isCollapsed={isSidebarCollapsed} 
+      />
 
-        <Navbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
-        
-        <div className="flex flex-1 pt-16 h-screen overflow-hidden">
-          <Sidebar 
-            isOpen={isSidebarOpen} 
-            onClose={() => setIsSidebarOpen(false)} 
-          />
-          
-          <main className="flex-1 lg:ml-72 flex flex-col h-full relative w-full overflow-hidden">
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
-               {children}
-               <div className="mt-auto">
-                  <Footer /> 
-               </div>
-            </div>
-          </main>
-        </div>
-      </div>
-    </ToastProvider>
+      {/* 3. MAIN CONTENT - Padding 0 jika Collapsed (Sembunyi Penuh), Padding 72 jika Muncul */}
+      <main className={`transition-all duration-300 ease-in-out pt-16 w-full ${
+        isSidebarCollapsed ? 'lg:pl-0' : 'lg:pl-72'
+      }`}>
+        {children}
+      </main>
+      
+    </div>
   );
 }
