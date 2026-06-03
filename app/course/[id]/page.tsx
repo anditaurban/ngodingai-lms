@@ -32,15 +32,27 @@ export async function generateMetadata({ params }: PageProps) {
     const RAW_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "";
     const BASE_URL = RAW_BASE_URL.endsWith("/") ? RAW_BASE_URL.slice(0, -1) : RAW_BASE_URL;
     
-    const res = await fetch(`${BASE_URL}/detail/course/${id}`, { cache: 'no-store' });
+    // ✨ FIX: Ambil cookie token agar API tidak menolak request (401/403)
+    const cookieStore = await cookies();
+    const token = cookieStore.get('api_token')?.value || process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN || '';
+    
+    const res = await fetch(`${BASE_URL}/detail/course/${id}`, { 
+      cache: 'no-store',
+      // ✨ FIX: Masukkan Headers persis seperti komponen utama
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}` 
+      }
+    });
+
     if (res.ok) {
       const json = await res.json();
-      // Menyesuaikan jika Katib membungkus data di dalam objek "data" atau "detail"
       const courseData = json.data || json.detail || json; 
       const mappedCourse = mapApiToCourseData(courseData);
 
       return {
-        title: `${mappedCourse.title} | Inovasia Academy (API Mode)`,
+        // Saya rapikan titlenya agar lebih cantik untuk SEO
+        title: `${mappedCourse.title} | Inovasia Digital Academy`, 
         description: mappedCourse.description,
       };
     }
