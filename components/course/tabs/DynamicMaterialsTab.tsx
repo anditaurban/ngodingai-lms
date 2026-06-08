@@ -192,7 +192,7 @@ export default function DynamicMaterialsTab({ courseSlug }: { courseSlug: string
     <div className="flex flex-col lg:flex-row gap-8 animate-fade-in pb-16 items-start">
       
       {/* SIDEBAR */}
-      <aside className="w-full lg:w-80 shrink-0 bg-white dark:bg-[#111111] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden lg:sticky lg:top-24">
+      <aside className="w-full lg:w-80 shrink-0 bg-white dark:bg-[#111111] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden lg:sticky lg:top-24 flex flex-col lg:h-[calc(100vh-7rem)]">
          <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 space-y-3">
             <h3 className={`text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 ${googleSansAlt.className}`}>
                <span className="material-symbols-outlined text-[#00BCD4]">menu_book</span> Daftar Materi
