@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import Cookies from "js-cookie";
 
-import coursesData from "@/data/courses.json";
 import { requestJson, buildAuthHeaders } from "@/lib/api"; // Pastikan path ini sesuai dengan project Anda
 
 // ✨ DEFINISI BASE_URL
@@ -15,8 +14,7 @@ const BASE_URL = RAW_BASE_URL.endsWith("/")
   ? RAW_BASE_URL.slice(0, -1)
   : RAW_BASE_URL;
 
-
-// Helper untuk mereplace judul kelas (Statis)
+// Helper untuk mereplace judul kelas
 const getDisplayTitle = (title: string) => {
   if (title.includes("NgodingAI: Master GenAI & LLMs")) {
     return "NgodingAI: Belajar ngoding pakai AI, bangun project website dalam waktu singkat";
@@ -24,7 +22,7 @@ const getDisplayTitle = (title: string) => {
   return title;
 };
 
-// Helper URL Thumbnail (Sesuai dengan proxy Anda)
+// Helper URL Thumbnail
 const getDynamicThumbnailUrl = (filename: string) => {
   if (!filename) return "";
   const cleanFilename = filename.replace(/^\//, "");
@@ -32,7 +30,6 @@ const getDynamicThumbnailUrl = (filename: string) => {
     ? cleanFilename
     : `${BASE_URL}/thumbnail/course/${cleanFilename}`;
 
-  // Menggunakan proxy image sesuai arahan kode Anda
   return `/api/proxy-image?url=${encodeURIComponent(rawUrl)}`;
 };
 
@@ -45,11 +42,26 @@ interface DynamicCourse {
   slug?: string;
 }
 
+interface CourseCustomer {
+  course_customer_id: number;
+  customer_id: number;
+  course_id: number;
+  instructor_id: number;
+  course: string;
+  instructor: string;
+  thumbnail?: string;
+}
+
 export default function MyClassPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
-  // State untuk API Dinamis
+  // STATE: API KELAS SAYA
+  const [myCourses, setMyCourses] = useState<CourseCustomer[]>([]);
+  const [loadingMyCourses, setLoadingMyCourses] = useState(true);
+  const [errorMyCourses, setErrorMyCourses] = useState<string | null>(null);
+
+  // STATE: API KELAS TERBARU
   const [dynamicCourses, setDynamicCourses] = useState<DynamicCourse[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,24 +69,46 @@ export default function MyClassPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // ==========================================
-  // FETCH DATA API DINAMIS
-  // ==========================================
-  const fetchDynamicCourses = useCallback(async (page: number) => {
-    setLoadingCourses(true);
-    setError(null);
+  // FETCH DATA: KELAS SAYA
+  const fetchMyCourses = useCallback(async () => {
+    setLoadingMyCourses(true);
+    setErrorMyCourses(null);
 
-    const ownerId = process.env.NEXT_PUBLIC_OWNER_ID || "4409";
-    // Gunakan CUSTOMER_UPDATE_TOKEN dari env, jika tidak ada fallback ke api_token biasa
+    const customerId = Cookies.get("customer_id") || "32455";
     const token =
       process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN ||
       Cookies.get("api_token") ||
       "";
 
     try {
-      // Menggunakan endpoint all_course sesuai referensi Anda
-      const targetUrl = `${BASE_URL}/table/all_course/${ownerId}/${page}`;
+      const targetUrl = `${BASE_URL}/list/course_customer/${customerId}`;
+      const data = await requestJson<any>(targetUrl, {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+      });
 
+      setMyCourses(data.listData || []);
+    } catch (err: any) {
+      console.error("Gagal mengambil data kelas saya:", err);
+      setErrorMyCourses(err.message || "Gagal memuat data kelas saya.");
+    } finally {
+      setLoadingMyCourses(false);
+    }
+  }, []);
+
+  // FETCH DATA: API DINAMIS
+  const fetchDynamicCourses = useCallback(async (page: number) => {
+    setLoadingCourses(true);
+    setError(null);
+
+    const ownerId = process.env.NEXT_PUBLIC_OWNER_ID || "4409";
+    const token =
+      process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN ||
+      Cookies.get("api_token") ||
+      "";
+
+    try {
+      const targetUrl = `${BASE_URL}/table/all_course/${ownerId}/${page}`;
       const data = await requestJson<any>(targetUrl, {
         method: "GET",
         headers: buildAuthHeaders(token),
@@ -83,7 +117,7 @@ export default function MyClassPage() {
       setDynamicCourses(data.tableData || []);
       setTotalPages(data.totalPages || 1);
     } catch (err: any) {
-      console.error("Gagal mengambil data kelas dinamis:", err);
+      console.error("Gagal mengambil data kelas terbaru:", err);
       setError(err.message || "Gagal memuat data kelas API.");
     } finally {
       setLoadingCourses(false);
@@ -91,36 +125,26 @@ export default function MyClassPage() {
   }, []);
 
   useEffect(() => {
+    fetchMyCourses();
     fetchDynamicCourses(currentPage);
-  }, [currentPage, fetchDynamicCourses]);
+  }, [currentPage, fetchDynamicCourses, fetchMyCourses]);
 
-  // ==========================================
-  // LOGIKA FILTERING (STATIS & DINAMIS)
-  // ==========================================
-  const filteredStaticCourses = coursesData.filter((course) => {
-    const displayTitle = getDisplayTitle(course.title);
+  // LOGIKA FILTERING
+  const filteredMyCourses = myCourses.filter((item) => {
+    const displayTitle = getDisplayTitle(item.course || "");
     const matchesSearch =
       displayTitle.toLowerCase().includes(search.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(search.toLowerCase());
+      (item.instructor || "").toLowerCase().includes(search.toLowerCase());
 
     let category = "All";
-    if (course.slug.includes("ngoding") || course.slug.includes("ai"))
+    if (
+      displayTitle.toLowerCase().includes("ngoding") ||
+      displayTitle.toLowerCase().includes("ai")
+    ) {
       category = "AI";
+    }
 
     const matchesFilter = filter === "All" || category === filter;
-    return matchesSearch && matchesFilter;
-  });
-
-  const filteredDynamicCourses = dynamicCourses.filter((course) => {
-    const matchesSearch =
-      (course.title || "").toLowerCase().includes(search.toLowerCase()) ||
-      (course.author_name || course.author || "")
-        .toLowerCase()
-        .includes(search.toLowerCase());
-
-    // Asumsi sementara untuk API: Loloskan jika filter All atau AI
-    const matchesFilter = filter === "All" || filter === "AI";
-
     return matchesSearch && matchesFilter;
   });
 
@@ -138,30 +162,6 @@ export default function MyClassPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          {/* Tombol Filter Kategori */}
-          <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl">
-            <button
-              onClick={() => setFilter("All")}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
-                filter === "All"
-                  ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-              }`}
-            >
-              Semua
-            </button>
-            <button
-              onClick={() => setFilter("AI")}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
-                filter === "AI"
-                  ? "bg-white dark:bg-slate-700 text-[#00BCD4] dark:text-cyan-400 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-              }`}
-            >
-              AI & Tech
-            </button>
-          </div>
-
           <div className="relative w-full sm:w-80">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
               search
@@ -177,99 +177,42 @@ export default function MyClassPage() {
         </div>
       </div>
 
-      {/* ================= SECTION 1: KELAS STATIS (JSON) ================= */}
+      {/* ================= SECTION 1: KELAS SAYA ================= */}
       <div className="mb-14">
-        <div className="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-3">
-          <span className="material-symbols-outlined text-[#00BCD4]">
-            folder
-          </span>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-            Kelas Tersimpan (Statis)
-          </h2>
-        </div>
+        {/* HEADER SECTION & INFO JUMLAH KELAS */}
+        <div className="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[#00BCD4]/10 rounded-lg flex items-center justify-center">
+              <span className="material-symbols-outlined text-[#00BCD4]">
+                library_books
+              </span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+              Kelas Tersimpan
+            </h2>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredStaticCourses.map((course) => {
-            const displayTitle = getDisplayTitle(course.title);
-            return (
-              <Link
-                href={`/${course.slug}`}
-                key={course.slug}
-                className="group bg-white dark:bg-[#151e2c] rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-2xl hover:shadow-[#00BCD4]/5 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden h-full"
-              >
-                <div className="aspect-video w-full relative bg-slate-800 overflow-hidden">
-                  <Image
-                    src={course.thumbnail}
-                    alt={displayTitle}
-                    fill
-                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    unoptimized={true}
-                  />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-colors duration-300 z-10 flex items-center justify-center">
-                    <div className="size-12 rounded-full bg-[#00BCD4] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg">
-                      <span className="material-symbols-outlined text-[24px] ml-1">
-                        play_arrow
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-5 flex flex-col flex-1">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug group-hover:text-[#00BCD4] transition-colors mb-4 line-clamp-2">
-                    {displayTitle}
-                  </h3>
-
-                  <div className="mt-auto flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
-                    <div className="size-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center shrink-0 border border-slate-200 dark:border-white/5">
-                      <span className="material-symbols-outlined text-[16px] text-slate-500 dark:text-slate-400">
-                        person
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-widest mb-0.5">
-                        Instructor
-                      </span>
-                      <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">
-                        {course.instructor}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-
-          {filteredStaticCourses.length === 0 && (
-            <div className="col-span-full py-8 text-center text-slate-400 text-sm">
-              Tidak ada kelas statis yang cocok.
+          {/* Badge Jumlah Kelas */}
+          {!loadingMyCourses && (
+            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-4 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                Total:{" "}
+                <span className="text-[#00BCD4]">
+                  {filteredMyCourses.length}
+                </span>{" "}
+                Kelas
+              </span>
             </div>
           )}
         </div>
-      </div>
 
-      {/* ================= SECTION 2: KELAS DINAMIS (API KATIB) ================= */}
-      <div>
-        <div className="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-3">
-          <span className="material-symbols-outlined text-emerald-500">
-            cloud_download
-          </span>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-            Kelas Terbaru (API Integrasi)
-            <span className="bg-emerald-100 text-emerald-600 text-[10px] uppercase font-black px-2 py-0.5 rounded animate-pulse">
-              Testing
-            </span>
-          </h2>
-        </div>
-
-        {error && (
+        {errorMyCourses && (
           <div className="bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 p-4 rounded-xl mb-6 text-sm font-medium border border-red-100 dark:border-red-900/30">
-            {error}
+            {errorMyCourses}
           </div>
         )}
 
-        {loadingCourses ? (
-          // SKELETON LOADING UI UNTUK API
+        {loadingMyCourses ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
               <div
@@ -287,54 +230,63 @@ export default function MyClassPage() {
               </div>
             ))}
           </div>
-        ) : filteredDynamicCourses.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredDynamicCourses.map((course) => {
-                const displayTitle = course.title || "Kelas Tanpa Judul";
-                const authorName =
-                  course.author_name || course.author || "Instruktur NgodingAI";
-                const thumbUrl = getDynamicThumbnailUrl(course.thumbnail);
+        ) : filteredMyCourses.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredMyCourses.map((item) => {
+              const displayTitle = getDisplayTitle(item.course);
+              const thumbUrl = getDynamicThumbnailUrl(item.thumbnail || "");
 
-                return (
-                  <Link
-                    href={`/course/${course.course_id}`}
-                    key={course.course_id}
-                    className="group bg-white dark:bg-[#151e2c] rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-2xl hover:shadow-[#00BCD4]/5 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden h-full"
-                  >
-                    <div className="aspect-video w-full relative bg-slate-800 overflow-hidden">
-                      {thumbUrl ? (
-                        <Image
-                          src={thumbUrl}
-                          alt={displayTitle}
-                          fill
-                          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          unoptimized={true}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-slate-200 dark:bg-slate-800 group-hover:scale-105 transition-transform duration-500">
-                          <span className="text-4xl font-black text-slate-400">
-                            {displayTitle.substring(0, 2).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
+              return (
+                <Link
+                  href={`/course/${item.course_id}`}
+                  key={item.course_customer_id}
+                  className="group bg-white dark:bg-[#151e2c] rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-2xl hover:shadow-[#00BCD4]/10 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden h-full relative"
+                >
+                  {/* Badge Label Status */}
+                  <div className="absolute top-3 right-3 z-20 bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide shadow-sm">
+                    Tersimpan
+                  </div>
 
-                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-colors duration-300 z-10 flex items-center justify-center">
-                        <div className="size-12 rounded-full bg-[#00BCD4] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg">
-                          <span className="material-symbols-outlined text-[24px] ml-1">
-                            play_arrow
+                  <div className="aspect-video w-full relative bg-slate-800 overflow-hidden">
+                    {thumbUrl ? (
+                      <Image
+                        src={thumbUrl}
+                        alt={displayTitle}
+                        fill
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        unoptimized={true}
+                      />
+                    ) : (
+                      // ✨ Fallback UI yang dipercantik menggunakan gradient
+                      <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-slate-700 to-slate-900 group-hover:scale-105 transition-transform duration-500">
+                        <div className="text-center p-4">
+                          <span className="material-symbols-outlined text-slate-500 text-4xl mb-2 opacity-50">
+                            image
                           </span>
+                          <h4 className="text-xl font-black text-slate-400/80 tracking-widest line-clamp-1">
+                            {displayTitle.substring(0, 3).toUpperCase()}
+                          </h4>
                         </div>
                       </div>
+                    )}
+
+                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-colors duration-300 z-10 flex items-center justify-center">
+                      <div className="size-12 rounded-full bg-[#00BCD4] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg">
+                        <span className="material-symbols-outlined text-[24px] ml-1">
+                          play_arrow
+                        </span>
+                      </div>
                     </div>
+                  </div>
 
-                    <div className="p-5 flex flex-col flex-1">
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug group-hover:text-[#00BCD4] transition-colors mb-4 line-clamp-2">
-                        {displayTitle}
-                      </h3>
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug group-hover:text-[#00BCD4] transition-colors mb-4 line-clamp-2">
+                      {displayTitle}
+                    </h3>
 
-                      <div className="mt-auto flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/5">
+                      <div className="flex items-center gap-3">
                         <div className="size-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center shrink-0 border border-slate-200 dark:border-white/5">
                           <span className="material-symbols-outlined text-[16px] text-slate-500 dark:text-slate-400">
                             person
@@ -344,56 +296,31 @@ export default function MyClassPage() {
                           <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-widest mb-0.5">
                             Instructor
                           </span>
-                          <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">
-                            {authorName}
+                          <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate max-w-30">
+                            {item.instructor}
                           </p>
                         </div>
                       </div>
                     </div>
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Pagination Controls untuk API */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-4 mt-10">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 disabled:opacity-50 flex items-center hover:bg-slate-50 dark:hover:bg-[#161616] text-slate-700 dark:text-slate-300 transition-colors"
-                >
-                  <span className="material-symbols-outlined">
-                    chevron_left
-                  </span>
-                </button>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Halaman <span className="font-bold">{currentPage}</span> dari{" "}
-                  <span className="font-bold">{totalPages}</span>
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 disabled:opacity-50 flex items-center hover:bg-slate-50 dark:hover:bg-[#161616] text-slate-700 dark:text-slate-300 transition-colors"
-                >
-                  <span className="material-symbols-outlined">
-                    chevron_right
-                  </span>
-                </button>
-              </div>
-            )}
-          </>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         ) : (
-          <div className="py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center text-center">
-            <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">
-              cloud_off
-            </span>
-            <p className="text-slate-500 text-sm">
-              Belum ada kelas dari API yang berhasil dimuat.
+          // ✨ Empty State yang dipercantik
+          <div className="col-span-full py-16 flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-slate-800/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+            <div className="size-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+              <span className="material-symbols-outlined text-3xl text-slate-400">
+                search_off
+              </span>
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
+              Kelas tidak ditemukan
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm">
+              Kami tidak dapat menemukan kelas yang sesuai dengan kata kunci
+              pencarian Anda. Coba gunakan kata kunci lain.
             </p>
           </div>
         )}

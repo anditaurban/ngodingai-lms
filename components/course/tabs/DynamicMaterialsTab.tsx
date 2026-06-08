@@ -29,6 +29,21 @@ export default function DynamicMaterialsTab({ courseSlug }: { courseSlug: string
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [activeChapterId, setActiveChapterId] = useState<string>('');
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // State untuk menyimpan ID materi yang sudah diselesaikan
+  const [completedChapterIds, setCompletedChapterIds] = useState<string[]>([]);
+
+  // 1. Load progress dari localStorage saat awal komponen di-render
+  useEffect(() => {
+    const savedProgress = localStorage.getItem(`progress_${courseSlug}`);
+    if (savedProgress) {
+      try {
+        setCompletedChapterIds(JSON.parse(savedProgress));
+      } catch (e) {
+        console.error("Gagal memuat data progres lokal:", e);
+      }
+    }
+  }, [courseSlug]);
 
   const fetchCurriculum = useCallback(async () => {
     setIsLoaded(false);
@@ -50,8 +65,8 @@ export default function DynamicMaterialsTab({ courseSlug }: { courseSlug: string
       }
 
       if (response.ok && resJson.status === 'success' && resJson.detail?.curriculum) {
-        const mappedModules: Module[] = resJson.detail.curriculum.map((sec: any) => ({
-          id: String(sec.section_id || Math.random()),
+        const mappedModules: Module[] = resJson.detail.curriculum.map((sec: any, index: number) => ({
+          id: String(sec.section_id || `sec-${index}`), // Hindari Math.random() agar tidak re-render bermasalah
           section: sec.title,
           chapters: (sec.materials || [])
             .filter((mat: any) => mat.content_html || mat.file_url)
@@ -68,7 +83,8 @@ export default function DynamicMaterialsTab({ courseSlug }: { courseSlug: string
         setModules(mappedModules);
 
         if (mappedModules.length > 0 && mappedModules[0].chapters.length > 0) {
-          setExpandedSections([mappedModules[0].id]);
+          // UX FIX: Awal buka halaman, semua bagian menutup (array kosong)
+          setExpandedSections([]); 
           setActiveChapterId(mappedModules[0].chapters[0].id);
         }
       } else {
@@ -91,24 +107,61 @@ export default function DynamicMaterialsTab({ courseSlug }: { courseSlug: string
     return modules.flatMap(sec => sec.chapters);
   }, [modules]);
 
+  // 2. LOGIC HITUNGAN PERSENAN PROGRESS
+  const progressPercentage = useMemo(() => {
+    if (flatChapters.length === 0) return 0;
+    // Hitung berapa banyak materi unik dari flatChapters yang ada di list completed
+    const completedCount = flatChapters.filter(c => completedChapterIds.includes(c.id)).length;
+    return Math.round((completedCount / flatChapters.length) * 100);
+  }, [flatChapters, completedChapterIds]);
+
+  // 3. LOGIC CHECK APAKAH MATERI TERKUNCI (1 by 1)
+  const isChapterUnlocked = useCallback((chapterId: string) => {
+    const index = flatChapters.findIndex(c => c.id === chapterId);
+    if (index <= 0) return true; // Materi pertama di urutan paling awal selalu terbuka
+    
+    // Materi ke-N terbuka hanya jika materi sebelumnya (N-1) sudah diselesaikan
+    const prevChapter = flatChapters[index - 1];
+    return completedChapterIds.includes(prevChapter.id);
+  }, [flatChapters, completedChapterIds]);
+
   const currentIndex = flatChapters.findIndex(c => c.id === activeChapterId);
   const activeChapter = currentIndex !== -1 ? flatChapters[currentIndex] : null;
   
   const prevChapter = currentIndex > 0 ? flatChapters[currentIndex - 1] : null;
   const nextChapter = currentIndex !== -1 && currentIndex < flatChapters.length - 1 ? flatChapters[currentIndex + 1] : null;
 
+  // UX FIX: Hanya dapat membuka 1 bagian saja (Accordion mode)
   const toggleSection = (secId: string) => {
-    setExpandedSections(prev => 
-      prev.includes(secId) ? prev.filter(id => id !== secId) : [...prev, secId]
-    );
+    setExpandedSections(prev => prev.includes(secId) ? [] : [secId]);
   };
 
   const handleNavigate = (chapterId: string, sectionId: string) => {
     setActiveChapterId(chapterId);
-    if (!expandedSections.includes(sectionId)) {
-       setExpandedSections(prev => [...prev, sectionId]);
-    }
+    // Saat navigasi lewat tombol prev/next, pastikan section-nya terbuka secara eksklusif
+    setExpandedSections([sectionId]);
     window.scrollTo({ top: 100, behavior: 'smooth' }); 
+  };
+
+  // Fungsi pembantu saat user klik tombol "Materi Selanjutnya" / "Selesai"
+  const markCurrentChapterAsComplete = () => {
+    if (activeChapter && !completedChapterIds.includes(activeChapter.id)) {
+      const updatedProgress = [...completedChapterIds, activeChapter.id];
+      setCompletedChapterIds(updatedProgress);
+      localStorage.setItem(`progress_${courseSlug}`, JSON.stringify(updatedProgress));
+    }
+  };
+
+  const handleNextNavigation = () => {
+    markCurrentChapterAsComplete(); // Simpan progres materi saat ini
+    if (nextChapter) {
+      handleNavigate(nextChapter.id, findSectionByChapter(nextChapter.id));
+    }
+  };
+
+  const handleFinishCourse = () => {
+    markCurrentChapterAsComplete();
+    alert("Selamat! Anda telah menyelesaikan seluruh rangkaian materi kelas ini.");
   };
 
   const findSectionByChapter = (chapId: string) => {
@@ -140,11 +193,26 @@ export default function DynamicMaterialsTab({ courseSlug }: { courseSlug: string
       
       {/* SIDEBAR */}
       <aside className="w-full lg:w-80 shrink-0 bg-white dark:bg-[#111111] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden lg:sticky lg:top-24">
-         <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+         <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 space-y-3">
             <h3 className={`text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 ${googleSansAlt.className}`}>
                <span className="material-symbols-outlined text-[#00BCD4]">menu_book</span> Daftar Materi
             </h3>
+            
+            {/* UI PROGRESS PERSENAN */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                <span>Progres Belajar</span>
+                <span className="text-[#00BCD4]">{progressPercentage}%</span>
+              </div>
+              <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-[#00BCD4] transition-all duration-500 ease-out"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+            </div>
          </div>
+         
          <div className="p-3 max-h-[60vh] overflow-y-auto custom-scrollbar space-y-2">
             {modules.length === 0 ? (
                <p className="text-center text-slate-400 text-sm py-8">Materi belum tersedia.</p>
@@ -156,22 +224,37 @@ export default function DynamicMaterialsTab({ courseSlug }: { courseSlug: string
                        <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">{mod.section}</span>
                        <span className={`material-symbols-outlined text-[18px] text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>expand_more</span>
                     </button>
-                    <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100 p-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                    <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-125 opacity-100 p-2' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                        <div className="space-y-1">
                           {mod.chapters.map(chapter => {
                              const isActive = activeChapterId === chapter.id;
+                             const isUnlocked = isChapterUnlocked(chapter.id);
+                             const isCompleted = completedChapterIds.includes(chapter.id);
+                             
                              return (
                                <button 
                                  key={chapter.id} 
-                                 onClick={() => handleNavigate(chapter.id, mod.id)}
-                                 className={`w-full text-left flex items-center justify-between gap-3 p-2.5 rounded-xl transition-all text-sm font-medium outline-none ${isActive ? 'bg-cyan-50 text-[#00BCD4] dark:bg-cyan-900/20 dark:text-cyan-400 font-bold border border-cyan-100 dark:border-cyan-800' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'}`}
+                                 disabled={!isUnlocked}
+                                 onClick={() => isUnlocked && handleNavigate(chapter.id, mod.id)}
+                                 className={`w-full text-left flex items-center justify-between gap-3 p-2.5 rounded-xl transition-all text-sm font-medium outline-none 
+                                   ${isActive 
+                                     ? 'bg-cyan-50 text-[#00BCD4] dark:bg-cyan-900/20 dark:text-cyan-400 font-bold border border-cyan-100 dark:border-cyan-800' 
+                                     : !isUnlocked
+                                       ? 'text-slate-300 dark:text-slate-600 opacity-60 cursor-not-allowed border border-transparent'
+                                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'
+                                   }`}
                                >
                                   <div className="flex items-center gap-2 overflow-hidden">
-                                      <span className={`material-symbols-outlined text-[18px] shrink-0 ${isActive ? 'text-[#00BCD4]' : 'text-slate-400'}`}>
-                                          {chapter.type === 'article' ? 'article' : chapter.type === 'video' ? 'play_circle' : 'picture_as_pdf'}
+                                      <span className={`material-symbols-outlined text-[18px] shrink-0 ${isActive ? 'text-[#00BCD4]' : !isUnlocked ? 'text-slate-300 dark:text-slate-600' : 'text-slate-400'}`}>
+                                          {!isUnlocked ? 'lock' : chapter.type === 'article' ? 'article' : chapter.type === 'video' ? 'play_circle' : 'picture_as_pdf'}
                                       </span>
                                       <span className="truncate">{chapter.title}</span>
                                   </div>
+                                  
+                                  {/* Indikator Checklist Selesai */}
+                                  {isCompleted && !isActive && (
+                                    <span className="material-symbols-outlined text-[16px] text-emerald-500 shrink-0">check_circle</span>
+                                  )}
                                   {isActive && <span className="size-1.5 rounded-full bg-[#00BCD4] shrink-0 animate-pulse"></span>}
                                </button>
                              );
@@ -239,7 +322,7 @@ export default function DynamicMaterialsTab({ courseSlug }: { courseSlug: string
 
                       {safeUrl && activeChapter.type === 'document' && (
                         <a href={safeUrl.replace('/preview', '/view')} target="_blank" rel="noreferrer" className="sm:hidden flex items-center justify-center gap-1.5 bg-cyan-50 dark:bg-cyan-900/20 text-[#00BCD4] px-4 py-3 rounded-xl text-xs font-bold hover:bg-[#00BCD4] hover:text-white transition-all shadow-sm w-full">
-                           <span className="material-symbols-outlined text-[16px]">open_in_new</span> Buka di Tab Baru
+                            <span className="material-symbols-outlined text-[16px]">open_in_new</span> Buka di Tab Baru
                         </a>
                       )}
                    </div>
@@ -260,7 +343,7 @@ export default function DynamicMaterialsTab({ courseSlug }: { courseSlug: string
 
                 {nextChapter ? (
                    <button 
-                     onClick={() => handleNavigate(nextChapter.id, findSectionByChapter(nextChapter.id))} 
+                     onClick={handleNextNavigation} 
                      className={`flex items-center gap-2 px-6 py-3 bg-[#00BCD4] hover:bg-[#00acc1] text-white rounded-2xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95 ${googleSansAlt.className}`}
                    >
                      <span className="hidden sm:inline">Materi Selanjutnya</span>
@@ -268,8 +351,11 @@ export default function DynamicMaterialsTab({ courseSlug }: { courseSlug: string
                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                    </button>
                 ) : (
-                   <button className={`flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-2xl text-sm font-bold shadow-lg shadow-emerald-500/20 cursor-default ${googleSansAlt.className}`}>
-                     <span className="material-symbols-outlined text-[18px]">check_circle</span> Modul Selesai
+                   <button 
+                     onClick={handleFinishCourse}
+                     className={`flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-emerald-500/20 active:scale-95 ${googleSansAlt.className}`}
+                   >
+                     <span className="material-symbols-outlined text-[18px]">check_circle</span> Selesaikan Modul
                    </button>
                 )}
              </div>
