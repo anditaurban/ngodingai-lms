@@ -231,7 +231,7 @@ export const useProfileLogic = () => {
 
     const payloadToBackend = {
       customer_id: formData.customer_id,
-      owner_id: formData.owner_id || 4409,
+      owner_id: formData.owner_id,
       phone: formData.phone || '', 
       nama: formData.nama || '',
       nama_belakang: formData.nama_belakang || '',

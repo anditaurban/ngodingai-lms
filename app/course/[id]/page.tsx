@@ -146,10 +146,6 @@ export default async function DynamicCourseDetailPage({ params }: PageProps) {
               {course?.title}
             </span>
 
-            {/* Badge Penanda bahwa ini adalah Rute API */}
-            <span className="ml-3 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 px-2 py-0.5 rounded text-[9px] hidden sm:inline-block">
-              API MODE
-            </span>
           </div>
         </div>
 
