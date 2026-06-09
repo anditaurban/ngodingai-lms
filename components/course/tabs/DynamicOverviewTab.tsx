@@ -88,9 +88,8 @@ export default function DynamicOverviewTab({
 
     try {
       const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL ||
-        process.env.NEXT_PUBLIC_API_URL ||
-        "https://dev.katib.cloud";
+        process.env.NEXT_PUBLIC_API_BASE_URL
+        process.env.NEXT_PUBLIC_API_URL
       const token =
         Cookies.get("api_token") ||
         process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN ||

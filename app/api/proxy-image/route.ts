@@ -12,10 +12,10 @@ export async function GET(request: Request) {
     }
 
     // ✨ STRICT MODE: Wajib pakai .env (Tanpa Hardcode)
-    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN;
+    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN;
 
     if (!serviceToken) {
-       console.error("[Proxy Image Error] CUSTOMER_UPDATE_TOKEN hilang di .env");
+       console.error("[Proxy Image Error] NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN hilang di .env");
        return new NextResponse('Server Configuration Error', { status: 500 });
     }
     

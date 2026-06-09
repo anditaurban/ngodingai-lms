@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
 // ==============================================================
 // 1. FUNGSI ADD (POST)
@@ -10,7 +10,7 @@ const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN;
+    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN;
 
     if (!serviceToken) {
         return NextResponse.json({ error: "Missing Env Token" }, { status: 500 });
@@ -92,7 +92,7 @@ export async function PUT(request: Request) {
     const assignmentId = searchParams.get('id');
     const body = await request.json();
     
-    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN;
+    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN;
 
     if (!serviceToken || !assignmentId) {
         return NextResponse.json({ error: "Missing Token or ID" }, { status: 400 });

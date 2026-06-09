@@ -9,11 +9,11 @@ export async function GET(request: Request) {
 
     if (!customerId) return NextResponse.json({ detail: null, message: "ID Kosong" }, { status: 200 });
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
     // Pastikan path ini benar sesuai dokumentasi Postman Head Team Anda
     const targetUrl = `${baseUrl}/detail/customer/${customerId}`; 
     
-    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN || 'DpacnJf3uEQeM7HN';
+    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN
 
     const backendResponse = await fetch(targetUrl, {
       method: 'GET',

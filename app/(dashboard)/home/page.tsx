@@ -56,7 +56,7 @@ export default function CatalogPage() {
   const { user, loading: isProfileLoading } = useProfileLogic();
   const userName = user?.nama || (user?.name ? user.name.split(" ")[0] : "Pelajar");
 
-  const ownerId = process.env.NEXT_PUBLIC_OWNER_ID || "4409";
+  const ownerId = process.env.NEXT_PUBLIC_OWNER_ID
   const token = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN || "";
 
   // ✨ FIX 2: State Lokal untuk Master Data Level

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Cookies from "js-cookie";
 
-import { requestJson, buildAuthHeaders } from "@/lib/api"; // Pastikan path ini sesuai dengan project Anda
+import { requestJson, buildAuthHeaders } from "@/lib/api"; // Pastikan path ini sesuai
 
 // ✨ DEFINISI BASE_URL
 const RAW_BASE_URL =
@@ -16,7 +16,8 @@ const BASE_URL = RAW_BASE_URL.endsWith("/")
 
 // Helper untuk mereplace judul kelas
 const getDisplayTitle = (title: string) => {
-  if (title.includes("NgodingAI: Master GenAI & LLMs")) {
+  if (!title) return "";
+  if (title.includes("NgodingAI: Membangun Web Aplikasi Dalam Waktu Singkat") || title.includes("NgodingAI: Master GenAI & LLMs")) {
     return "NgodingAI: Belajar ngoding pakai AI, bangun project website dalam waktu singkat";
   }
   return title;
@@ -33,79 +34,38 @@ const getDynamicThumbnailUrl = (filename: string) => {
   return `/api/proxy-image?url=${encodeURIComponent(rawUrl)}`;
 };
 
-interface DynamicCourse {
+// ✨ UPDATE INTERFACE SESUAI RESPONSE JSON API ALL COURSE
+interface CatalogCourse {
   course_id: number;
   title: string;
-  author_name: string;
-  author: string;
+  author_name: string | null;
   thumbnail: string;
-  slug?: string;
-}
-
-interface CourseCustomer {
-  course_customer_id: number;
-  customer_id: number;
-  course_id: number;
-  instructor_id: number;
-  course: string;
-  instructor: string;
-  thumbnail?: string;
+  category_name: string;
+  level_name: string;
+  price: number;
+  total_price: number;
 }
 
 export default function MyClassPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
-  // STATE: API KELAS SAYA
-  const [myCourses, setMyCourses] = useState<CourseCustomer[]>([]);
-  const [loadingMyCourses, setLoadingMyCourses] = useState(true);
-  const [errorMyCourses, setErrorMyCourses] = useState<string | null>(null);
-
-  // STATE: API KELAS TERBARU
-  const [dynamicCourses, setDynamicCourses] = useState<DynamicCourse[]>([]);
-  const [loadingCourses, setLoadingCourses] = useState(true);
+  // STATE UTAMA: DAFTAR KELAS
+  const [courses, setCourses] = useState<CatalogCourse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // FETCH DATA: KELAS SAYA
-  const fetchMyCourses = useCallback(async () => {
-    setLoadingMyCourses(true);
-    setErrorMyCourses(null);
-
-    const customerId = Cookies.get("customer_id") || "32455";
-    const token =
-      process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN ||
-      Cookies.get("api_token") ||
-      "";
-
-    try {
-      const targetUrl = `${BASE_URL}/list/course_customer/${customerId}`;
-      const data = await requestJson<any>(targetUrl, {
-        method: "GET",
-        headers: buildAuthHeaders(token),
-      });
-
-      setMyCourses(data.listData || []);
-    } catch (err: any) {
-      console.error("Gagal mengambil data kelas saya:", err);
-      setErrorMyCourses(err.message || "Gagal memuat data kelas saya.");
-    } finally {
-      setLoadingMyCourses(false);
-    }
-  }, []);
-
-  // FETCH DATA: API DINAMIS
-  const fetchDynamicCourses = useCallback(async (page: number) => {
-    setLoadingCourses(true);
+  // FETCH DATA: API ALL COURSE
+  const fetchCourses = useCallback(async (page: number) => {
+    setLoading(true);
     setError(null);
 
     const ownerId = process.env.NEXT_PUBLIC_OWNER_ID || "4409";
-    const token =
-      process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN ||
-      Cookies.get("api_token") ||
-      "";
+    // Gunakan token dari session agar terhindar dari error Unauthorized
+    const token = Cookies.get("token") || Cookies.get("auth_session") || process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN || "";
 
     try {
       const targetUrl = `${BASE_URL}/table/all_course/${ownerId}/${page}`;
@@ -114,27 +74,28 @@ export default function MyClassPage() {
         headers: buildAuthHeaders(token),
       });
 
-      setDynamicCourses(data.tableData || []);
+      setCourses(data.tableData || []);
       setTotalPages(data.totalPages || 1);
     } catch (err: any) {
-      console.error("Gagal mengambil data kelas terbaru:", err);
-      setError(err.message || "Gagal memuat data kelas API.");
+      console.error("Gagal mengambil data kelas:", err);
+      setError(err.message || "Gagal memuat data kelas.");
     } finally {
-      setLoadingCourses(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchMyCourses();
-    fetchDynamicCourses(currentPage);
-  }, [currentPage, fetchDynamicCourses, fetchMyCourses]);
+    fetchCourses(currentPage);
+  }, [currentPage, fetchCourses]);
 
   // LOGIKA FILTERING
-  const filteredMyCourses = myCourses.filter((item) => {
-    const displayTitle = getDisplayTitle(item.course || "");
+  const filteredCourses = courses.filter((item) => {
+    const displayTitle = getDisplayTitle(item.title);
+    const authorName = item.author_name || "Anonymous";
+    
     const matchesSearch =
       displayTitle.toLowerCase().includes(search.toLowerCase()) ||
-      (item.instructor || "").toLowerCase().includes(search.toLowerCase());
+      authorName.toLowerCase().includes(search.toLowerCase());
 
     let category = "All";
     if (
@@ -154,10 +115,10 @@ export default function MyClassPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">
-            My Courses
+            Eksplorasi Kelas
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">
-            Lanjutkan perjalanan belajarmu di Inovasia Digital Academy.
+            Temukan dan pelajari berbagai kelas menarik di Inovasia Digital Academy.
           </p>
         </div>
 
@@ -177,7 +138,7 @@ export default function MyClassPage() {
         </div>
       </div>
 
-      {/* ================= SECTION 1: KELAS SAYA ================= */}
+      {/* ================= SECTION 1: DAFTAR KELAS ================= */}
       <div className="mb-14">
         {/* HEADER SECTION & INFO JUMLAH KELAS */}
         <div className="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -188,17 +149,17 @@ export default function MyClassPage() {
               </span>
             </div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-              Kelas Tersimpan
+              Semua Kelas
             </h2>
           </div>
 
           {/* Badge Jumlah Kelas */}
-          {!loadingMyCourses && (
+          {!loading && (
             <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-4 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
               <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
                 Total:{" "}
                 <span className="text-[#00BCD4]">
-                  {filteredMyCourses.length}
+                  {filteredCourses.length}
                 </span>{" "}
                 Kelas
               </span>
@@ -206,13 +167,13 @@ export default function MyClassPage() {
           )}
         </div>
 
-        {errorMyCourses && (
+        {error && (
           <div className="bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 p-4 rounded-xl mb-6 text-sm font-medium border border-red-100 dark:border-red-900/30">
-            {errorMyCourses}
+            {error}
           </div>
         )}
 
-        {loadingMyCourses ? (
+        {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
               <div
@@ -230,21 +191,21 @@ export default function MyClassPage() {
               </div>
             ))}
           </div>
-        ) : filteredMyCourses.length > 0 ? (
+        ) : filteredCourses.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredMyCourses.map((item) => {
-              const displayTitle = getDisplayTitle(item.course);
+            {filteredCourses.map((item) => {
+              const displayTitle = getDisplayTitle(item.title);
               const thumbUrl = getDynamicThumbnailUrl(item.thumbnail || "");
 
               return (
                 <Link
                   href={`/course/${item.course_id}`}
-                  key={item.course_customer_id}
+                  key={item.course_id}
                   className="group bg-white dark:bg-[#151e2c] rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-2xl hover:shadow-[#00BCD4]/10 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden h-full relative"
                 >
-                  {/* Badge Label Status */}
-                  <div className="absolute top-3 right-3 z-20 bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide shadow-sm">
-                    Tersimpan
+                  {/* Badge Kategori */}
+                  <div className="absolute top-3 right-3 z-20 bg-indigo-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide shadow-sm">
+                    {item.category_name || "General"}
                   </div>
 
                   <div className="aspect-video w-full relative bg-slate-800 overflow-hidden">
@@ -258,7 +219,6 @@ export default function MyClassPage() {
                         unoptimized={true}
                       />
                     ) : (
-                      // ✨ Fallback UI yang dipercantik menggunakan gradient
                       <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-slate-700 to-slate-900 group-hover:scale-105 transition-transform duration-500">
                         <div className="text-center p-4">
                           <span className="material-symbols-outlined text-slate-500 text-4xl mb-2 opacity-50">
@@ -296,10 +256,15 @@ export default function MyClassPage() {
                           <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-widest mb-0.5">
                             Instructor
                           </span>
-                          <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate max-w-30">
-                            {item.instructor}
+                          <p className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate max-w-30 sm:max-w-37.5">
+                            {item.author_name || "Anonymous"}
                           </p>
                         </div>
+                      </div>
+                      
+                      {/* Optional: Tampilkan Level */}
+                      <div className="text-[10px] font-bold text-slate-400 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded">
+                        {item.level_name || "Beginner"}
                       </div>
                     </div>
                   </div>
@@ -308,7 +273,6 @@ export default function MyClassPage() {
             })}
           </div>
         ) : (
-          // ✨ Empty State yang dipercantik
           <div className="col-span-full py-16 flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-slate-800/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
             <div className="size-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
               <span className="material-symbols-outlined text-3xl text-slate-400">

@@ -12,11 +12,11 @@ async function UpdateHandler(request: Request) {
         return NextResponse.json({ error: "ID Customer tidak ditemukan. Gagal update." }, { status: 400 });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
     
     // Sesuaikan dengan endpoint Postman Anda
     const targetUrl = `${baseUrl}/update/customer/${bodyData.customer_id}`; 
-    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN || 'DpacnJf3uEQeM7HN';
+    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN
 
     // Eksekusi ke Katib
     const backendResponse = await fetch(targetUrl, {

@@ -15,7 +15,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Customer ID diperlukan' }, { status: 400 });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
     
     // ✨ FIX: Gunakan objek URL agar penyusunan query string lebih dinamis dan aman
     const targetUrl = new URL(`${baseUrl}/table/course_assignment/${customerId}/${page}`);
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     }
 
     const finalUrlString = targetUrl.toString();
-    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN;
+    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN;
 
     // ✨ LOGIC RETRY & ANTI-ECONNRESET DENGAN TIMEOUT ✨
     let backendResponse;

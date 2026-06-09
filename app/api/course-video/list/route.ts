@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     const customerId = searchParams.get("customerId"); 
 
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN;
+    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN;
 
     if (!baseUrl || !serviceToken) {
       console.error("[API Proxy Error] Missing Environment Variables.");

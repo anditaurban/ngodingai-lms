@@ -10,14 +10,14 @@ export async function GET(request: Request) {
     const keyword = searchParams.get('keyword') || '';
     
     // 2. Siapkan URL Backend Katib
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
     
     // Asumsi ownerId = 1 seperti di log terminal Anda. 
     // Sesuaikan jika ini harus dinamis.
     const ownerId = "1"; 
     const targetUrl = `${baseUrl}/table/region/${ownerId}/1?search=${encodeURIComponent(keyword)}`;
 
-    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN || 'DpacnJf3uEQeM7HN';
+    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN
 
     // 3. Eksekusi Fetch ke Backend
     const res = await fetch(targetUrl, {

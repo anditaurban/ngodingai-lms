@@ -14,9 +14,9 @@ export async function GET(
   const resolvedParams = await params;
   const customerId = resolvedParams.id;
   
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
   const targetUrl = `${baseUrl}/detail/sales_course_certificate/${customerId}`;
-  const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN || 'DpacnJf3uEQeM7HN'; 
+  const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN
 
   try {
     const backendResponse = await fetch(targetUrl, {

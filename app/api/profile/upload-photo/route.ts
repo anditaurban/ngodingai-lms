@@ -26,11 +26,11 @@ export async function POST(request: Request) {
     const outgoingFormData = new FormData();
     outgoingFormData.append('file', file, file.name); // Kirim ke Katib dengan key 'file' dan sertakan nama filenya
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dev.katib.cloud';
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
     const targetUrl = `${baseUrl}/update/customer_photo/${customerId}`;
     
     // Pastikan token ini benar (dari .env)
-    const serviceToken = process.env.CUSTOMER_UPDATE_TOKEN || 'DpacnJf3uEQeM7HN';
+    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN
 
     // 3. Tembak ke Katib menggunakan PUT
     const backendResponse = await fetch(targetUrl, {
