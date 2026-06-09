@@ -36,7 +36,7 @@ export const useAssignments = (courseId?: number | string) => {
         const sessionStr = localStorage.getItem('user_profile');
         if (!sessionStr) return null;
         const user = JSON.parse(sessionStr);
-        return { owner_id: user.owner_id || 4409, customer_id: user.customer_id };
+        return { owner_id: user.owner_id, customer_id: user.customer_id };
     };
 
     const fetchAssignments = useCallback(async (page: number, search: string) => {

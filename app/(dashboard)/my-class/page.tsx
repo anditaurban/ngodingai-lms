@@ -64,21 +64,52 @@ export default function MyClassPage() {
     setError(null);
 
     const ownerId = process.env.NEXT_PUBLIC_OWNER_ID || "4409";
-    // Gunakan token dari session agar terhindar dari error Unauthorized
-    const token = Cookies.get("token") || Cookies.get("auth_session") || process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN || "";
+    
+    // ✨ FIX & UX IMPROVEMENT: Pencari Token Cerdas yang berjalan realtime
+    const getRealToken = () => {
+      // 1. Coba cari Token JWT asli dari profil user di localStorage
+      if (typeof window !== "undefined") {
+        try {
+          const profileStr = localStorage.getItem("user_profile");
+          if (profileStr) {
+            const profile = JSON.parse(profileStr);
+            if (profile.token) return profile.token; // Ini adalah Token otorisasi yang valid
+          }
+        } catch (e) {
+          console.warn("Gagal membaca profil dari storage");
+        }
+      }
+      // 2. Jika user tidak punya token khusus, gunakan Global Service Token dari .env
+      return process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN || "";
+    };
+
+    const validToken = getRealToken();
+
+    // ✨ UX IMPROVEMENT: Cegah hit ke server jika token benar-benar kosong
+    if (!validToken) {
+      setError("Akses ditolak. Konfigurasi token sistem tidak ditemukan. Hubungi tim developer untuk mengatur file .env.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const targetUrl = `${BASE_URL}/table/all_course/${ownerId}/${page}`;
       const data = await requestJson<any>(targetUrl, {
         method: "GET",
-        headers: buildAuthHeaders(token),
+        headers: buildAuthHeaders(validToken),
       });
 
       setCourses(data.tableData || []);
       setTotalPages(data.totalPages || 1);
     } catch (err: any) {
       console.error("Gagal mengambil data kelas:", err);
-      setError(err.message || "Gagal memuat data kelas.");
+      
+      // ✨ UX IMPROVEMENT: Pesan error spesifik jika 401
+      if (err.message?.includes("401") || err.message?.toLowerCase().includes("unauthorized")) {
+        setError("Sesi Anda telah berakhir atau akses ditolak oleh server. Silakan coba login ulang.");
+      } else {
+        setError(err.message || "Gagal memuat data kelas.");
+      }
     } finally {
       setLoading(false);
     }

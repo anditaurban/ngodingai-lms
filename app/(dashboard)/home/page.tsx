@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { DM_Sans } from "next/font/google";
+import Cookies from "js-cookie"; // ✨ FIX: Import Cookies untuk fallback token
 
 import { useProfileLogic } from "@/hooks/useProfileLogic";
 import { requestJson, buildAuthHeaders } from "@/lib/api";
@@ -13,7 +14,6 @@ const googleSansAlt = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "700"
 const RAW_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "";
 const BASE_URL = RAW_BASE_URL.endsWith("/") ? RAW_BASE_URL.slice(0, -1) : RAW_BASE_URL;
 
-// ✨ FIX 1: Definisikan Interface CourseLevel agar TypeScript tenang
 interface CourseLevel {
   level_id: number;
   level_name: string;
@@ -56,12 +56,9 @@ export default function CatalogPage() {
   const { user, loading: isProfileLoading } = useProfileLogic();
   const userName = user?.nama || (user?.name ? user.name.split(" ")[0] : "Pelajar");
 
-  const ownerId = process.env.NEXT_PUBLIC_OWNER_ID
-  const token = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN || "";
+  const ownerId = process.env.NEXT_PUBLIC_OWNER_ID || "4409";
 
-  // ✨ FIX 2: State Lokal untuk Master Data Level
   const [levels, setLevels] = useState<CourseLevel[]>([]);
-
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,13 +69,32 @@ export default function CatalogPage() {
 
   const [levelFilter, setLevelFilter] = useState("");
 
-  // ✨ FIX 3: Tarik data Master Level langsung saat halaman dimuat
+  // ✨ FIX: Helper fungsi pencari token global (sama seperti di my-class)
+  const getRealToken = useCallback(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const profileStr = localStorage.getItem("user_profile");
+        if (profileStr) {
+          const profile = JSON.parse(profileStr);
+          if (profile.token) return profile.token;
+        }
+      } catch (e) {
+        console.warn("Gagal membaca profil dari storage");
+      }
+    }
+    return process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN || Cookies.get("token") || "";
+  }, []);
+
+  // Tarik data Master Level langsung saat halaman dimuat
   useEffect(() => {
     const fetchLevels = async () => {
+      const validToken = getRealToken();
+      if (!validToken) return; // Jangan request jika token tidak ada
+
       try {
         const data = await requestJson<any>(`${BASE_URL}/table/course_level/${ownerId}/1`, {
           method: "GET",
-          headers: buildAuthHeaders(token),
+          headers: buildAuthHeaders(validToken),
         });
         if (data && data.tableData) {
           setLevels(data.tableData);
@@ -88,11 +104,20 @@ export default function CatalogPage() {
       }
     };
     fetchLevels();
-  }, [ownerId, token]);
+  }, [ownerId, getRealToken]);
 
   const fetchCourses = useCallback(async (page: number, selectedLevel: string = "") => {
     setLoadingCourses(true);
     setError(null);
+
+    const validToken = getRealToken();
+
+    // UX IMPROVEMENT: Cegah hit ke server jika token benar-benar kosong
+    if (!validToken) {
+      setError("Akses ditolak. Konfigurasi token sistem tidak ditemukan. Hubungi tim developer untuk mengatur file .env.");
+      setLoadingCourses(false);
+      return;
+    }
 
     try {
       const params = new URLSearchParams();
@@ -105,18 +130,25 @@ export default function CatalogPage() {
 
       const data = await requestJson<any>(targetUrl, {
         method: "GET",
-        headers: buildAuthHeaders(token),
+        headers: buildAuthHeaders(validToken),
       });
 
       setCourses(data.tableData || []);
       setTotalPages(data.totalPages || 1);
       setTotalRecords(data.totalRecords || 0);
     } catch (err: any) {
-      setError(err.message || "Gagal memuat katalog kelas.");
+      console.error("Gagal mengambil data kelas:", err);
+      
+      // UX IMPROVEMENT: Pesan error spesifik jika 401
+      if (err.message?.includes("401") || err.message?.toLowerCase().includes("unauthorized")) {
+        setError("Sesi Anda telah berakhir atau akses ditolak oleh server. Silakan coba login ulang.");
+      } else {
+        setError(err.message || "Gagal memuat katalog kelas.");
+      }
     } finally {
       setLoadingCourses(false);
     }
-  }, [ownerId, token]);
+  }, [ownerId, getRealToken]);
 
   useEffect(() => {
     fetchCourses(currentPage, levelFilter);
@@ -157,7 +189,6 @@ export default function CatalogPage() {
             Temukan {totalRecords > 0 ? totalRecords : ""} kelas terbaik untuk tingkatkan keahlianmu.
           </p>
         </div>
-        
       </div>
 
       {error && (
@@ -174,18 +205,12 @@ export default function CatalogPage() {
           ))
         ) : courses.length > 0 ? (
           courses.map((course) => {
-            
-            // ✨ FIX: Logika Sapu Jagat (Tangkap level_id, atau level, lalu cari namanya)
             const rawLevelId = course.level_id ?? course.level;
-            
-            // 1. Coba cari nama level dari data master berdasarkan ID
             const matchedLevel = levels.find(l => String(l.level_id) === String(rawLevelId));
-            
-            // 2. Jika ketemu, pakai namanya. Jika tidak, pakai level_name dari API. Jika tidak ada juga, tampilkan aslinya.
             const displayLevel = matchedLevel?.level_name 
               || course.level_name 
               || (typeof rawLevelId === 'string' && isNaN(Number(rawLevelId)) ? rawLevelId : null)
-              || "Beginner"; // Fallback akhir jika benar-benar kosong
+              || "Beginner";
 
             return (
               <div
@@ -218,7 +243,6 @@ export default function CatalogPage() {
                   )}
                   
                   <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
-                    
                     {displayLevel}
                   </div>
                 </Link>
