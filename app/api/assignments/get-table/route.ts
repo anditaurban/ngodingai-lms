@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customerId');
-    const courseId = searchParams.get('courseId'); // ✨ TANGKAP courseId dari frontend
+    const courseId = searchParams.get('courseId'); // Tangkap courseId dari frontend
     const page = searchParams.get('page') || '1';
     const search = searchParams.get('search') || '';
 
@@ -15,17 +15,16 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Customer ID diperlukan' }, { status: 400 });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     
-    // ✨ FIX: Gunakan objek URL agar penyusunan query string lebih dinamis dan aman
+    // FORMAT API KATIB: /table/course_assignment/{customer_id}/{page}
     const targetUrl = new URL(`${baseUrl}/table/course_assignment/${customerId}/${page}`);
     
     if (search) {
         targetUrl.searchParams.append('search', search);
     }
 
-    // ✨ FIX: Suntikkan course_id ke backend Katib agar data terfilter spesifik per kelas
-    // Catatan: Asumsi backend Katib menerima filter ini via query "?course_id=..."
+    // Suntikkan course_id ke Katib (Sebagai langkah antisipatif jika Katib support query param)
     if (courseId) {
         targetUrl.searchParams.append('course_id', courseId);
     }
@@ -33,14 +32,13 @@ export async function GET(request: Request) {
     const finalUrlString = targetUrl.toString();
     const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN;
 
-    // ✨ LOGIC RETRY & ANTI-ECONNRESET DENGAN TIMEOUT ✨
+    // ✨ LOGIC RETRY & ANTI-ECONNRESET DENGAN TIMEOUT
     let backendResponse;
     let retries = 3; 
 
     for (let i = 0; i < retries; i++) {
-        // ✨ PELINDUNG TIMEOUT: Batas 8 Detik per percobaan
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); 
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 Detik Timeout
 
         try {
             backendResponse = await fetch(finalUrlString, {
@@ -50,19 +48,18 @@ export async function GET(request: Request) {
                 'Authorization': `Bearer ${serviceToken}`
               },
               cache: 'no-store',
-              signal: controller.signal // Pasang pelindung
+              signal: controller.signal 
             });
             
             clearTimeout(timeoutId);
-            break; // Berhasil! Keluar dari loop
+            break; // Berhasil fetch!
         } catch (err: any) {
             clearTimeout(timeoutId);
-            console.warn(`[API Assignments] Percobaan ${i + 1} gagal (Timeout/ECONNRESET). Mencoba lagi...`);
+            console.warn(`[API Assignments] Percobaan ${i + 1} gagal (Timeout). Mencoba lagi...`);
             
             if (i === retries - 1) {
-                // Jangan buat server Next.js crash! Kembalikan status 504 dengan anggun
                 return NextResponse.json(
-                    { error: "Server Katib sedang tidak merespon (Timeout). Silakan muat ulang halaman." }, 
+                    { error: "Server sedang tidak merespon (Timeout). Silakan muat ulang halaman." }, 
                     { status: 504 }
                 );
             }
@@ -72,7 +69,6 @@ export async function GET(request: Request) {
         }
     }
 
-    // Pengecekan standar
     if (!backendResponse || !backendResponse.ok) {
         const status = backendResponse?.status || 500;
         console.error(`[API Assignments] Error Katib: Status ${status}`);
@@ -82,29 +78,27 @@ export async function GET(request: Request) {
         );
     }
 
-    // Tangkap response sebagai teks terlebih dahulu untuk menghindari crash JSON.parse
     const textData = await backendResponse.text();
-    
-    // Fallback default jika data dari Katib kosong/error
     let data: any = { tableData: [], totalRecords: 0, totalPages: 1, currentPage: Number(page) };
     
     try {
         if (textData) {
             data = JSON.parse(textData);
             
-            // PENGAMANAN EKSTRA: Jika Katib belum mendukung filter course_id, 
-            // kita lakukan filter manual di sisi Next.js
+            // PENGAMANAN EKSTRA: Filter spesifik kelas di sisi Next.js
             if (courseId && data.tableData && Array.isArray(data.tableData)) {
                 data.tableData = data.tableData.filter((item: any) => 
-                    String(item.course_id) === String(courseId) || 
-                    String(item.course) === String(courseId) // Fallback jika pakai slug
+                    String(item.course_id) === String(courseId)
                 );
-                // Sesuaikan total records setelah difilter manual
+                
+                // Sesuaikan paginasi UI setelah data difilter manual
                 data.totalRecords = data.tableData.length;
+                // Asumsi 10 item per halaman untuk memperbaiki UI paginasi
+                data.totalPages = Math.max(1, Math.ceil(data.totalRecords / 10)); 
             }
         }
     } catch (e) {
-        console.error(`[API Assignments] Katib tidak membalas JSON yang valid. Teks:`, textData.substring(0, 100));
+        console.error(`[API Assignments] Katib tidak membalas JSON yang valid.`);
     }
 
     return NextResponse.json(data, { status: 200 });

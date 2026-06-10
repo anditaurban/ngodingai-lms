@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
+
 export interface AssignmentData {
     assignment_id: number;
     owner_id: number;
@@ -110,19 +111,16 @@ export const useAssignments = (courseId?: number | string) => {
             const dateObj = new Date();
             const todayFormatted = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
 
+            // ✨ PAYLOAD BERSIH: Hanya 8 kolom wajib (Tanpa evaluation_score, dll)
             const payload: Record<string, any> = {
                 owner_id: owner_id,
                 customer_id: customer_id,
-                course_id: courseId || data.course_id, // ✨ FIX: Suntikkan ID Kelas saat ini
+                course_id: courseId || data.course_id, // 🔥 Menyuntikkan ID Kelas
                 date: data.date || todayFormatted,
-                course: data.course || "Class Assignment", // Fallback string jika backend masih mewajibkan nama
                 project_title: data.project_title || '',
                 git_repo_url: data.git_repo_url || data.git_repo || '', 
                 deployment_url: data.deployment_url || '',
-                description: data.description || '',
-                evaluation_score: data.evaluation_score || 0,
-                comment: data.comment || "",
-                reviewed: data.reviewed || "no"
+                description: data.description || ''
             };
 
             const url = mode === 'add' ? `/api/assignments/crud` : `/api/assignments/crud?id=${data.assignment_id}`;
@@ -138,6 +136,8 @@ export const useAssignments = (courseId?: number | string) => {
 
             if (!res.ok) throw new Error(result.error || "Gagal menyimpan data ke server");
 
+            // Jeda 1.5 detik agar database Katib selesai memproses sebelum ditarik ulang
+            await new Promise(resolve => setTimeout(resolve, 1500));
             await fetchAssignments(currentPage, searchQuery);
 
             return {

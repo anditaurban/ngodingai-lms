@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // ==============================================================
 // 1. FUNGSI ADD (POST)
@@ -10,31 +9,44 @@ const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN;
+    
+    // 🚨 RADAR DEBUGGER: Cetak apa saja yang masuk dari Frontend
+    console.log("🚨 [API POST] Data mentah dari Frontend:", body);
 
+    const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN;
     if (!serviceToken) {
         return NextResponse.json({ error: "Missing Env Token" }, { status: 500 });
     }
 
-    // ✨ SANITASI PAYLOAD: Pastikan tidak ada "undefined" yang bikin server Katib meledak
+    // Tangkap data
+    const customerId = Number(body.customer_id);
+    const ownerId = Number(body.owner_id);
+    const requestedCourseId = Number(body.course_id) || 1; // Fallback ke 1 jika FE gagal mengirim
+
+    // Format Tanggal (YYYY-MM-DD)
+    let formattedDate = body.date; 
+    if (formattedDate && formattedDate.includes('/')) {
+        const parts = formattedDate.split('/'); 
+        formattedDate = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : formattedDate;
+    } else if (!formattedDate) {
+        formattedDate = new Date().toISOString().split('T')[0]; 
+    }
+
+    // ✨ PAYLOAD STRICT 8 KOLOM 
     const payloadKeKatib = {
-        owner_id: body.owner_id,
-        customer_id: body.customer_id,
-        date: body.date,
-        course: body.course || "Ngoding AI", // Wajib ada untuk Katib
+        owner_id: ownerId,
+        course_id: requestedCourseId, 
+        customer_id: customerId,
+        date: formattedDate, 
         project_title: body.project_title,
-        git_repo_url: body.git_repo_url || body.git_repo || "", // Fallback yang aman
+        git_repo_url: body.git_repo_url || body.git_repo || "", 
         deployment_url: body.deployment_url || "",
-        description: body.description || "",
-        evaluation_score: body.evaluation_score || 0,
-        comment: body.comment || "",
-        reviewed: body.reviewed || "no"
+        description: body.description || ""
     };
 
-    const targetUrl = `${baseUrl}/add/course_assignment`;
-    console.log(`[API POST] Payload dikirim ke Katib:`, payloadKeKatib);
+    const targetUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/add/course_assignment`;
+    console.log(`🚀 [API POST] Payload SIAP tembak ke Katib:`, payloadKeKatib);
 
-    // ✨ PELINDUNG TIMEOUT: Batas 12 detik, mencegah "fetch failed" (ECONNRESET)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000); 
 
@@ -49,13 +61,12 @@ export async function POST(request: Request) {
           },
           body: JSON.stringify(payloadKeKatib), 
           cache: 'no-store',
-          signal: controller.signal // Pasang pelindung
+          signal: controller.signal
         });
         clearTimeout(timeoutId);
     } catch (fetchErr: any) {
         clearTimeout(timeoutId);
-        console.error(`[API POST] Fetch gagal (Timeout/ECONNRESET):`, fetchErr.message);
-        return NextResponse.json({ error: "Koneksi ke server pusat terputus (Timeout). Silakan coba lagi." }, { status: 504 });
+        return NextResponse.json({ error: "Koneksi ke server terputus." }, { status: 504 });
     }
 
     const textResponse = await backendResponse.text();
@@ -64,15 +75,13 @@ export async function POST(request: Request) {
     try {
         if (textResponse) data = JSON.parse(textResponse);
     } catch (e) {
-        console.warn("Katib POST Response is not JSON:", textResponse.substring(0, 100));
+        console.warn("Response Katib bukan JSON:", textResponse.substring(0, 100));
     }
     
-    console.log(`[API POST] Balasan Asli Katib:`, JSON.stringify(data, null, 2));
-
     const isKatibFailed = data?.data?.success === false || data?.success === false;
 
     if (!backendResponse.ok || isKatibFailed) {
-       const errorMsg = data?.data?.message || data?.message || "Ditolak oleh server Katib";
+       const errorMsg = data?.data?.message || data?.message || "Ditolak oleh Server Katib";
        return NextResponse.json({ error: errorMsg }, { status: 400 }); 
     }
 
@@ -93,73 +102,61 @@ export async function PUT(request: Request) {
     const body = await request.json();
     
     const serviceToken = process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN;
-
-    if (!serviceToken || !assignmentId) {
-        return NextResponse.json({ error: "Missing Token or ID" }, { status: 400 });
-    }
-
-    // SANITASI PAYLOAD PUT
-    const payloadKeKatib = {
-        ...body,
-        git_repo_url: body.git_repo_url || body.git_repo || "", 
-    };
-    delete payloadKeKatib.git_repo;
+    if (!serviceToken || !assignmentId) return NextResponse.json({ error: "Missing Token or ID" }, { status: 400 });
 
     const isDeleteAction = body.visibility === 'no';
+    let payloadKeKatib: any = {};
+
+    if (isDeleteAction) {
+        // Jika Hapus, kirim payload visibilitas saja
+        payloadKeKatib = { visibility: 'no' };
+    } else {
+        // ✨ CELAH 1 DITUTUP: Sanitasi ketat untuk UPDATE (Sama persis seperti Add)
+        let formattedDate = body.date; 
+        if (formattedDate && formattedDate.includes('/')) {
+            const parts = formattedDate.split('/'); 
+            formattedDate = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : formattedDate;
+        }
+
+        payloadKeKatib = {
+            owner_id: Number(body.owner_id),
+            course_id: Number(body.course_id),
+            customer_id: Number(body.customer_id),
+            date: formattedDate, 
+            project_title: body.project_title,
+            git_repo_url: body.git_repo_url || body.git_repo || "", 
+            deployment_url: body.deployment_url || "",
+            description: body.description || ""
+        };
+    }
+
     const targetUrl = isDeleteAction 
         ? `${baseUrl}/delete/course_assignment/${assignmentId}`
         : `${baseUrl}/update/course_assignment/${assignmentId}`;
 
-    console.log(`[API PUT] Aksi: ${isDeleteAction ? 'DELETE' : 'UPDATE'} | Menembak: ${targetUrl}`);
-
-    // ✨ PELINDUNG TIMEOUT 12 DETIK
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-    let backendResponse;
-    try {
-        backendResponse = await fetch(targetUrl, {
-          method: 'PUT',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${serviceToken}`
-          },
-          body: JSON.stringify(payloadKeKatib), 
-          cache: 'no-store',
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-    } catch (fetchErr: any) {
-        clearTimeout(timeoutId);
-        console.error(`[API PUT] Fetch gagal (Timeout/ECONNRESET):`, fetchErr.message);
-        return NextResponse.json({ error: "Koneksi ke server pusat terputus (Timeout). Silakan coba lagi." }, { status: 504 });
-    }
+    const backendResponse = await fetch(targetUrl, {
+        method: 'PUT',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceToken}` },
+        body: JSON.stringify(payloadKeKatib), 
+        cache: 'no-store',
+        signal: controller.signal
+    });
+    clearTimeout(timeoutId);
 
     const textResponse = await backendResponse.text();
-    let data: any = {};
-    
-    try {
-        if (textResponse) {
-            data = JSON.parse(textResponse);
-        }
-    } catch (e) {
-        console.warn("Katib PUT Response is not JSON. Output:", textResponse.substring(0, 150));
-    }
+    let data: any = {}; 
+    try { if (textResponse) data = JSON.parse(textResponse); } catch (e) {}
 
-    console.log(`[API PUT] Balasan Asli Katib:`, JSON.stringify(data, null, 2));
-
-    const isKatibFailed = data?.data?.success === false || data?.success === false;
-
-    if (!backendResponse.ok || isKatibFailed) {
-       const errorMsg = data?.data?.message || data?.message || `Gagal memproses data`;
-       return NextResponse.json({ error: errorMsg }, { status: 400 });
+    if (!backendResponse.ok || data?.data?.success === false || data?.success === false) {
+       return NextResponse.json({ error: data?.data?.message || data?.message || "Gagal memproses data" }, { status: 400 });
     }
 
     return NextResponse.json(data, { status: 200 });
 
   } catch (error: any) {
-    console.error("🔥 Error kritis di PUT API:", error);
-    return NextResponse.json({ error: "Internal Server Error", detail: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
