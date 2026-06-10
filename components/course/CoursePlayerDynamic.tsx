@@ -62,8 +62,7 @@ export default function CoursePlayerDynamic({ courseId, courseData }: CoursePlay
         )}
 
         {activeTab === 'assignments' && (
-          // ✨ Lempar ID real dari database
-          <AssignmentsTab courseId={courseId} />
+           <AssignmentsTab /> 
         )}
         
       </div>
