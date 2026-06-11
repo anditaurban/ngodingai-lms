@@ -67,7 +67,17 @@ export default function AssignmentsTab() {
 
     showToast(modalMode === "add" ? "Menyimpan tugas..." : "Memperbarui tugas...", "loading");
 
-    const rawResult: any = await submitAssignment(modalMode, formData);
+    // ✨ GABUNGKAN PAYLOAD: Sisipkan owner_id dari Environment Variable
+    const finalPayload = {
+      ...formData,
+      course_id: courseId,
+      // ✨ Bebas hardcode! Gunakan .env dan pastikan dikonversi menjadi Number
+      owner_id: Number(process.env.NEXT_PUBLIC_OWNER_ID), 
+    };
+
+    // Kirim finalPayload yang sudah valid
+    const rawResult: any = await submitAssignment(modalMode, finalPayload);
+    
     const isSuccess = typeof rawResult === "object" ? rawResult.success : rawResult === true;
     const message = typeof rawResult === "object" ? rawResult.message : isSuccess ? "Berhasil disimpan!" : "Gagal menyimpan.";
 

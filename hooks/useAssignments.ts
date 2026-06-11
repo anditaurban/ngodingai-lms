@@ -113,7 +113,7 @@ export const useAssignments = (courseId?: number | string) => {
 
             // ✨ PAYLOAD BERSIH: Hanya 8 kolom wajib (Tanpa evaluation_score, dll)
             const payload: Record<string, any> = {
-                owner_id: owner_id,
+                owner_id: data.owner_id || owner_id,
                 customer_id: customer_id,
                 course_id: courseId || data.course_id, // 🔥 Menyuntikkan ID Kelas
                 date: data.date || todayFormatted,
