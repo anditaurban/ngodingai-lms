@@ -9,10 +9,16 @@ import Cookies from "js-cookie"; // ✨ FIX: Import Cookies untuk fallback token
 import { useProfileLogic } from "@/hooks/useProfileLogic";
 import { requestJson, buildAuthHeaders } from "@/lib/api";
 
-const googleSansAlt = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "700", "800"] });
+const googleSansAlt = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "700", "800"],
+});
 
-const RAW_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "";
-const BASE_URL = RAW_BASE_URL.endsWith("/") ? RAW_BASE_URL.slice(0, -1) : RAW_BASE_URL;
+const RAW_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "";
+const BASE_URL = RAW_BASE_URL.endsWith("/")
+  ? RAW_BASE_URL.slice(0, -1)
+  : RAW_BASE_URL;
 
 interface CourseLevel {
   level_id: number;
@@ -54,7 +60,8 @@ const getThumbnailUrl = (filename: string) => {
 
 export default function CatalogPage() {
   const { user, loading: isProfileLoading } = useProfileLogic();
-  const userName = user?.nama || (user?.name ? user.name.split(" ")[0] : "Pelajar");
+  const userName =
+    user?.nama || (user?.name ? user.name.split(" ")[0] : "Pelajar");
 
   const ownerId = process.env.NEXT_PUBLIC_OWNER_ID || "4409";
 
@@ -82,7 +89,11 @@ export default function CatalogPage() {
         console.warn("Gagal membaca profil dari storage");
       }
     }
-    return process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN || Cookies.get("token") || "";
+    return (
+      process.env.NEXT_PUBLIC_CUSTOMER_UPDATE_TOKEN ||
+      Cookies.get("token") ||
+      ""
+    );
   }, []);
 
   // Tarik data Master Level langsung saat halaman dimuat
@@ -92,10 +103,13 @@ export default function CatalogPage() {
       if (!validToken) return; // Jangan request jika token tidak ada
 
       try {
-        const data = await requestJson<any>(`${BASE_URL}/table/course_level/${ownerId}/1`, {
-          method: "GET",
-          headers: buildAuthHeaders(validToken),
-        });
+        const data = await requestJson<any>(
+          `${BASE_URL}/table/course_level/${ownerId}/1`,
+          {
+            method: "GET",
+            headers: buildAuthHeaders(validToken),
+          },
+        );
         if (data && data.tableData) {
           setLevels(data.tableData);
         }
@@ -106,49 +120,59 @@ export default function CatalogPage() {
     fetchLevels();
   }, [ownerId, getRealToken]);
 
-  const fetchCourses = useCallback(async (page: number, selectedLevel: string = "") => {
-    setLoadingCourses(true);
-    setError(null);
+  const fetchCourses = useCallback(
+    async (page: number, selectedLevel: string = "") => {
+      setLoadingCourses(true);
+      setError(null);
 
-    const validToken = getRealToken();
+      const validToken = getRealToken();
 
-    // UX IMPROVEMENT: Cegah hit ke server jika token benar-benar kosong
-    if (!validToken) {
-      setError("Akses ditolak. Konfigurasi token sistem tidak ditemukan. Hubungi tim developer untuk mengatur file .env.");
-      setLoadingCourses(false);
-      return;
-    }
-
-    try {
-      const params = new URLSearchParams();
-      if (selectedLevel) {
-        params.append("level_id", selectedLevel); 
+      // UX IMPROVEMENT: Cegah hit ke server jika token benar-benar kosong
+      if (!validToken) {
+        setError(
+          "Akses ditolak. Konfigurasi token sistem tidak ditemukan. Hubungi tim developer untuk mengatur file .env.",
+        );
+        setLoadingCourses(false);
+        return;
       }
 
-      const queryString = params.toString() ? `?${params.toString()}` : "";
-      const targetUrl = `${BASE_URL}/table/all_course/${ownerId}/${page}${queryString}`;
+      try {
+        const params = new URLSearchParams();
+        if (selectedLevel) {
+          params.append("level_id", selectedLevel);
+        }
 
-      const data = await requestJson<any>(targetUrl, {
-        method: "GET",
-        headers: buildAuthHeaders(validToken),
-      });
+        const queryString = params.toString() ? `?${params.toString()}` : "";
+        const targetUrl = `${BASE_URL}/table/all_course/${ownerId}/${page}${queryString}`;
 
-      setCourses(data.tableData || []);
-      setTotalPages(data.totalPages || 1);
-      setTotalRecords(data.totalRecords || 0);
-    } catch (err: any) {
-      console.error("Gagal mengambil data kelas:", err);
-      
-      // UX IMPROVEMENT: Pesan error spesifik jika 401
-      if (err.message?.includes("401") || err.message?.toLowerCase().includes("unauthorized")) {
-        setError("Sesi Anda telah berakhir atau akses ditolak oleh server. Silakan coba login ulang.");
-      } else {
-        setError(err.message || "Gagal memuat katalog kelas.");
+        const data = await requestJson<any>(targetUrl, {
+          method: "GET",
+          headers: buildAuthHeaders(validToken),
+        });
+
+        setCourses(data.tableData || []);
+        setTotalPages(data.totalPages || 1);
+        setTotalRecords(data.totalRecords || 0);
+      } catch (err: any) {
+        console.error("Gagal mengambil data kelas:", err);
+
+        // UX IMPROVEMENT: Pesan error spesifik jika 401
+        if (
+          err.message?.includes("401") ||
+          err.message?.toLowerCase().includes("unauthorized")
+        ) {
+          setError(
+            "Sesi Anda telah berakhir atau akses ditolak oleh server. Silakan coba login ulang.",
+          );
+        } else {
+          setError(err.message || "Gagal memuat katalog kelas.");
+        }
+      } finally {
+        setLoadingCourses(false);
       }
-    } finally {
-      setLoadingCourses(false);
-    }
-  }, [ownerId, getRealToken]);
+    },
+    [ownerId, getRealToken],
+  );
 
   useEffect(() => {
     fetchCourses(currentPage, levelFilter);
@@ -166,7 +190,9 @@ export default function CatalogPage() {
           {isProfileLoading ? (
             <div className="animate-pulse h-8 bg-slate-200 dark:bg-slate-800 rounded w-48 mb-2"></div>
           ) : (
-            <h2 className={`text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white flex items-center gap-2 ${googleSansAlt.className}`}>
+            <h2
+              className={`text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white flex items-center gap-2 ${googleSansAlt.className}`}
+            >
               Halo, {userName}! <span className="wave-animation">👋</span>
             </h2>
           )}
@@ -182,11 +208,14 @@ export default function CatalogPage() {
       {/* Header & Filter Area */}
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className={`text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight ${googleSansAlt.className}`}>
+          <h1
+            className={`text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight ${googleSansAlt.className}`}
+          >
             Eksplorasi Kelas
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Temukan {totalRecords > 0 ? totalRecords : ""} kelas terbaik untuk tingkatkan keahlianmu.
+            Temukan {totalRecords > 0 ? totalRecords : ""} kelas terbaik untuk
+            tingkatkan keahlianmu.
           </p>
         </div>
       </div>
@@ -201,16 +230,24 @@ export default function CatalogPage() {
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {loadingCourses ? (
           Array.from({ length: 8 }).map((_, idx) => (
-            <div key={idx} className="bg-slate-100 dark:bg-[#161616] rounded-2xl h-80 animate-pulse border border-slate-200 dark:border-slate-800"></div>
+            <div
+              key={idx}
+              className="bg-slate-100 dark:bg-[#161616] rounded-2xl h-80 animate-pulse border border-slate-200 dark:border-slate-800"
+            ></div>
           ))
         ) : courses.length > 0 ? (
           courses.map((course) => {
             const rawLevelId = course.level_id ?? course.level;
-            const matchedLevel = levels.find(l => String(l.level_id) === String(rawLevelId));
-            const displayLevel = matchedLevel?.level_name 
-              || course.level_name 
-              || (typeof rawLevelId === 'string' && isNaN(Number(rawLevelId)) ? rawLevelId : null)
-              || "Beginner";
+            const matchedLevel = levels.find(
+              (l) => String(l.level_id) === String(rawLevelId),
+            );
+            const displayLevel =
+              matchedLevel?.level_name ||
+              course.level_name ||
+              (typeof rawLevelId === "string" && isNaN(Number(rawLevelId))
+                ? rawLevelId
+                : null) ||
+              "Beginner";
 
             return (
               <div
@@ -218,7 +255,10 @@ export default function CatalogPage() {
                 className="group bg-white dark:bg-[#111111] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full"
               >
                 {/* Thumbnail Area */}
-                <Link href={`/course/${course.course_id}`} className="relative w-full h-48 bg-slate-100 dark:bg-slate-800 block overflow-hidden">
+                <Link
+                  href={`/course/${course.course_id}`}
+                  className="relative w-full h-48 bg-slate-100 dark:bg-slate-800 block overflow-hidden"
+                >
                   {course.thumbnail ? (
                     <Image
                       src={getThumbnailUrl(course.thumbnail)}
@@ -230,8 +270,16 @@ export default function CatalogPage() {
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-[#00BCD4]/10 to-[#00BCD4]/30 dark:from-cyan-900/40 dark:to-cyan-800/40 group-hover:scale-105 transition-transform duration-500">
-                      <span className={`text-4xl font-black text-[#00BCD4] dark:text-cyan-400 uppercase tracking-widest ${googleSansAlt.className}`}>
-                        {course.title ? (course.title.split(' ').length > 1 ? course.title.split(' ')[0][0] + course.title.split(' ')[1][0] : course.title.substring(0, 2)).toUpperCase() : 'C'}
+                      <span
+                        className={`text-4xl font-black text-[#00BCD4] dark:text-cyan-400 uppercase tracking-widest ${googleSansAlt.className}`}
+                      >
+                        {course.title
+                          ? (course.title.split(" ").length > 1
+                              ? course.title.split(" ")[0][0] +
+                                course.title.split(" ")[1][0]
+                              : course.title.substring(0, 2)
+                            ).toUpperCase()
+                          : "C"}
                       </span>
                     </div>
                   )}
@@ -241,20 +289,25 @@ export default function CatalogPage() {
                       {course.discount_percent}% OFF
                     </div>
                   )}
-                  
+
                   <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
                     {displayLevel}
                   </div>
                 </Link>
 
                 <div className="p-5 flex flex-col grow">
-                  <Link href={`/course/${course.course_id}`} className="block mb-4">
+                  <Link
+                    href={`/course/${course.course_id}`}
+                    className="block mb-4"
+                  >
                     <div className="mb-2 inline-block">
                       <span className="text-[9px] sm:text-[10px] font-bold text-[#00BCD4] bg-[#00BCD4]/10 px-1.5 py-1 sm:px-2 rounded uppercase mb-2 inline-block truncate max-w-full">
                         {course.category_name || "General"}
                       </span>
                     </div>
-                    <h3 className={`text-sm sm:text-lg font-bold text-slate-900 dark:text-white line-clamp-2 ${googleSansAlt.className}`}>
+                    <h3
+                      className={`text-sm sm:text-lg font-bold text-slate-900 dark:text-white line-clamp-2 ${googleSansAlt.className}`}
+                    >
                       {course.title}
                     </h3>
                   </Link>
@@ -264,15 +317,25 @@ export default function CatalogPage() {
                   <div className="flex items-center gap-3 mb-4">
                     <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center">
                       {course.author_photo ? (
-                        <Image src={course.author_photo} alt={course.author_name} fill className="object-cover" unoptimized />
+                        <Image
+                          src={course.author_photo}
+                          alt={course.author_name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
                       ) : (
                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                          {course.author_name ? course.author_name.charAt(0).toUpperCase() : "A"}
+                          {course.author_name
+                            ? course.author_name.charAt(0).toUpperCase()
+                            : "A"}
                         </span>
                       )}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Instructor</span>
+                      <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
+                        Instructor
+                      </span>
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
                         {course.author_name || "Anonymous"}
                       </span>
@@ -286,15 +349,24 @@ export default function CatalogPage() {
                           {formatRupiah(course.price)}
                         </span>
                       )}
-                      <span className={`text-base sm:text-xl font-extrabold ${course.total_price === 0 ? 'text-emerald-500' : 'text-slate-900 dark:text-white'}`}>
-                        {course.total_price === 0 ? "GRATIS" : formatRupiah(course.total_price)}
+                      <span
+                        className={`text-base sm:text-xl font-extrabold ${course.total_price === 0 ? "text-emerald-500" : "text-slate-900 dark:text-white"}`}
+                      >
+                        {course.total_price === 0
+                          ? "GRATIS"
+                          : formatRupiah(course.total_price)}
                       </span>
                     </div>
                     <button
-                      onClick={() => handleAddCourse(course.course_id, course.title)}
-                      className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
+                      disabled
+                      onClick={() =>
+                        handleAddCourse(course.course_id, course.title)
+                      }
+                      className="w-full bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-none cursor-not-allowed"
                     >
-                      <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                      <span className="material-symbols-outlined text-[18px]">
+                        add_circle
+                      </span>
                       Pilih Kelas
                     </button>
                   </div>
@@ -320,10 +392,13 @@ export default function CatalogPage() {
             <span className="material-symbols-outlined">chevron_left</span>
           </button>
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Halaman <span className="font-bold">{currentPage}</span> dari <span className="font-bold">{totalPages}</span>
+            Halaman <span className="font-bold">{currentPage}</span> dari{" "}
+            <span className="font-bold">{totalPages}</span>
           </span>
           <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
             className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 disabled:opacity-50 flex items-center hover:bg-slate-50 dark:hover:bg-[#161616] text-slate-700 dark:text-slate-300 transition-colors"
           >

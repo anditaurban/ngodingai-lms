@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import DynamicOverviewTab from './tabs/DynamicOverviewTab';
 import DynamicMaterialsTab from './tabs/DynamicMaterialsTab';
@@ -14,6 +14,19 @@ interface CoursePlayerDynamicProps {
 
 export default function CoursePlayerDynamic({ courseId, courseData }: CoursePlayerDynamicProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'materials' | 'recordings' | 'assignments'>('overview');
+
+  useEffect(() => {
+    const handleSwitchTab = (e: any) => {
+      if (e.detail) {
+        setActiveTab(e.detail); // Mengubah state tab menjadi 'assignments'
+      }
+    };
+
+    window.addEventListener('switchTab', handleSwitchTab);
+    
+    // Bersihkan listener saat komponen dibongkar
+    return () => window.removeEventListener('switchTab', handleSwitchTab);
+  }, []);
 
   return (
     <div className="flex flex-col h-full">

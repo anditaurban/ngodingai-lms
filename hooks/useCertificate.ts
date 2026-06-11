@@ -8,13 +8,21 @@ export interface CertificateAPI {
   course_url: string;
 }
 
-export function useCertificate() {
+// ✨ Tambahkan parameter courseId
+export function useCertificate(courseId: number | string) {
   const [data, setData] = useState<CertificateAPI | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCertificateData = async () => {
+      // ✨ FIX: Jika courseId kosong/0, hentikan loading agar tidak muter selamanya
+      if (!courseId || courseId === 0) {
+        setLoading(false);
+        // setError("ID Kelas tidak ditemukan."); // Opsional
+        return;
+      }
+
       try {
         const storedProfile = localStorage.getItem('user_profile');
         if (!storedProfile) {
@@ -23,19 +31,19 @@ export function useCertificate() {
 
         const { customer_id } = JSON.parse(storedProfile);
 
-        // Menembak ke Proxy Lokal
-        const response = await fetch(`/api/certificate/${customer_id}`);
+        // ✨ Kirim courseId & customerId sebagai Query Parameters
+        const response = await fetch(`/api/certificate?courseId=${courseId}&customerId=${customer_id}`);
         const result = await response.json();
 
         if (!response.ok) {
           throw new Error(result.error || `Error API Katib: ${response.status}`);
         }
 
-        // ✨ PERBAIKAN STRUKTUR DATA: Mengambil dari result.detail.data ✨
+        // Struktur respon Katib: result.detail.data
         if (result.detail && result.detail.data) {
           setData(result.detail.data);
         } else if (result.detail) {
-          setData(result.detail); // Jaga-jaga jika Katib merubah struktur di masa depan
+          setData(result.detail);
         } else {
           throw new Error("Format data dari API Katib tidak sesuai.");
         }
@@ -49,7 +57,7 @@ export function useCertificate() {
     };
 
     fetchCertificateData();
-  }, []);
+  }, [courseId]); // ✨ Re-fetch otomatis jika ID kelas berubah
 
   return { data, loading, error };
 }
